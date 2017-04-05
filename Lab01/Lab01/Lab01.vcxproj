@@ -111,13 +111,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="HashFunctions.cpp" />
     <ClCompile Include="HashTable.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="StaticCharArray.cpp" />
     <ClCompile Include="WordList.cpp" />
     <ClCompile Include="WordNode.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="HashFunctions.h" />
     <ClInclude Include="HashTable.h" />
+    <ClInclude Include="StaticCharArray.h" />
     <ClInclude Include="WordList.h" />
     <ClInclude Include="WordNode.h" />
   </ItemGroup>

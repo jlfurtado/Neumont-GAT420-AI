@@ -2,6 +2,7 @@
 #define HASHTABLE_H
 
 #include <fstream>
+#include "HashFunctions.h"
 
 // Justin Furtado
 // 4/4/2017
@@ -12,7 +13,7 @@ class WordList;
 class HashTable
 {
 public:
-	bool Initialize(unsigned int tableSize);
+	bool Initialize(unsigned int tableSize, HashCallback callback);
 	bool Shutdown();
 	bool ProcessFile(const char *fileName);
 	bool InsertWord(const char *str);
@@ -23,7 +24,6 @@ public:
 	bool DisplayStats();
 
 private:
-	int Hash(const char *str);
 	int GetIndexFromHash(const char *str);
 	bool AddUniqueWord(const char *word, const char **outLowercasedWordPtr);
 	bool OpenFile(const char *fileName);
@@ -46,6 +46,7 @@ private:
 	int m_tableSize{ 0 };
 	WordList *m_pWordLists{ nullptr };
 	std::ifstream m_inputFileStream;
+	HashCallback m_hashCallback;
 };
 
 #endif // ifndef HASHTABLE_H

@@ -20,9 +20,17 @@ bool HashTable::ProcessFile(const char *fileName)
 }
 
 // initializes the table by making the lists of the appropriate size
-bool HashTable::Initialize(unsigned int tableSize)
+bool HashTable::Initialize(unsigned int tableSize, HashCallback hashCallback)
 {
+	// reset values
+	m_insertedWords = 0;
+	m_rejectedWords = 0;
+	m_nonWordsFound = 0;
+	m_tableSize = 0;
+	m_pWordLists = nullptr;
+
 	if (!MakeLists(tableSize)) { printf("Failed to Initalize()! Could not make lists for table size [%d]!\n", tableSize); return false; }
+	m_hashCallback = hashCallback;
 	return true;
 }
 
@@ -37,9 +45,9 @@ bool HashTable::Shutdown()
 bool HashTable::InsertWord(const char *str)
 {
 	// update counts and add word if necessary, log error if fail
-	if (!IsWord(str)) { m_nonWordsFound++; return false; }
-	else if (ContainsWord(str)) { m_rejectedWords++; return false; }
-	else if (AddWord(str)) { m_insertedWords++; return true; }
+	if (!IsWord(str)) { m_nonWordsFound++; printf("[%s] is not a valid word!\n", str); return false; }
+	else if (ContainsWord(str)) { m_rejectedWords++; printf("[%s] is already inside table!\n", str); return false; }
+	else if (AddWord(str)) { m_insertedWords++; printf("[%s] inserted successfully!\n", str); return true; }
 	else { printf("Failed to add word [%s]!\n", str); return false; }
 }
 
@@ -73,22 +81,57 @@ int HashTable::NumberOfNonWords()
 	return m_nonWordsFound;
 }
 
-// TODO: IMPLEMENT
+//  Do some simple stats 
 bool HashTable::DisplayStats()
 {
-	return false;
-}
+	// make vars
+	int min = m_pWordLists[0].GetNodeCount(), minCount = 0;
+	int max = m_pWordLists[0].GetNodeCount(), maxCount = 0;
+	float idealWordsPerEntry = m_insertedWords * 1.0f / m_tableSize;
+	float averageDistance = 0.0f;
+	float standardDeviation = 0.0f;
 
-// TODO: IMPLEMENT
-int HashTable::Hash(const char * str)
-{
-	return 0;
+	// iterate through all lists
+	for (int i = 0; i < m_tableSize; ++i)
+	{
+		// grab the number of nodes in the list
+		int count = m_pWordLists[i].GetNodeCount();
+
+		// update minimum and minimum count accordingly
+		if (count < min) { min = count; minCount = 1; }
+		else if (min == count) { minCount++; }
+
+		// update maximum and maximum count accordingly
+		if (count > max) { max = count; maxCount = 1; }
+		else if (max == count) { maxCount++; }
+
+		// sum absolute difference
+		averageDistance += fabsf(count - idealWordsPerEntry);
+
+		// sum squares for deviations
+		standardDeviation += (count - idealWordsPerEntry) * (count - idealWordsPerEntry);
+	}
+
+	// convert sums to final values
+	averageDistance /= m_tableSize;
+	standardDeviation = sqrtf(standardDeviation / m_tableSize);
+
+	// dump the info
+	printf("Number of table Entries: [%d]\n", m_tableSize);
+	printf("Number of total Words: [%d]\n", m_insertedWords);
+	printf("Minimum entry size: [%d], number of entries with this size: [%d]\n", min, minCount);
+	printf("Maximum entry size: [%d], number of entries with this size: [%d]\n", max, maxCount);
+	printf("Ideal words per entry: [%.3f]\n", idealWordsPerEntry);
+	printf("Weird Average thing you asked for: [%.3f]\n", averageDistance);
+	printf("Standard deviation: [%.3f]\n", standardDeviation);
+
+	return true;
 }
 
 // gets an index from the hash
 int HashTable::GetIndexFromHash(const char * str)
 {
-	return Hash(str) % m_tableSize;
+	return m_hashCallback(str) % m_tableSize;
 }
 
 // Adds a word to the list of unique words

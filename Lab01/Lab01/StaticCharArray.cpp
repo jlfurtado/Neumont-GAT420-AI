@@ -7,7 +7,7 @@
 // Encapsulates a large array for storing c-style strings and accessing them
 
 
-const int MAX_CHARS = 1000000;
+const int MAX_CHARS = 10000000;
 char s_uniqueWords[MAX_CHARS]{ 0 };
 int s_nextSlot = 0;
 

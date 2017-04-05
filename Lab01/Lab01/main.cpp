@@ -13,14 +13,24 @@ void HoldOnEnd()
 	system("pause");
 }
 
+const int MAX_INPUT_SIZE = 500;
 // Runs the application with valid arguments passed
 int Run(const char *const fileName, unsigned int tableSize)
 {
 	HashTable dictionary;
-	if (!dictionary.Initialize(tableSize)) { printf("Failed to Initalize(), cannot run!\n"); return false; }
+	if (!dictionary.Initialize(tableSize, HashFunctions::Hash6)) { printf("Failed to Initalize(), cannot run!\n"); return false; }
 	if (!dictionary.ProcessFile(fileName)) { printf("Failed to ProcessFile(), cannot run!\n"); return false; }
 
-	// TODO: LOOP AND DO INPUT THING HERE
+	dictionary.DisplayStats();
+	
+	char input[MAX_INPUT_SIZE]{ 0 };
+	do
+	{
+		std::cout << "Enter word: ";
+		std::cin >> input;
+		dictionary.InsertWord(&input[0]);
+
+	} while (!(input[0] == '-' && input[1] == '\0'));
 
 	return dictionary.Shutdown() ? EXIT_SUCCESS : EXIT_FAILURE;
 }
