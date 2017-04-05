@@ -51,3 +51,22 @@ int WordList::GetNodeCount() const
 {
 	return m_nodeCount;
 }
+
+// iterate through the list, if a node has a matching string, we're done
+bool WordList::ContainsWord(const char * str) const
+{
+	// start at the head
+	WordNode *pCurrent = m_pHeadNode;
+
+	while (pCurrent != nullptr)
+	{
+		// if its a match indicate so
+		if (pCurrent->WordsAreEqual(str)) { return true; }
+
+		// otherwise keep looking
+		pCurrent = pCurrent->GetNextNode();
+	}
+
+	// no matches found, end of list reached
+	return false;
+}

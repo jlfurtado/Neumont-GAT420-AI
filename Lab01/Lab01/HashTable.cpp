@@ -1,5 +1,6 @@
 #include "HashTable.h"
 #include "WordList.h"
+#include "StaticCharArray.h"
 #include <iostream>
 
 // Justin Furtado
@@ -7,8 +8,7 @@
 // HashTable.h
 // Defines a hash table for a dictionary of words
 
-const int MAX_CHARS = 1000000;
-char words[MAX_CHARS]{ 0 };
+const int MAX_LINE_LENGTH = 5000; // TODO: CHECK CONSTANT
 
 // processes the specified file by opening it, reading from it, then closing it
 bool HashTable::ProcessFile(const char *fileName)
@@ -33,16 +33,26 @@ bool HashTable::Shutdown()
 	return true;
 }
 
-// TODO: CHECK THIS
+// Inserts a word, returns true if inserted, false otherwise
 bool HashTable::InsertWord(const char *str)
 {
-	return ProcessPossibleWord(str);
+	// update counts and add word if necessary, log error if fail
+	if (!IsWord(str)) { m_nonWordsFound++; return false; }
+	else if (ContainsWord(str)) { m_rejectedWords++; return false; }
+	else if (AddWord(str)) { m_insertedWords++; return true; }
+	else { printf("Failed to add word [%s]!\n", str); return false; }
 }
 
-// TODO: IMPLEMENT
+// Checks if the word exists within the database by searching the list the lowercased string hashes to
 bool HashTable::ContainsWord(const char *str)
 {
-	return false;
+	// get lowercase of str
+	char wordLowercase[MAX_LINE_LENGTH]{ 0 };
+	for (int i = 0; !IsWhitespace(*(str + i)); ++i) { wordLowercase[i] = ToLowerCase(*(str + i)); }
+
+	// get index for list
+	int index = GetIndexFromHash(&wordLowercase[0]);
+	return m_pWordLists[index].ContainsWord(wordLowercase);
 }
 
 // returns the total number of words successfully added to the table
@@ -69,6 +79,38 @@ bool HashTable::DisplayStats()
 	return false;
 }
 
+// TODO: IMPLEMENT
+int HashTable::Hash(const char * str)
+{
+	return 0;
+}
+
+// gets an index from the hash
+int HashTable::GetIndexFromHash(const char * str)
+{
+	return Hash(str) % m_tableSize;
+}
+
+// Adds a word to the list of unique words
+bool HashTable::AddUniqueWord(const char * word, const char **outLowercasedWordPtr)
+{
+	// set out variable to beginning of word
+	*outLowercasedWordPtr = StaticCharArray::GetNextStringPtr();
+
+	// add the word to the end, copying it character by character and lower-casing it
+	for (int i = 0; !IsWhitespace(*(word + i)); ++i)
+	{
+		char c = *(word + i);
+		StaticCharArray::AddChar(ToLowerCase(c));
+	}
+	
+	// null-terminate the string (possibly redundantly)
+	StaticCharArray::AddChar('\0');
+
+	// indicate success
+	return true;
+}
+
 // opens the file specified
 bool HashTable::OpenFile(const char * fileName)
 {
@@ -86,10 +128,23 @@ bool HashTable::OpenFile(const char * fileName)
 	return true;
 }
 
-// TODO: IMPLEMENT
 bool HashTable::ReadFile()
 {
-	return false;
+	// array of characters for the current line
+	char currentLine[MAX_LINE_LENGTH]{ 0 };
+
+	// iterate through the file, until it has ended, maintaining a counter for the current line number
+	for (int line = 1; !m_inputFileStream.eof(); ++line)
+	{
+		// grab the current line
+		m_inputFileStream.getline(&currentLine[0], MAX_LINE_LENGTH);
+
+		// read the line, if it fails, consider the whole file a failure
+		if (!ProcessLine(&currentLine[0])) { printf("Failed to read file! Failed to process line [%d]!\n", line); return false; }
+	}
+
+	// no lines failed, end of file reached, all good
+	return true;
 }
 
 // Closes the file opened
@@ -109,6 +164,7 @@ bool HashTable::ProcessLine(const char * line)
 	// iterate through each character
 	for (int i = 0; !IsEndOfLine(*(line + i)); ++i)
 	{
+		// grab first two chars, adjust for first word being a boundary regardless manually
 		char first = i == 0 ? ' ' : *(line + i - 1);
 		char second = *(line + i);
 
@@ -120,7 +176,7 @@ bool HashTable::ProcessLine(const char * line)
 	return true;
 }
 
-// processes the strings which may or may not be words
+// processes the strings which may or may not be words, returns false only in case of error
 bool HashTable::ProcessPossibleWord(const char * word)
 {
 	// update counts and add word if necessary, log error if fail
@@ -129,6 +185,7 @@ bool HashTable::ProcessPossibleWord(const char * word)
 	else if (AddWord(word)) { m_insertedWords++; }
 	else { printf("Failed to add word [%s]!\n", word); return false; }
 
+	// success
 	return true;
 }
 
@@ -166,10 +223,16 @@ bool HashTable::DeleteLists()
 	return shouldDelete;
 }
 
-// TODO: IMPLEMENT
+// Adds a word to the appropriate linked list and unique words list
 bool HashTable::AddWord(const char * str)
 {
-	return false;
+	// add the word, grabbing a pointer to the stored lower-cased copy
+	const char *strLower;
+	if (!AddUniqueWord(str, &strLower)) { printf("Could not add word! Failed to AddUniqueWord()!\n"); return false; }
+
+	// hash for index, and add to that linked list, return success/failure
+	int index = GetIndexFromHash(strLower);
+	return m_pWordLists[index].AddToFront(strLower);
 }
 
 // returns whether or not a character is a valid delemiter between words
@@ -196,4 +259,11 @@ bool HashTable::IsEndOfLine(char c)
 bool HashTable::IsWordStartBoundary(char before, char current)
 {
 	return IsWhitespace(before) && IsWordChar(current, true);
+}
+
+// returns the lowercase equivalent of a character
+char HashTable::ToLowerCase(char c)
+{
+	// if its a letter, move it over 32, otherwise, leave it
+	return (c >= 'A' && c <= 'Z') ? (c + ('a' - 'A')) : (c);
 }

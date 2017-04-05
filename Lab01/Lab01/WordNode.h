@@ -14,8 +14,10 @@ public:
 	WordNode *GetNextNode();
 	void PointTo(WordNode *pNext);
 	const char *GetWord() const;
+	bool WordsAreEqual(const char *str) const;
 
 private:
+	int StringLength(const char *str) const;
 	const char *m_pWord;
 	WordNode *m_pNextNode;
 };

@@ -14,6 +14,7 @@ public:
 	~WordList();
 	bool AddToFront(const char *str);
 	int GetNodeCount() const;
+	bool ContainsWord(const char *str) const;
 
 private:
 	WordNode *m_pHeadNode;

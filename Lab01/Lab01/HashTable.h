@@ -23,6 +23,9 @@ public:
 	bool DisplayStats();
 
 private:
+	int Hash(const char *str);
+	int GetIndexFromHash(const char *str);
+	bool AddUniqueWord(const char *word, const char **outLowercasedWordPtr);
 	bool OpenFile(const char *fileName);
 	bool ReadFile();
 	bool CloseFile();
@@ -36,6 +39,7 @@ private:
 	bool IsWordChar(char c, bool first);
 	bool IsEndOfLine(char c);
 	bool IsWordStartBoundary(char before, char current);
+	char ToLowerCase(char c);
 	int m_insertedWords{ 0 };
 	int m_rejectedWords{ 0 };
 	int m_nonWordsFound{ 0 };
