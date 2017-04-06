@@ -8,7 +8,7 @@
 // Encapsulates static methods
 
 // First bullet point hash from lab doc
-unsigned int HashFunctions::Hash1(const char * str)
+unsigned int HashFunctions::Hash1(const char * /*str*/)
 {
 	return 0;	// puts everything in the first bucket
 }
