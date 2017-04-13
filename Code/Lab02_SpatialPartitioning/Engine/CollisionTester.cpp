@@ -1,7 +1,4 @@
 #include "CollisionTester.h"
-#include "CollisionTester.h"
-#include "CollisionTester.h"
-#include "CollisionTester.h"
 #include "GraphicalObject.h"
 #include "Mesh.h"
 #include "Entity.h"

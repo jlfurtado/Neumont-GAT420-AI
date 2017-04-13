@@ -12,6 +12,8 @@
 
 namespace Engine
 {
+	const int BUFFER_SIZE = 25;
+
 	bool ShaderProgram::Initialize()
 	{
 		// no errors yet
@@ -408,7 +410,7 @@ namespace Engine
 		return LinkProgram() && UseProgram();
 	}
 
-	GLint ShaderProgram::GetUniformLocation(const GLchar * name)
+	GLint ShaderProgram::GetUniformLocation(const GLchar * name) const
 	{
 		// get location
 		GLint id = glGetUniformLocation(m_id, name);
@@ -428,7 +430,7 @@ namespace Engine
 		return id;
 	}
 
-	GLint ShaderProgram::GetAttribLocation(const GLchar * name)
+	GLint ShaderProgram::GetAttribLocation(const GLchar * name) const
 	{
 		// get location
 		GLint id = glGetAttribLocation(m_id, name);
@@ -662,7 +664,6 @@ namespace Engine
 	}
 
 	const int NUM_ATTRIB_VALUES = 2;
-	const int BUFFER_SIZE = 25;
 	// displays a single attribute for the shader
 	bool ShaderProgram::DisplaySingleAttribute(int attribNum)
 	{

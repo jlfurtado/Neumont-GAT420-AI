@@ -9,6 +9,7 @@
 #include "GL\glew.h"
 #include "Mat4.h"
 #include "ExportHeader.h"
+#include "ShaderProgram.h"
 
 namespace Engine
 {
