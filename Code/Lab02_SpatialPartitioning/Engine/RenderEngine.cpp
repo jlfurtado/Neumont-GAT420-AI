@@ -405,6 +405,8 @@ namespace Engine
 			}
 		}
 
+		pInstanceBuffer->UnsetAttrib(outIndex);
+
 		return true;
 	}
 

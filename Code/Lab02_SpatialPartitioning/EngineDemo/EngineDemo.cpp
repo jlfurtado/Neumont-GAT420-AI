@@ -88,6 +88,7 @@ Engine::GraphicalObject thing1Gob;
 Engine::GraphicalObjectComponent thing1GobComp;
 Engine::SpatialComponent thing1SpatialComp;
 StarComp thing1Comp;
+bool drawGrid = true;
 
 bool EngineDemo::Initialize(Engine::MyWindow *window)
 {
@@ -105,7 +106,7 @@ bool EngineDemo::Initialize(Engine::MyWindow *window)
 		return false;
 	}
 
-	if (!Engine::ShapeGenerator::Initialize(m_shaderPrograms[1].GetProgramId(), m_shaderPrograms[0].GetProgramId(), m_shaderPrograms[3].GetProgramId()))
+	if (!Engine::ShapeGenerator::Initialize(m_shaderPrograms[1].GetProgramId(), m_shaderPrograms[5].GetProgramId(), m_shaderPrograms[3].GetProgramId()))
 	{
 		Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to initialize game because shape generator failed to initialize!\n");
 		return false;
@@ -250,14 +251,17 @@ void EngineDemo::Update(float dt)
 
 	if (Engine::MouseManager::IsLeftMouseClicked())
 	{
-		Engine::RayCastingOutput rco = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), 1500.0f);
+		Engine::RayCastingOutput rco = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), 1000.0f);
 		if (rco.m_didIntersect)
 		{
+			bool found = false;
 			for (int i = 0; i < NUM_DEMO_OBJECTS; ++i)
 			{
 				if (rco.m_belongsTo == &m_demoObjects[i])
 				{
-					m_texIDs[i] = (m_texIDs[i] == fractalGradientTextureID) ? fractalGradientAlternateTextureID : fractalGradientTextureID;
+					m_demoObjects[i].GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+					m_demoObjects[i].GetMatPtr()->m_ambientReflectivity = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+					found = true;
 				}
 			}
 
@@ -271,6 +275,21 @@ void EngineDemo::Update(float dt)
 	fractalSeed.GetAddress()[1] += fsy.GetX() * dt; if (fractalSeed.GetY() < fsy.GetY()) { fractalSeed.GetAddress()[1] = fsy.GetY(); fsy.GetAddress()[0] *= -1.0f; } if (fractalSeed.GetY() > fsy.GetZ()) { fractalSeed.GetAddress()[1] = fsy.GetZ(); fsy.GetAddress()[0] *= -1.0f; }
 
 	m_lights[0].SetTransMat(Engine::Mat4::Translation(playerGraphicalObject.GetPos() + Engine::Vec3(0.0f, 15.0f, 0.0f)));
+
+	static int lastX = 0;
+	static int lastZ = 0;
+
+	float x = playerGraphicalObject.GetPos().GetX();
+	float z = playerGraphicalObject.GetPos().GetZ();
+	int cX = Engine::CollisionTester::GetGridIndexFromPosX(x);
+	int cZ = Engine::CollisionTester::GetGridIndexFromPosZ(z);
+
+	if (cX != lastX || cZ != lastZ)
+	{
+		char buffer[50];
+		sprintf_s(buffer, 50, "[%d] triangles in [%d] [%d]\n", Engine::CollisionTester::GetTriangleCountForSpace(x, z), cX, cZ);
+		m_objectText.SetupText(0.2f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, buffer);
+	}
 }
 
 void EngineDemo::Draw()
@@ -278,10 +297,12 @@ void EngineDemo::Draw()
 	// Clear window
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
 	Engine::RenderEngine::Draw();
+	if (drawGrid) { Engine::CollisionTester::DrawGrid(0); }
 
 	m_fpsTextObject.RenderText(&m_shaderPrograms[0], debugColorLoc);
-
+	m_objectText.RenderText(&m_shaderPrograms[0], debugColorLoc);
 }
 
 void EngineDemo::OnResizeWindow()
@@ -385,6 +406,15 @@ bool EngineDemo::InitializeGL()
 		m_shaderPrograms[4].UseProgram();
 	}
 
+
+	if (m_shaderPrograms[5].Initialize())
+	{					 
+		m_shaderPrograms[5].AddVertexShader("..\\Data\\Shaders\\DebugInstanced.Vert.shader");
+		m_shaderPrograms[5].AddFragmentShader("..\\Data\\Shaders\\DebugInstanced.Frag.shader");
+		m_shaderPrograms[5].LinkProgram();
+		m_shaderPrograms[5].UseProgram();
+	}
+
 	// Text Shader Program
 
 	if (m_shaderProgramText.Initialize())
@@ -454,11 +484,16 @@ bool EngineDemo::ReadConfigValues()
 	return true;
 }
 
+const float MULTIPLIER = 250.0f;
+const float MIN_SPEED = 250.0f / MULTIPLIER;
+const float MAX_SPEED = 250.0f * MULTIPLIER;
+const float MIN_ROTATION_SPEED = 0.8f / MULTIPLIER;
+const float MAX_ROTATION_SPEED = 0.8f * MULTIPLIER;
 bool EngineDemo::ProcessInput(float dt)
 {
 	static int spotLightIndex = 0;
 	static bool specToggle = false;
-	
+
 	//int multiKeyTest[]{ 'J', 'K', VK_OEM_PERIOD };
 	//if (keyboardManager.KeysArePressed(&multiKeyTest[0], 3)) { Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "3 keys pressed!\n"); }
 	if (keyboardManager.KeyWasPressed('T')) { Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "%f\n", dt); }
@@ -466,10 +501,21 @@ bool EngineDemo::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('`')) { Engine::ConfigReader::pReader->ProcessConfigFile(); }
 	if (keyboardManager.KeyWasPressed('M')) { Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "(%.3f, %.3f, %.3f)\n", playerGraphicalObject.GetPos().GetX(), playerGraphicalObject.GetPos().GetY(), playerGraphicalObject.GetPos().GetZ()); }
 	if (keyboardManager.KeyWasPressed('L')) { Engine::RenderEngine::LogStats(); }
-	if (keyboardManager.KeyWasPressed('7')) { playerCamera.SetSpeed(playerCamera.GetSpeed() * 0.75f); }
-	if (keyboardManager.KeyWasPressed('6')) { playerCamera.SetSpeed(playerCamera.GetSpeed() * 1.25f); }
-	if (keyboardManager.KeyWasPressed('1')) { currentFractalTexID = fractalGradientTextureID; }
-	if (keyboardManager.KeyWasPressed('2')) { currentFractalTexID = fractalGradientAlternateTextureID; }
+	if (keyboardManager.KeyWasPressed('G')) { drawGrid = !drawGrid; }
+	if (keyboardManager.KeyWasPressed('7'))
+	{
+		playerCamera.SetSpeed(Engine::MathUtility::Clamp(playerCamera.GetSpeed() * 0.75f, MIN_SPEED, MAX_SPEED));
+		playerCamera.SetRotateSpeed(Engine::MathUtility::Clamp(playerCamera.GetRotateSpeed() * 0.75f, MIN_ROTATION_SPEED, MAX_ROTATION_SPEED));
+
+	}
+	if (keyboardManager.KeyWasPressed('6')) 
+	{ 
+		playerCamera.SetSpeed(Engine::MathUtility::Clamp(playerCamera.GetSpeed() * 1.25f, MIN_SPEED, MAX_SPEED));
+		playerCamera.SetRotateSpeed(Engine::MathUtility::Clamp(playerCamera.GetRotateSpeed() * 1.25f, MIN_ROTATION_SPEED, MAX_ROTATION_SPEED));
+	}
+
+	//if (keyboardManager.KeyWasPressed('1')) { currentFractalTexID = fractalGradientTextureID; }
+	//if (keyboardManager.KeyWasPressed('2')) { currentFractalTexID = fractalGradientAlternateTextureID; }
 	if (keyboardManager.KeyWasPressed('X')) { Shutdown(); return false; }
 
 	return true;
@@ -549,66 +595,48 @@ bool EngineDemo::UglyDemoCode()
 	thing1.AddComponent(&thing1Comp, "thing1StarComp");
 	thing1.Initialize();
 
-	m_fpsTextObject.SetupText(-0.9f,                       0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "FPS: 0\n");
+	m_fpsTextObject.SetupText(-0.9f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "FPS: 0\n");
+	m_objectText.SetupText(0.2f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "TRIANGLEs: 0\n");
 	m_perspective.SetPerspective(m_pWindow->width() / static_cast<float>(m_pWindow->height()), Engine::MathUtility::ToRadians(60.0f), 1.0f, RENDER_DISTANCE);
 	m_perspective.SetScreenDimmensions(static_cast<float>(m_pWindow->width()), static_cast<float>(m_pWindow->height()));
 	Engine::MousePicker::SetPerspectiveInfo(m_perspective.GetFOVY(), m_perspective.GetNearDist(), m_perspective.GetWidth(), m_perspective.GetHeight());
 
 	whiteSquareId = Engine::BitmapLoader::SetupWhitePixel();
 
-	Engine::ShapeGenerator::MakeGrid(&m_grid, Engine::CollisionTester::GetGridWidthSections(), Engine::CollisionTester::GetGridHeightSections(), Engine::Vec3(0.5f));
-	Engine::RenderEngine::AddGraphicalObject(&m_grid);
-	m_grid.SetScaleMat(Engine::Mat4::Scale(Engine::CollisionTester::GetGridScale()));
-	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_grid.GetFullTransformPtr(), modelToWorldMatLoc));
-	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc));
-	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr()->GetAddress(), perspectiveMatLoc));
-	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_grid.GetMatPtr()->m_materialColor, tintColorLoc));
-	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT, &m_grid.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
-
 	//Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\SkySphere.PT.Scene", &m_demoObjects[NUM_OBJECTS_TOTAL + 2], m_shaderPrograms[2].GetProgramId(), "..\\Data\\Textures\\fractalGradient.bmp", false);
-	fractalGradientTextureID = Engine::BitmapLoader::LoadTexture("..\\Data\\Textures\\fractalGradient.bmp");
-	fractalGradientAlternateTextureID = Engine::BitmapLoader::LoadTexture("..\\Data\\Textures\\fractalGradientAlternate.bmp");
-
-	//m_demoObjects[NUM_OBJECTS_TOTAL + 2].SetTransMat(Engine::Mat4::Translation(Engine::Vec3(0.0f, 0.0f, 0.0f)));
-	//m_demoObjects[NUM_OBJECTS_TOTAL + 2].SetScaleMat(Engine::Mat4::Scale(RENDER_DISTANCE * 0.1f));
-	//m_demoObjects[NUM_OBJECTS_TOTAL + 2].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_demoObjects[NUM_OBJECTS_TOTAL + 2].GetFullTransformPtr(), modelToWorldMatLoc));
-	//m_demoObjects[NUM_OBJECTS_TOTAL + 2].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc));
-	//m_demoObjects[NUM_OBJECTS_TOTAL + 2].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr()->GetAddress(), perspectiveMatLoc));
-	//m_demoObjects[NUM_OBJECTS_TOTAL + 2].AddUniformData(Engine::UniformData(GL_TEXTURE0, m_demoObjects[NUM_OBJECTS_TOTAL + 2].GetMeshPointer()->GetTextureIDPtr(), 15));
-	//m_demoObjects[NUM_OBJECTS_TOTAL + 2].AddUniformData(Engine::UniformData(GL_FLOAT_VEC2, &fractalSeed, shaderOffsetLoc));
-	//m_demoObjects[NUM_OBJECTS_TOTAL + 2].AddUniformData(Engine::UniformData(GL_FLOAT, &repeatScale, repeatScaleLoc));
-	//m_demoObjects[NUM_OBJECTS_TOTAL + 2].AddUniformData(Engine::UniformData(GL_INT, &numIterations, numIterationsLoc));
-	//Engine::RenderEngine::AddGraphicalObject(&m_demoObjects[NUM_OBJECTS_TOTAL + 2]);
+	fractalGradientAlternateTextureID = Engine::BitmapLoader::LoadTexture("..\\Data\\Textures\\fractalGradient.bmp");
 
 	repeatScale = 1.0f;
 
 	for (int i = 0; i < NUM_OBJECTS_TOTAL; ++i)
 	{
 		// use the shader based on the dargin group
-		Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\SkySphere.PT.Scene", &m_demoObjects[i], m_shaderPrograms[2].GetProgramId(), "..\\Data\\Textures\\fractalGradientAlternate.bmp", false);
+		Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\SkySphere.PT.Scene", &m_demoObjects[i], m_shaderPrograms[2].GetProgramId(), "..\\Data\\Textures\\fractalGradientGray.bmp", false);
 
 		m_demoObjects[i].SetTransMat(Engine::Mat4::Translation(Engine::Vec3((i%OBJECTS_PER_ROW - (OBJECTS_PER_ROW / 2 - 0.5f))*objectSpacing, 15.0f, (i / OBJECTS_PER_ROW - (OBJECTS_PER_ROW / 2 - 0.5f))*objectSpacing)));
 		m_demoObjects[i].SetScaleMat(Engine::Mat4::Scale(100.0f));
 
-		// both sets of dargons need phong uniforms
-		//m_demoObjects[i].AddPhongUniforms(modelToWorldMatLoc, worldToViewMatLoc, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), perspectiveMatLoc, m_perspective.GetPerspectivePtr(),
-		//	tintColorLoc, diffuseColorLoc, ambientColorLoc, specularColorLoc, specularPowerLoc, diffuseIntensityLoc, ambientIntensityLoc, specularIntensityLoc,
-		//	&m_lights[0].GetMatPtr()->m_materialColor, cameraPosLoc, playerCamera.GetPosPtr(), lightLoc, m_lights[0].GetLocPtr());
-		//m_demoObjects[i].AddUniformData(Engine::UniformData(GL_INT, &numCelLevels, 18));
 		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_demoObjects[i].GetFullTransformPtr(), modelToWorldMatLoc));
 		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc));
 		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr()->GetAddress(), perspectiveMatLoc));
-		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_TEXTURE0, &m_texIDs[i], 15));
-		m_texIDs[i] = fractalGradientTextureID;
+		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_TEXTURE0, &fractalGradientAlternateTextureID, 15));
+		//m_texIDs[i] = fractalGradientTextureID;
 		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT_VEC2, &fractalSeed, shaderOffsetLoc));
 		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT, &repeatScale, repeatScaleLoc));
 		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_INT, &numIterations, numIterationsLoc));
+		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_demoObjects[i].GetMatPtr()->m_materialColor, tintColorLoc));
+		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_demoObjects[i].GetMatPtr()->m_ambientReflectivity, tintIntensityLoc));
+		m_demoObjects[i].GetMatPtr()->m_materialColor = Engine::Vec3(0.0f, 0.0f, 0.0f);
+		m_demoObjects[i].GetMatPtr()->m_ambientReflectivity = Engine::Vec3(1.0f, 1.0f, 1.0f);
 
 		// random fun stuff
 		Engine::RenderEngine::AddGraphicalObject(&m_demoObjects[i]);
 		Engine::CollisionTester::AddGraphicalObject(&m_demoObjects[i]);
 
 	}
+
+	Engine::CollisionTester::InitializeGridDebugShapes(0, Engine::Vec3(1.0f, 0.0f, 0.0f), playerCamera.GetWorldToViewMatrixPtr()->GetAddress(),
+		m_perspective.GetPerspectivePtr()->GetAddress(), tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
 
 	return true;
 }

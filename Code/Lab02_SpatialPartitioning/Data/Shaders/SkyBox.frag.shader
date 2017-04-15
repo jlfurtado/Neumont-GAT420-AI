@@ -9,6 +9,8 @@ layout(location = 3) uniform vec2 randomValue;
 layout(location = 1) uniform float repeatScale;
 layout(location = 2) uniform vec3 rgb;
 layout(location = 4) uniform int numIterations;
+layout(location = 10) uniform vec3 tintColor;
+layout(location = 11) uniform vec3 tintColor2;
 
 void main()
 {
@@ -36,5 +38,7 @@ void main()
 	if (i == numIterations) { discard; }
 
 	float f = (i+f2) / 100.0f;
-	fColor = texture2D(textureSampler, vec2(f, 0.5f));
+	vec4 texColor = texture2D(textureSampler, vec2(f, 0.5f));
+	float scale = (texColor.g);
+	fColor = vec4(mix(tintColor.rgb, tintColor2.rgb, scale + scale * scale / 2.0f), 1.0f);
 }

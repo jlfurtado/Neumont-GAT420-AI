@@ -9,6 +9,8 @@
 #include "SpatialTriangleData.h"
 #include "ExportHeader.h"
 #include "LinkedList.h"
+#include "InstanceBuffer.h"
+#include "GraphicalObject.h"
 
 namespace Engine
 {
@@ -18,6 +20,8 @@ namespace Engine
 		SpatialGrid();
 		~SpatialGrid();
 
+		bool InitializeDisplayGrid(Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc);
+		void DrawDebugShapes();
 		SpatialTriangleData *GetTriangleDataByGrid(int gridX, int gridZ);
 		SpatialTriangleData *GetTriangleDataByGridAtPosition(float worldX, float worldZ);
 		bool AddGraphicalObject(GraphicalObject *pGraphicalObjectToAdd);
@@ -52,6 +56,8 @@ namespace Engine
 		int m_maxGridTriangleCount{ -1 };
 		int m_totalTriangleCount{ -1 };
 		float m_avgGridTriangleCount{ -1.0f };
+		InstanceBuffer m_gridInstanceBuffer;
+		GraphicalObject m_gridDisplayObject;
 	};
 }
 

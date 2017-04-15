@@ -127,6 +127,40 @@ namespace Engine
 					0.0f, 0.0f, -2.0f * near, 0.0f);
 	}
 
+	Mat4 Mat4::Inverse(Mat4 input)
+	{
+		Mat4 inverse;
+		float determinant;
+
+		inverse[0] = input[5] * input[10] * input[15] -	input[5] * input[11] * input[14] - input[9] * input[6] * input[15] + input[9] * input[7] * input[14] + input[13] * input[6] * input[11] - input[13] * input[7] * input[10];
+		inverse[4] = -input[4] * input[10] * input[15] + input[4] * input[11] * input[14] + input[8] * input[6] * input[15] - input[8] * input[7] * input[14] - input[12] * input[6] * input[11] + input[12] * input[7] * input[10];
+		inverse[8] = input[4] * input[9] * input[15] - input[4] * input[11] * input[13] - input[8] * input[5] * input[15] + input[8] * input[7] * input[13] + input[12] * input[5] * input[11] - input[12] * input[7] * input[9];
+		inverse[12] = -input[4] * input[9] * input[14] + input[4] * input[10] * input[13] + input[8] * input[5] * input[14] - input[8] * input[6] * input[13] - input[12] * input[5] * input[10] + input[12] * input[6] * input[9];
+		inverse[1] = -input[1] * input[10] * input[15] + input[1] * input[11] * input[14] + input[9] * input[2] * input[15] - input[9] * input[3] * input[14] - input[13] * input[2] * input[11] + input[13] * input[3] * input[10];
+		inverse[5] = input[0] * input[10] * input[15] - input[0] * input[11] * input[14] - input[8] * input[2] * input[15] + input[8] * input[3] * input[14] + input[12] * input[2] * input[11] - input[12] * input[3] * input[10];
+		inverse[9] = -input[0] * input[9] * input[15] + input[0] * input[11] * input[13] + input[8] * input[1] * input[15] - input[8] * input[3] * input[13] - input[12] * input[1] * input[11] + input[12] * input[3] * input[9];
+		inverse[13] = input[0] * input[9] * input[14] - input[0] * input[10] * input[13] - input[8] * input[1] * input[14] + input[8] * input[2] * input[13] + input[12] * input[1] * input[10] - input[12] * input[2] * input[9];
+		inverse[2] = input[1] * input[6] * input[15] - input[1] * input[7] * input[14] - input[5] * input[2] * input[15] + input[5] * input[3] * input[14] + input[13] * input[2] * input[7] - input[13] * input[3] * input[6];
+		inverse[6] = -input[0] * input[6] * input[15] + input[0] * input[7] * input[14] + input[4] * input[2] * input[15] - input[4] * input[3] * input[14] - input[12] * input[2] * input[7] + input[12] * input[3] * input[6];
+		inverse[10] = input[0] * input[5] * input[15] - input[0] * input[7] * input[13] - input[4] * input[1] * input[15] + input[4] * input[3] * input[13] + input[12] * input[1] * input[7] - input[12] * input[3] * input[5];
+		inverse[14] = -input[0] * input[5] * input[14] + input[0] * input[6] * input[13] + input[4] * input[1] * input[14] - input[4] * input[2] * input[13] - input[12] * input[1] * input[6] + input[12] * input[2] * input[5];
+		inverse[3] = -input[1] * input[6] * input[11] + input[1] * input[7] * input[10] + input[5] * input[2] * input[11] - input[5] * input[3] * input[10] - input[9] * input[2] * input[7] + input[9] * input[3] * input[6];
+		inverse[7] = input[0] * input[6] * input[11] - input[0] * input[7] * input[10] - input[4] * input[2] * input[11] + input[4] * input[3] * input[10] + input[8] * input[2] * input[7] - input[8] * input[3] * input[6];
+		inverse[11] = -input[0] * input[5] * input[11] + input[0] * input[7] * input[9] + input[4] * input[1] * input[11] - input[4] * input[3] * input[9] - input[8] * input[1] * input[7] + input[8] * input[3] * input[5];
+		inverse[15] = input[0] * input[5] * input[10] - input[0] * input[6] * input[9] - input[4] * input[1] * input[10] + input[4] * input[2] * input[9] + input[8] * input[1] * input[6] - input[8] * input[2] * input[5];
+
+		determinant = input[0] * inverse[0] + input[1] * inverse[4] + input[2] * inverse[8] + input[3] * inverse[12];
+
+		if (determinant == 0) return Mat4();
+
+		determinant = 1.0 / determinant;
+
+		for (int i = 0; i < 16; i++)
+			inverse[i] = inverse[i] * determinant;
+
+		return inverse;
+	}
+
 
 	Mat4 Mat4::LookAt(const Vec3 & cameraPosition, const Vec3 & targetPosition, const Vec3 & up)
 	{

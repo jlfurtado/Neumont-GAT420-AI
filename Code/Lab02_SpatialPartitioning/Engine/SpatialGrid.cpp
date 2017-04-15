@@ -4,6 +4,9 @@
 #include "GraphicalObject.h"
 #include "Vec3.h"
 #include "Vec4.h"
+#include "ShapeGenerator.h"
+#include "RenderEngine.h"
+#include "MathUtility.h"
 
 // Justin Furtado
 // SpatialGrid.h
@@ -23,6 +26,45 @@ namespace Engine
 	SpatialGrid::~SpatialGrid()
 	{
 		CleanUp();
+	}
+
+	bool SpatialGrid::InitializeDisplayGrid(Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc)
+	{
+		Engine::ShapeGenerator::MakeDebugCube(&m_gridDisplayObject, color);
+
+		m_gridDisplayObject.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_gridDisplayObject.GetFullTransformPtr(), modelToWorldMatLoc));
+		m_gridDisplayObject.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pCamMat, worldToViewMatLoc));
+		m_gridDisplayObject.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pPerspMat, perspectiveMatLoc));
+		m_gridDisplayObject.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_gridDisplayObject.GetMatPtr()->m_materialColor, tintColorLoc));
+		m_gridDisplayObject.AddUniformData(Engine::UniformData(GL_FLOAT, &m_gridDisplayObject.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
+		m_gridDisplayObject.GetMatPtr()->m_materialColor = color;
+
+		GLuint numSections = GetGridWidth() * GetGridHeight();
+
+		Mat4* modelMatrices;
+		modelMatrices = new Engine::Mat4[numSections]{ Mat4() };
+
+		for (GLuint i = 0; i < numSections; ++i)
+		{
+			modelMatrices[i] = Mat4::Translation(MathUtility::GetQuadification(i, GetGridWidth(), GetGridHeight(), GetGridScale())) * Mat4::Scale(m_gridScale, 0.0001f, m_gridScale);
+		}
+
+		m_gridInstanceBuffer.Initialize(modelMatrices, 16 * sizeof(float), numSections, 16 * numSections);
+
+		delete[] modelMatrices;
+
+		m_gridDisplayObject.CalcFullTransform();
+
+		Engine::RenderEngine::AddGraphicalObject(&m_gridDisplayObject);
+		m_gridDisplayObject.SetEnabled(false);
+		return true;
+	}
+
+	void SpatialGrid::DrawDebugShapes()
+	{
+		m_gridDisplayObject.SetEnabled(true);
+		Engine::RenderEngine::DrawInstanced(&m_gridDisplayObject, &m_gridInstanceBuffer);
+		m_gridDisplayObject.SetEnabled(false);
 	}
 
 	SpatialTriangleData * SpatialGrid::GetTriangleDataByGrid(int gridX, int gridZ)
@@ -343,6 +385,7 @@ namespace Engine
 					}
 				}
 			}
+
 		}
 
 		// indicate success

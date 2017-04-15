@@ -36,6 +36,7 @@ namespace Engine
 		static Mat4 ViewPort(float right, float left, float top, float bottom, float far, float near);
 		static Mat4 Bias();
 		static Mat4 InfinitePerspective(float fovy, float aspect, float near);
+		static Mat4 Inverse(Mat4 input);
 
 		// utility
 		float * GetAddress();

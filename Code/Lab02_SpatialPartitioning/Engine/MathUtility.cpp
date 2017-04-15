@@ -107,6 +107,11 @@ namespace Engine
 	{
 		return acosf(left.Normalize().Dot(right.Normalize()));
 	}
+
+	ENGINE_SHARED Vec3 MathUtility::GetQuadification(int index, int objectsX, int objectsZ, float spacing)
+	{
+		return Vec3(((index%objectsX - (objectsX / 2 - 0.5f))*spacing), 0.0f, (index / objectsZ - (objectsZ / 2 - 0.5f))*spacing);
+	}
 	
 
 }

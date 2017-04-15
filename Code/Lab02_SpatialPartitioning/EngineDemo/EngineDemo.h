@@ -57,11 +57,11 @@ private:
 	void InitIndicesForMeshNames(const char *const meshNames, int *indices, int numMeshes);
 
 	//data
-	static const int NUM_SHADER_PROGRAMS = 5;
+	static const int NUM_SHADER_PROGRAMS = 6;
 	bool paused = false;
 	Engine::Perspective m_perspective;
 	Engine::TextObject m_fpsTextObject;
-	Engine::TextObject m_textTimeLeft;
+	Engine::TextObject m_objectText;
 	// Engine::TextObject m_EngineDemoInfoObject;
 	Engine::MyWindow *m_pWindow{ nullptr };
 	Engine::ShaderProgram m_shaderPrograms[NUM_SHADER_PROGRAMS];

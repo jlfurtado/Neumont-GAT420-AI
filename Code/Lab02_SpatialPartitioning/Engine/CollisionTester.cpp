@@ -1,4 +1,6 @@
 #include "CollisionTester.h"
+#include "CollisionTester.h"
+#include "CollisionTester.h"
 #include "GraphicalObject.h"
 #include "Mesh.h"
 #include "Entity.h"
@@ -15,6 +17,16 @@ namespace Engine
 {
 	GraphicalObject *CollisionTester::s_pHeadNode = nullptr;
 	SpatialGrid CollisionTester::s_spatialGrid;
+
+	bool CollisionTester::InitializeGridDebugShapes(int gridIndex, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc)
+	{
+		return s_spatialGrid.InitializeDisplayGrid(color, pCamMat, pPerspMat, tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
+	}
+
+	void CollisionTester::DrawGrid(int gridIndex)
+	{
+		s_spatialGrid.DrawDebugShapes(); // TEMPORARY TODO REPLACE
+	}
 
 	void CollisionTester::ConsoleLogOutput()
 	{

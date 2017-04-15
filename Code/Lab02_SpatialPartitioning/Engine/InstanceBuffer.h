@@ -16,6 +16,7 @@ namespace Engine
 		bool Initialize(void *pData, unsigned stride, unsigned count, unsigned numFloats);
 		bool Shutdown();
 		bool SetupAttrib(int attribIndex);
+		bool UnsetAttrib(int attribIndex);
 		unsigned GetCount();
 
 	private:

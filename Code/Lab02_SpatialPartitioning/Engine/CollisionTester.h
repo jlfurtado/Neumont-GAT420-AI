@@ -29,6 +29,8 @@ namespace Engine
 	class ENGINE_SHARED CollisionTester
 	{
 	public:
+		static bool InitializeGridDebugShapes(int gridIndex, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc);
+		static void DrawGrid(int gridIndex);
 		static void ConsoleLogOutput();
 		static int GetGridWidthSections();
 		static int GetGridHeightSections();
