@@ -33,6 +33,9 @@ namespace Engine
 	class ENGINE_SHARED Mesh
 	{
 	public:
+		typedef bool(*VertexIterationCallback)(int index, const void *pVertex, void *pClassInstance, void *pPassThroughData);
+		typedef bool(*TriangleIterationCallback)(int index, const void *pVert1, const void *pVert2, const void *pVert3, void *pClassInstance, void *pPassThroughData);
+
 		// ctor/dtor
 		Mesh()
 			: m_vertexCount(0), m_indexCount(0), m_pVertices(nullptr), m_pIndices(nullptr), m_renderInfo(RenderInfo()), m_meshMode(GL_TRIANGLES), m_indexSize(IndexSizeInBytes::Uint), m_indexed(true), m_shaderProgramID(0), m_vertexFormat(VertexFormat::None), m_isCullingEnabledForObject(true) {}
@@ -55,7 +58,49 @@ namespace Engine
 		bool IsCullingEnabledForObject() { return m_isCullingEnabledForObject; }
 		GLuint GetTextureID() { return m_textureID; }
 		GLuint *GetTextureIDPtr() { return &m_textureID; }
+
+		void WalkVertices(VertexIterationCallback callback, void *pClassInstance, void *pPassThroughData)
+		{
+			if (m_indexed)
+			{
+				for (unsigned int i = 0; i < m_indexCount; ++i)
+				{
+					if (!callback(GetIndexAt(i), GetPointerToVertexAt(GetIndexAt(i)), pClassInstance, pPassThroughData)) { break; }
+				}
+			}
+			else
+			{
+				for (unsigned int i = 0; i < m_vertexCount; ++i)
+				{
+					if (!callback(i, GetPointerToVertexAt(i), pClassInstance, pPassThroughData)) { break; }
+				}
+			}
+		}
+
+		void WalkTriangles(TriangleIterationCallback callback, void *pClassInstance, void *pPassThroughData)
+		{
+			if (m_indexed)
+			{
+				for (unsigned int i = 0; i < m_indexCount; i += 3)
+				{
+					if (!callback(GetIndexAt(i), GetPointerToVertexAt(GetIndexAt(i)), GetPointerToVertexAt(GetIndexAt(i + 1)), GetPointerToVertexAt(GetIndexAt(i + 2)), pClassInstance, pPassThroughData)) { break; }
+				}
+			}
+			else
+			{
+				for (unsigned int i = 0; i < m_vertexCount; i += 3)
+				{
+					if (!callback(i,	GetPointerToVertexAt(i), GetPointerToVertexAt(i + 1), GetPointerToVertexAt(i + 2), pClassInstance, pPassThroughData)) { break; }
+				}
+			}
+		}
 		
+		int GetIndexAt(unsigned int indexIndex)
+		{
+			if (indexIndex > m_indexCount) { GameLogger::Log(MessageType::cWarning, "Tried to GetIndexAt [%d] but it was out of range!\n", indexIndex); return 0; }
+			return *reinterpret_cast<int*>(reinterpret_cast<char*>(m_pIndices) + (int)m_indexSize);
+		}
+
 		void *GetPointerToVertexAt(unsigned int index)
 		{
 			if (index > m_vertexCount) { GameLogger::Log(MessageType::cWarning, "Tried to GetVertexAt [%d] but it was out of range!\n", index); return nullptr; }

@@ -37,8 +37,23 @@ namespace Engine
 		// TODO: Move!??!?!?!
 
 	private:
+		typedef bool(*TriangleProcessingCallback)(int x, int z, GraphicalObject *pObj, int index, void *pClassInstance);
+
+		struct SpatialCallbackPassData
+		{
+			Mat4 modelToWorld;
+			TriangleProcessingCallback callback;
+			GraphicalObject *pObj;
+		};
+
 		static bool AddGraphicalObjectToGridPassThrough(GraphicalObject *pGraphicalObjectToAdd, void *pClassInstance);
 		bool AddGraphicalObjectToGrid(GraphicalObject *pGraphicalObjectToAdd);
+		static bool ProcessTrianglesPassThrough(int index, const void *pVert1, const void *pVert2, const void *pVert3, void *pClassInstance, void *pPassThroughData);
+		bool ProcessTriangles(int index, const void *pVert1, const void *pVert2, const void *pVert3, void *pPassThroughData);
+		static bool SetTriangleIndexPassThrough(int x, int z, GraphicalObject *pObj, int index, void *pClassInstance);
+		bool SetTriangleIndex(int x, int z, GraphicalObject *pObj, int index);
+		static bool AddSpatialTrianglePassThrough(int x, int z, GraphicalObject *pObj, int index, void *pClassInstance);
+		bool AddSpatialTriangle(int x, int z, GraphicalObject *pObj, int index);
 		bool SetGridStartIndices();
 		static bool SetGridStartIndicesForObjectPassThrough(GraphicalObject *pGraphicalObjectToAdd, void *pClassInstance);
 		bool SetGridStartIndicesForObject(GraphicalObject *pCurrent);

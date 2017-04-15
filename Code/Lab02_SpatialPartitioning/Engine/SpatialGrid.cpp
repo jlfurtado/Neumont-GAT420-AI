@@ -205,84 +205,12 @@ namespace Engine
 		// model to world matrix
 		Mat4 modelToWorld = pCurrent->GetTransMat() * (pCurrent->GetScaleMat() * pCurrent->GetRotMat());
 
-		// convenience data
-		Mesh *pMesh = pCurrent->GetMeshPointer();
-		int meshFormatSize = VertexFormatSize(pMesh->GetVertexFormat());
-		void *pVertices = pMesh->GetVertexPointer();
+		SpatialCallbackPassData data;
+		data.modelToWorld = modelToWorld;
+		data.callback = SpatialGrid::SetTriangleIndexPassThrough;
+		data.pObj = pCurrent;
 
-		// loop through every triangle
-		if (pMesh->IsIndexed())
-		{
-			GLuint *pIndices = (GLuint *)pMesh->GetIndexPointer();
-			for (unsigned int i = 0; i < pMesh->GetIndexCount(); i += 3)
-			{
-				Vec3 p0 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * pIndices[i + 0]))));
-				Vec3 p1 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * pIndices[i + 1]))));
-				Vec3 p2 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * pIndices[i + 2]))));
-
-				// extract the leftmost, upmost, downmost, rightmost grid indices for which the bounding box of the triangle enters
-				// TODO: investigate the case where a triangle is added to a grid in which the bounding quad intersects but the triangle does not
-				// NOTE: if the grid size is larger than the triangle size, the triangle can be in at most four grid spaces, and the above TODO: would only have a small effect
-				float offsetX = 0.5f*m_gridSectionsWidth;
-				float offsetZ = 0.5f*m_gridSectionsHeight;
-				int minGridX = (int)fminf(fminf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
-				int minGridZ = (int)fminf(fminf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
-				int maxGridX = (int)fmaxf(fmaxf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
-				int maxGridZ = (int)fmaxf(fmaxf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
-
-				// error checking
-				if (minGridX < 0 || minGridX > m_gridSectionsWidth || minGridZ < 0 || minGridZ > m_gridSectionsHeight || maxGridX < 0 || maxGridX > m_gridSectionsWidth || maxGridZ < 0 || maxGridZ > m_gridSectionsHeight)
-				{
-					GameLogger::Log(MessageType::cWarning, "Tried to AddGraphicalObject to SpatialGrid but some triangles were out of grid range!\n");
-					return false;
-				}
-
-				// add to all grid cells in range
-				for (int x = minGridX; x <= maxGridX; ++x)
-				{
-					for (int z = minGridZ; z <= maxGridZ; ++z)
-					{
-						m_pGridTriangleCounts[z*m_gridSectionsWidth + x]++;
-					}
-				}
-			}
-		}
-		else
-		{
-			for (unsigned int i = 0; i < pCurrent->GetMeshPointer()->GetVertexCount(); i += 3)
-			{
-				// grab the vertex positions regardless of format
-				Vec3 p0 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (i + 0)))));
-				Vec3 p1 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (i + 1)))));
-				Vec3 p2 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (i + 2)))));
-
-				// extract the leftmost, upmost, downmost, rightmost grid indices for which the bounding box of the triangle enters
-				// TODO: investigate the case where a triangle is added to a grid in which the bounding quad intersects but the triangle does not
-				// NOTE: if the grid size is larger than the triangle size, the triangle can be in at most four grid spaces, and the above would only have a small effect
-				float offsetX = 0.5f*m_gridSectionsWidth;
-				float offsetZ = 0.5f*m_gridSectionsHeight;
-				int minGridX = (int)fminf(fminf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
-				int minGridZ = (int)fminf(fminf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
-				int maxGridX = (int)fmaxf(fmaxf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
-				int maxGridZ = (int)fmaxf(fmaxf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
-
-				// error checking
-				if (minGridX < 0 || minGridX > m_gridSectionsWidth || minGridZ < 0 || minGridZ > m_gridSectionsHeight || maxGridX < 0 || maxGridX > m_gridSectionsWidth || maxGridZ < 0 || maxGridZ > m_gridSectionsHeight)
-				{
-					GameLogger::Log(MessageType::cWarning, "Tried to AddGraphicalObject to SpatialGrid but some triangles were out of grid range!\n");
-					return false;
-				}
-
-				// add to all grid cells in range
-				for (int x = minGridX; x <= maxGridX; ++x)
-				{
-					for (int z = minGridZ; z <= maxGridZ; ++z)
-					{
-						m_pGridTriangleCounts[z*m_gridSectionsWidth + x]++;
-					}
-				}
-			}
-		}
+		pCurrent->GetMeshPointer()->WalkTriangles(SpatialGrid::ProcessTrianglesPassThrough, this, &data);
 
 		return true;
 	}
@@ -298,98 +226,86 @@ namespace Engine
 		// model to world matrix
 		Mat4 modelToWorld = pGraphicalObjectToAdd->GetTransMat() * (pGraphicalObjectToAdd->GetScaleMat() * pGraphicalObjectToAdd->GetRotMat());
 
-		// convenience data
-		Mesh *pMesh = pGraphicalObjectToAdd->GetMeshPointer();
-		int meshFormatSize = VertexFormatSize(pMesh->GetVertexFormat());
-		void *pVertices = pMesh->GetVertexPointer();
+		SpatialCallbackPassData data;
+		data.modelToWorld = modelToWorld;
+		data.callback = SpatialGrid::AddSpatialTrianglePassThrough;
+		data.pObj = pGraphicalObjectToAdd;
 
-		// loop through every triangle
-		if (pMesh->IsIndexed())
-		{
-			GLuint *pIndices = (GLuint *)pMesh->GetIndexPointer();
-			for (unsigned int i = 0; i < pMesh->GetIndexCount(); i += 3)
-			{
-				Vec3 p0 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * pIndices[i + 0]))));
-				Vec3 p1 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * pIndices[i + 1]))));
-				Vec3 p2 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * pIndices[i + 2]))));
-
-				// extract the leftmost, upmost, downmost, rightmost grid indices for which the bounding box of the triangle enters
-				// TODO: investigate the case where a triangle is added to a grid in which the bounding quad intersects but the triangle does not
-				// NOTE: if the grid size is larger than the triangle size, the triangle can be in at most four grid spaces, and the above TODO: would only have a small effect
-				float offsetX = 0.5f*m_gridSectionsWidth;
-				float offsetZ = 0.5f*m_gridSectionsHeight;
-				int minGridX = (int)fminf(fminf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
-				int minGridZ = (int)fminf(fminf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
-				int maxGridX = (int)fmaxf(fmaxf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
-				int maxGridZ = (int)fmaxf(fmaxf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
-
-				// error checking
-				if (minGridX < 0 || minGridX > m_gridSectionsWidth || minGridZ < 0 || minGridZ > m_gridSectionsHeight || maxGridX < 0 || maxGridX > m_gridSectionsWidth || maxGridZ < 0 || maxGridZ > m_gridSectionsHeight)
-				{
-					GameLogger::Log(MessageType::cWarning, "Tried to AddGraphicalObject to SpatialGrid but some triangles were out of grid range!\n");
-					return false;
-				}
-
-				// add to all grid cells in range
-				for (int x = minGridX; x <= maxGridX; ++x)
-				{
-					for (int z = minGridZ; z <= maxGridZ; ++z)
-					{
-						SpatialTriangleData newData;
-						newData.m_pTriangleOwner = pGraphicalObjectToAdd;
-						newData.m_triangleVertexZeroIndex = pIndices[i]; // pIndices[i] is index of p0
-						int w = m_pGridStartIndices[z*m_gridSectionsWidth + x] + m_pGridTriangleCounts[z*m_gridSectionsWidth + x];
-						m_pData[w] = newData;
-						m_pGridTriangleCounts[z*m_gridSectionsWidth + x]++;
-					}
-				}
-			}
-		}
-		else
-		{
-			for (unsigned int i = 0; i < pGraphicalObjectToAdd->GetMeshPointer()->GetVertexCount(); i += 3)
-			{
-				// grab the vertex positions regardless of format
-				Vec3 p0 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (i + 0)))));
-				Vec3 p1 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (i + 1)))));
-				Vec3 p2 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (i + 2)))));
-
-				// extract the leftmost, upmost, downmost, rightmost grid indices for which the bounding box of the triangle enters
-				// TODO: investigate the case where a triangle is added to a grid in which the bounding quad intersects but the triangle does not
-				// NOTE: if the grid size is larger than the triangle size, the triangle can be in at most four grid spaces, and the above would only have a small effect
-				float offsetX = 0.5f*m_gridSectionsWidth;
-				float offsetZ = 0.5f*m_gridSectionsHeight;
-				int minGridX = (int)fminf(fminf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
-				int minGridZ = (int)fminf(fminf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
-				int maxGridX = (int)fmaxf(fmaxf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
-				int maxGridZ = (int)fmaxf(fmaxf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
-
-				// error checking
-				if (minGridX < 0 || minGridX > m_gridSectionsWidth || minGridZ < 0 || minGridZ > m_gridSectionsHeight || maxGridX < 0 || maxGridX > m_gridSectionsWidth || maxGridZ < 0 || maxGridZ > m_gridSectionsHeight)
-				{
-					GameLogger::Log(MessageType::cWarning, "Tried to AddGraphicalObject to SpatialGrid but some triangles were out of grid range!\n");
-					return false;
-				}
-
-				// add to all grid cells in range
-				for (int x = minGridX; x <= maxGridX; ++x)
-				{
-					for (int z = minGridZ; z <= maxGridZ; ++z)
-					{
-						SpatialTriangleData newData;
-						newData.m_pTriangleOwner = pGraphicalObjectToAdd;
-						newData.m_triangleVertexZeroIndex = i; // pIndices[i] is index of p0.
-						int w = m_pGridStartIndices[z*m_gridSectionsWidth + x] + m_pGridTriangleCounts[z*m_gridSectionsWidth + x];
-						m_pData[w] = newData;
-						m_pGridTriangleCounts[z*m_gridSectionsWidth + x]++;
-					}
-				}
-			}
-
-		}
+		pGraphicalObjectToAdd->GetMeshPointer()->WalkTriangles(SpatialGrid::ProcessTrianglesPassThrough, this, &data);
 
 		// indicate success
 		GameLogger::Log(MessageType::Process, "Successfully added GraphicalObject to SpatialGrid!\n");
+		return true;
+	}
+
+	bool SpatialGrid::ProcessTrianglesPassThrough(int index, const void * pVert1, const void * pVert2, const void * pVert3, void * pClassInstance, void * pPassThroughData)
+	{
+		SpatialGrid *pInstance = reinterpret_cast<SpatialGrid *>(pClassInstance);
+		return pInstance->ProcessTriangles(index, pVert1, pVert2, pVert3, pPassThroughData);
+	}
+
+	bool SpatialGrid::ProcessTriangles(int index, const void * pVert1, const void * pVert2, const void * pVert3, void * pPassThroughData)
+	{
+		SpatialCallbackPassData *pData = reinterpret_cast<SpatialCallbackPassData*>(pPassThroughData);
+
+		// grab the vertex positions regardless of format
+		Vec3 p0 = pData->modelToWorld * (*(reinterpret_cast<const Vec3 *>(pVert1)));
+		Vec3 p1 = pData->modelToWorld * (*(reinterpret_cast<const Vec3 *>(pVert2)));
+		Vec3 p2 = pData->modelToWorld * (*(reinterpret_cast<const Vec3 *>(pVert3)));
+
+		// extract the leftmost, upmost, downmost, rightmost grid indices for which the bounding box of the triangle enters
+		// TODO: investigate the case where a triangle is added to a grid in which the bounding quad intersects but the triangle does not
+		// NOTE: if the grid size is larger than the triangle size, the triangle can be in at most four grid spaces, and the above would only have a small effect
+		float offsetX = 0.5f*m_gridSectionsWidth;
+		float offsetZ = 0.5f*m_gridSectionsHeight;
+		int minGridX = (int)fminf(fminf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
+		int minGridZ = (int)fminf(fminf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
+		int maxGridX = (int)fmaxf(fmaxf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
+		int maxGridZ = (int)fmaxf(fmaxf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
+
+		// error checking
+		if (minGridX < 0 || minGridX > m_gridSectionsWidth || minGridZ < 0 || minGridZ > m_gridSectionsHeight || maxGridX < 0 || maxGridX > m_gridSectionsWidth || maxGridZ < 0 || maxGridZ > m_gridSectionsHeight)
+		{
+			GameLogger::Log(MessageType::cWarning, "Tried to AddGraphicalObject to SpatialGrid but some triangles were out of grid range!\n");
+			return false;
+		}
+
+		// add to all grid cells in range
+		for (int x = minGridX; x <= maxGridX; ++x)
+		{
+			for (int z = minGridZ; z <= maxGridZ; ++z)
+			{
+				pData->callback(x, z, pData->pObj, index, this);
+			}
+		}
+	}
+
+	bool SpatialGrid::SetTriangleIndexPassThrough(int x, int z, GraphicalObject * pObj, int index, void *pClassInstance)
+	{
+		SpatialGrid *pInstance = reinterpret_cast<SpatialGrid *>(pClassInstance);
+		return pInstance->SetTriangleIndex(x, z, pObj, index);
+	}
+
+	bool SpatialGrid::SetTriangleIndex(int x, int z, GraphicalObject * pObj, int index)
+	{
+		m_pGridTriangleCounts[z*m_gridSectionsWidth + x]++;
+		return true;
+	}
+
+	bool SpatialGrid::AddSpatialTrianglePassThrough(int x, int z, GraphicalObject * pObj, int index, void *pClassInstance)
+	{
+		SpatialGrid *pInstance = reinterpret_cast<SpatialGrid *>(pClassInstance);
+		return pInstance->AddSpatialTriangle(x, z, pObj, index);
+	}
+
+	bool SpatialGrid::AddSpatialTriangle(int x, int z, GraphicalObject * pObj, int index)
+	{
+		SpatialTriangleData newData;
+		newData.m_pTriangleOwner = pObj;
+		newData.m_triangleVertexZeroIndex = index; // pIndices[i] is index of p0
+		int w = m_pGridStartIndices[z*m_gridSectionsWidth + x] + m_pGridTriangleCounts[z*m_gridSectionsWidth + x];
+		m_pData[w] = newData;
+		m_pGridTriangleCounts[z*m_gridSectionsWidth + x]++;
 		return true;
 	}
 
