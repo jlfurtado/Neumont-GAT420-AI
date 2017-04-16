@@ -41,7 +41,7 @@
 // The game
 
 const float objectSpacing = 500.0f;
-const int OBJECTS_PER_ROW = 2;
+const int OBJECTS_PER_ROW = 7;
 const int NUM_OBJECTS_DEMO1 = OBJECTS_PER_ROW * OBJECTS_PER_ROW;
 const int NUM_OBJECTS_DEMO2 = OBJECTS_PER_ROW * OBJECTS_PER_ROW;
 const float OBJECT_PLANE_OFFSET = 1000.0f;
@@ -54,7 +54,7 @@ Engine::GraphicalObject m_demoObjects[NUM_DEMO_OBJECTS];
 Engine::GraphicalObject m_lights[NUM_DEMO_OBJECTS];
 Engine::GraphicalObject playerGraphicalObject;
 int m_texIDs[NUM_DEMO_OBJECTS]{ 0 };
-const float EngineDemo::RENDER_DISTANCE = 2500.0f;
+const float EngineDemo::RENDER_DISTANCE = 3500.0f;
 Engine::Entity player;
 Engine::ChaseCameraComponent playerCamera(Engine::Vec3(0, 30, 50), Engine::Vec3(0, 5, 0), Engine::Vec3(0), false);
 Engine::GraphicalObjectComponent playerGob;
@@ -254,7 +254,7 @@ void EngineDemo::Update(float dt)
 
 	if (Engine::MouseManager::IsLeftMouseClicked())
 	{
-		Engine::RayCastingOutput rco = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), 1000.0f, currentCollisionLayer);
+		Engine::RayCastingOutput rco = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, currentCollisionLayer);
 		if (rco.m_didIntersect)
 		{
 			bool found = false;
@@ -637,8 +637,8 @@ bool EngineDemo::UglyDemoCode()
 		// use the shader based on the dargin group
 		Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\SkySphere.PT.Scene", &m_demoObjects[i], m_shaderPrograms[2].GetProgramId(), "..\\Data\\Textures\\fractalGradientGray.bmp", false);
 
-		m_demoObjects[i].SetTransMat(Engine::Mat4::Translation(Engine::Vec3((i%OBJECTS_PER_ROW - (OBJECTS_PER_ROW / 2 - 0.5f))*objectSpacing, 15.0f, (i / OBJECTS_PER_ROW - (OBJECTS_PER_ROW / 2 - 0.5f))*objectSpacing)));
-		m_demoObjects[i].SetScaleMat(Engine::Mat4::Scale(100.0f));
+		m_demoObjects[i].SetTransMat(Engine::Mat4::Translation(Engine::Vec3((i%OBJECTS_PER_ROW - (OBJECTS_PER_ROW / 2 - 0.5f))*objectSpacing, 0.0f, (i / OBJECTS_PER_ROW - (OBJECTS_PER_ROW / 2 - 0.5f))*objectSpacing)));
+		m_demoObjects[i].SetScaleMat(Engine::Mat4::Scale(250.0f));
 
 		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_demoObjects[i].GetFullTransformPtr(), modelToWorldMatLoc));
 		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc));
@@ -655,12 +655,14 @@ bool EngineDemo::UglyDemoCode()
 
 		// random fun stuff
 		Engine::RenderEngine::AddGraphicalObject(&m_demoObjects[i]);
-		Engine::CollisionTester::AddGraphicalObjectToLayer(&m_demoObjects[i], (Engine::CollisionLayer)i);
+		Engine::CollisionTester::AddGraphicalObjectToLayer(&m_demoObjects[i], (Engine::CollisionLayer)(1+(i%((int)Engine::CollisionLayer::NUM_LAYERS-1))));
 
 	}
 
 	Engine::CollisionTester::InitializeGridDebugShapes(Engine::CollisionLayer::STATIC_GEOMETRY, Engine::Vec3(1.0f, 0.0f, 0.0f), playerCamera.GetWorldToViewMatrixPtr()->GetAddress(),
 		m_perspective.GetPerspectivePtr()->GetAddress(), tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
+
+	Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer);
 
 	return true;
 }
