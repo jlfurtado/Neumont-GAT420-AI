@@ -297,6 +297,7 @@ void EngineDemo::Update(float dt)
 
 	}
 
+	m_gazebo.CalcFullTransform();
 	lastCollisionLayer = currentCollisionLayer;
 
 }
@@ -426,6 +427,14 @@ bool EngineDemo::InitializeGL()
 		m_shaderPrograms[5].UseProgram();
 	}
 
+	if (m_shaderPrograms[6].Initialize())
+	{
+		m_shaderPrograms[6].AddVertexShader("..\\Data\\Shaders\\SimpleTexture.vert.shader");
+		m_shaderPrograms[6].AddFragmentShader("..\\Data\\Shaders\\SimpleTexture.frag.shader");
+		m_shaderPrograms[6].LinkProgram();
+		m_shaderPrograms[6].UseProgram();
+	}
+
 	// Text Shader Program
 
 	if (m_shaderProgramText.Initialize())
@@ -454,6 +463,7 @@ bool EngineDemo::InitializeGL()
 	repeatScaleLoc = m_shaderPrograms[2].GetUniformLocation("repeatScale");
 	numIterationsLoc = m_shaderPrograms[2].GetUniformLocation("numIterations");
 	shaderOffsetLoc = m_shaderPrograms[2].GetUniformLocation("randomValue");
+	texLoc = m_shaderPrograms[6].GetUniformLocation("textureSampler");
 
 	if (Engine::MyGL::TestForError(Engine::MessageType::cFatal_Error, "InitializeGL errors!"))
 	{
@@ -637,7 +647,9 @@ bool EngineDemo::UglyDemoCode()
 		// use the shader based on the dargin group
 		Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\SkySphere.PT.Scene", &m_demoObjects[i], m_shaderPrograms[2].GetProgramId(), "..\\Data\\Textures\\fractalGradientGray.bmp", false);
 
-		m_demoObjects[i].SetTransMat(Engine::Mat4::Translation(Engine::Vec3((i%OBJECTS_PER_ROW - (OBJECTS_PER_ROW / 2 - 0.5f))*objectSpacing, 0.0f, (i / OBJECTS_PER_ROW - (OBJECTS_PER_ROW / 2 - 0.5f))*objectSpacing)));
+		float xPosition = (i%OBJECTS_PER_ROW - (OBJECTS_PER_ROW / 2 - 0.5f))*objectSpacing;
+		float zPosition = (i / OBJECTS_PER_ROW - (OBJECTS_PER_ROW / 2 - 0.5f))*objectSpacing;
+		m_demoObjects[i].SetTransMat(Engine::Mat4::Translation(Engine::Vec3(xPosition, 4*objectSpacing-sqrtf(xPosition*xPosition+zPosition*zPosition), zPosition)));
 		m_demoObjects[i].SetScaleMat(Engine::Mat4::Scale(250.0f));
 
 		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_demoObjects[i].GetFullTransformPtr(), modelToWorldMatLoc));
@@ -658,6 +670,21 @@ bool EngineDemo::UglyDemoCode()
 		Engine::CollisionTester::AddGraphicalObjectToLayer(&m_demoObjects[i], (Engine::CollisionLayer)(1+(i%((int)Engine::CollisionLayer::NUM_LAYERS-1))));
 
 	}
+
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Gazebo.PTN.Scene", &m_gazebo, m_shaderPrograms[6].GetProgramId(), "..\\Data\\Textures\\WhiteMarble3.bmp");
+	m_gazebo.SetTransMat(Engine::Mat4::Translation(Engine::Vec3(-200.0f, 5.0f, 0.0f)));
+	m_gazebo.SetScaleMat(Engine::Mat4::Scale(60.0f));
+	m_gazebo.AddPhongUniforms(modelToWorldMatLoc, worldToViewMatLoc, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), perspectiveMatLoc, m_perspective.GetPerspectivePtr()->GetAddress(),
+		tintColorLoc, diffuseColorLoc, ambientColorLoc, specularColorLoc, specularPowerLoc, diffuseIntensityLoc, ambientIntensityLoc, specularIntensityLoc,
+		&playerGraphicalObject.GetMatPtr()->m_materialColor, cameraPosLoc, playerCamera.GetPosPtr(), lightLoc, m_lights[0].GetLocPtr());
+	m_gazebo.AddUniformData(Engine::UniformData(GL_TEXTURE0, m_gazebo.GetMeshPointer()->GetTextureIDPtr(), texLoc));
+	m_gazebo.GetMatPtr()->m_specularReflectivity = Engine::Vec3(0.1f);
+	m_gazebo.GetMatPtr()->m_diffuseReflectivity = Engine::Vec3(0.8f);
+	m_gazebo.GetMatPtr()->m_ambientReflectivity = Engine::Vec3(0.1f);
+	m_gazebo.GetMatPtr()->m_specularIntensity = 128.0f;
+	Engine::RenderEngine::AddGraphicalObject(&m_gazebo);
+	Engine::CollisionTester::AddGraphicalObjectToLayer(&m_gazebo, Engine::CollisionLayer::STATIC_GEOMETRY);
+
 
 	Engine::CollisionTester::InitializeGridDebugShapes(Engine::CollisionLayer::STATIC_GEOMETRY, Engine::Vec3(1.0f, 0.0f, 0.0f), playerCamera.GetWorldToViewMatrixPtr()->GetAddress(),
 		m_perspective.GetPerspectivePtr()->GetAddress(), tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);

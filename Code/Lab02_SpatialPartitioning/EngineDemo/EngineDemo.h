@@ -57,7 +57,7 @@ private:
 	void InitIndicesForMeshNames(const char *const meshNames, int *indices, int numMeshes);
 
 	//data
-	static const int NUM_SHADER_PROGRAMS = 6;
+	static const int NUM_SHADER_PROGRAMS = 7;
 	bool paused = false;
 	Engine::Perspective m_perspective;
 	Engine::TextObject m_fpsTextObject;
@@ -92,6 +92,7 @@ private:
 	GLint levelsLoc;
 	GLint halfWidthLoc;
 	GLint repeatScaleLoc;
+	Engine::GraphicalObject m_gazebo;
 	float repeatScale;
 	GLint numIterationsLoc;
 	int numIterations;

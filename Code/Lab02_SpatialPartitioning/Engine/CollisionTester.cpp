@@ -48,10 +48,10 @@ namespace Engine
 	{
 		for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i)
 		{
-			GameLogger::Log(MessageType::ConsoleOnly, "========================== Begin Spatial grid [%s] ==========================\n", LayerString((CollisionLayer)i));
+			GameLogger::Log(MessageType::cDebug, "========================== Begin Spatial grid [%s] ==========================\n", LayerString((CollisionLayer)i));
 			s_spatialGrids[i].CalculateStatisticsFromCounts();
 			s_spatialGrids[i].ConsoleLogStats();
-			GameLogger::Log(MessageType::ConsoleOnly, "========================== End Spatial grid [%s] ==========================\n\n", LayerString((CollisionLayer)i));
+			GameLogger::Log(MessageType::cDebug, "========================== End Spatial grid [%s] ==========================\n\n", LayerString((CollisionLayer)i));
 		}
 	}
 

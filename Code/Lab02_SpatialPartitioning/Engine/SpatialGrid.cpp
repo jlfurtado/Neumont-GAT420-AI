@@ -149,10 +149,10 @@ namespace Engine
 
 	void SpatialGrid::ConsoleLogStats()
 	{
-		GameLogger::Log(MessageType::ConsoleOnly, "Total triangle count for grid is [%d]\n", m_totalTriangleCount);
-		GameLogger::Log(MessageType::ConsoleOnly, "Average triangle count for grid cells is [%.3f]\n", m_avgGridTriangleCount);
-		GameLogger::Log(MessageType::ConsoleOnly, "Min triangle count for grid is [%d]\n", m_minGridTriangleCount);
-		GameLogger::Log(MessageType::ConsoleOnly, "Max triangle count for grid is [%d]\n", m_maxGridTriangleCount);
+		GameLogger::Log(MessageType::cDebug, "Total triangle count for grid is [%d]\n", m_totalTriangleCount);
+		GameLogger::Log(MessageType::cDebug, "Average triangle count for grid cells is [%.3f]\n", m_avgGridTriangleCount);
+		GameLogger::Log(MessageType::cDebug, "Min triangle count for grid is [%d]\n", m_minGridTriangleCount);
+		GameLogger::Log(MessageType::cDebug, "Max triangle count for grid is [%d]\n", m_maxGridTriangleCount);
 	}
 
 	bool SpatialGrid::AddTrianglesToPartitions()
