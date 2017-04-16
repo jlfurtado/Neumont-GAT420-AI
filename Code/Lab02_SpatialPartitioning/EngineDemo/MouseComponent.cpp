@@ -51,7 +51,7 @@ const float MAX_DISTANCE_MULTIPLER = 5.0f;
 bool MouseComponent::HandleMouseMovement()
 {	
 	static float distanceMultiplier = 1.0f;
-	static Engine::GraphicalObject *pLast = nullptr;
+	//static Engine::GraphicalObject *pLast = nullptr;
 
 	// Requires access to camera to rotate it
 	Engine::ChaseCameraComponent *pCamera = GetSiblingComponent<Engine::ChaseCameraComponent>();
@@ -68,12 +68,12 @@ bool MouseComponent::HandleMouseMovement()
 
 	Engine::MousePicker::SetCameraInfo(pCamera->GetPosition(), pCamera->GetViewDir(), pCamera->GetUp());
 
-	Engine::RayCastingOutput output = Engine::CollisionTester::FindFromMousePos(x, y, 10000.0f);
+	//Engine::RayCastingOutput output = Engine::CollisionTester::FindFromMousePos(x, y, 10000.0f);
 
-	if (output.m_didIntersect)
-	{ 
-		pLast = output.m_belongsTo;
-	}
+	//if (output.m_didIntersect)
+	//{ 
+	//	pLast = output.m_belongsTo;
+	//}
 
 	return true;
 }

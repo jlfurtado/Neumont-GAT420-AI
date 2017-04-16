@@ -55,6 +55,7 @@ private:
 	void ShowFrameRate(float dt);
 	bool UglyDemoCode();
 	void InitIndicesForMeshNames(const char *const meshNames, int *indices, int numMeshes);
+	void SetObjPosDataPtrs();
 
 	//data
 	static const int NUM_SHADER_PROGRAMS = 7;

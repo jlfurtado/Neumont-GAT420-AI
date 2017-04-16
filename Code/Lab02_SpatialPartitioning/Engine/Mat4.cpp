@@ -153,7 +153,7 @@ namespace Engine
 
 		if (determinant == 0) return Mat4();
 
-		determinant = 1.0 / determinant;
+		determinant = 1.0f / determinant;
 
 		for (int i = 0; i < 16; i++)
 			inverse[i] = inverse[i] * determinant;

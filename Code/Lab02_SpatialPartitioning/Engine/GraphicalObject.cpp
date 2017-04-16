@@ -67,7 +67,7 @@ namespace Engine
 
 	Mesh * GraphicalObject::GetMeshPointer()
 	{
-		return m_pMesh;
+ 		return m_pMesh;
 	}
 
 	Material * GraphicalObject::GetMatPtr()

@@ -39,6 +39,7 @@ namespace Engine
 		void DisableObjects();
 		static bool EnableObject(GraphicalObject *pGob, void *pInstance);
 		static bool DisableObject(GraphicalObject *pGob, void *pInstance);
+		bool DoesFitInGrid(GraphicalObject *pGraphicalObjectToTest);
 
 		// TODO: Move!??!?!?!
 
@@ -50,6 +51,7 @@ namespace Engine
 			Mat4 modelToWorld;
 			TriangleProcessingCallback callback;
 			GraphicalObject *pObj;
+			bool m_success{ true };
 		};
 
 		static bool AddGraphicalObjectToGridPassThrough(GraphicalObject *pGraphicalObjectToAdd, void *pClassInstance);
@@ -65,6 +67,7 @@ namespace Engine
 		bool SetGridStartIndicesForObject(GraphicalObject *pCurrent);
 		void CleanUp();
 
+		bool m_firstCalculation{ true };
 		float m_gridScale;
 		SpatialTriangleData *m_pData{ nullptr };
 		LinkedList<GraphicalObject> m_objectList;

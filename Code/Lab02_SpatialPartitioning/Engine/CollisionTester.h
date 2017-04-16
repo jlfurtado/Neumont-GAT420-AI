@@ -50,6 +50,7 @@ namespace Engine
 		static RayCastingOutput FindCeiling(Entity *pEntity, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
 		static RayCastingOutput RayTriangleIntersect(const Vec3& rayPosition, const Vec3& rayDirection, const Vec3& p0, const Vec3& p1, const Vec3& p2, float currentClosest);
 		static bool AddGraphicalObjectToLayer(GraphicalObject *pGraphicalObjectToAdd, CollisionLayer layer);
+		static bool DoesFitInGrid(GraphicalObject *pGraphicalObjectToTest, CollisionLayer layer);
 		static void RemoveGraphicalObjectFromLayer(GraphicalObject *pGobToRemove, CollisionLayer layer);
 		static int GetTriangleCountForSpace(float xPos, float zPos, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
 		static int GetGridIndexFromPosX(float xPos, CollisionLayer layer);

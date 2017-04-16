@@ -3,6 +3,7 @@
 #include "CollisionTester.h"
 #include "CollisionTester.h"
 #include "CollisionTester.h"
+#include "CollisionTester.h"
 #include "GraphicalObject.h"
 #include "Mesh.h"
 #include "Entity.h"
@@ -108,29 +109,32 @@ namespace Engine
 		{
 			SpatialTriangleData *pFirst = s_spatialGrids[(unsigned)layer].GetTriangleDataByGrid(i, j);
 
-			for (int c = 0; c < s_spatialGrids[(unsigned)layer].GetGridTriangleCount(i, j); ++c)
+			if (pFirst)
 			{
-				SpatialTriangleData *pCurrent = pFirst + c;
-				if (pCurrent)
+				for (int c = 0; c < s_spatialGrids[(unsigned)layer].GetGridTriangleCount(i, j); ++c)
 				{
-					Mesh *pMesh = pCurrent->m_pTriangleOwner->GetMeshPointer();
-					Mat4 modelToWorld = pCurrent->m_pTriangleOwner->GetTransMat() * (pCurrent->m_pTriangleOwner->GetScaleMat() * pCurrent->m_pTriangleOwner->GetRotMat());
-					void *pVertices = pMesh->GetVertexPointer();
-					int meshFormatSize = VertexFormatSize(pMesh->GetVertexFormat());
-
-					if (pCurrent->m_pTriangleOwner->IsEnabled())
+					SpatialTriangleData *pCurrent = pFirst + c;
+					if (pCurrent)
 					{
-						Vec3 p0 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * pCurrent->m_triangleVertexZeroIndex))));
-						Vec3 p1 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (pCurrent->m_triangleVertexZeroIndex + 1)))));
-						Vec3 p2 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (pCurrent->m_triangleVertexZeroIndex + 2)))));
+						Mesh *pMesh = pCurrent->m_pTriangleOwner->GetMeshPointer();
+						Mat4 modelToWorld = *pCurrent->m_pTriangleOwner->GetFullTransformPtr();
+						void *pVertices = pMesh->GetVertexPointer();
+						int meshFormatSize = VertexFormatSize(pMesh->GetVertexFormat());
 
-						RayCastingOutput output = RayTriangleIntersect(rayPosition, rd, p0, p1, p2, finalOutput.m_distance);
-						if (output.m_didIntersect && output.m_distance < finalOutput.m_distance) { finalOutput = output; finalOutput.m_belongsTo = pCurrent->m_pTriangleOwner; finalOutput.m_vertexIndex = pCurrent->m_triangleVertexZeroIndex; }
+						if (pCurrent->m_pTriangleOwner->IsEnabled())
+						{
+							Vec3 p0 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * pCurrent->m_triangleVertexZeroIndex))));
+							Vec3 p1 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (pCurrent->m_triangleVertexZeroIndex + 1)))));
+							Vec3 p2 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (pCurrent->m_triangleVertexZeroIndex + 2)))));
+
+							RayCastingOutput output = RayTriangleIntersect(rayPosition, rd, p0, p1, p2, finalOutput.m_distance);
+							if (output.m_didIntersect && output.m_distance < finalOutput.m_distance) { finalOutput = output; finalOutput.m_belongsTo = pCurrent->m_pTriangleOwner; finalOutput.m_vertexIndex = pCurrent->m_triangleVertexZeroIndex; }
+						}
 					}
-				}
-				
-			}
 
+				}
+			}
+			
 			// checking further is irrelevant because a triangle has been hit in the closest partition
 			//if (finalOutput.m_didIntersect) { return finalOutput; }
 			// TODO: BETTER FIX FOR BUG WITH TRIANGLE COMPARISON ORDER
@@ -332,6 +336,11 @@ namespace Engine
 		if (!pGraphicalObjectToAdd) { GameLogger::Log(MessageType::cError, "Failed to AddGraphicalObject to CollisionTester! GraphicalObject to-be-added was nullptr!\n"); return false; }
 		if (layer == CollisionLayer::NUM_LAYERS) { GameLogger::Log(MessageType::cWarning, "Tried to AddGraphicalObjectToLayer for NUM_LAYERS!\n"); return false; }
 		return s_spatialGrids[(unsigned)layer].AddGraphicalObject(pGraphicalObjectToAdd);
+	}
+
+	bool CollisionTester::DoesFitInGrid(GraphicalObject * pGraphicalObjectToTest, CollisionLayer layer)
+	{
+		return s_spatialGrids[(unsigned)layer].DoesFitInGrid(pGraphicalObjectToTest);
 	}
 
 	void CollisionTester::RemoveGraphicalObjectFromLayer(GraphicalObject * pGobToRemove, CollisionLayer layer)

@@ -97,22 +97,15 @@ namespace Engine
 		if (m_numFloats < 16)
 		{
 			glDisableVertexAttribArray(attribIndex);
-			//glVertexAttribPointer(attribIndex, m_numFloats, GL_FLOAT, GL_FALSE, m_stride, (GLvoid*)0);
 			glVertexAttribDivisor(attribIndex, 0);
 		}
 		else
 		{
 			// Vertex Attributes
-			GLsizei vec4Size = 4 * sizeof(float);
 			glDisableVertexAttribArray(attribIndex + 0);
-			//glVertexAttribPointer(attribIndex + 0, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (GLvoid*)0);
 			glDisableVertexAttribArray(attribIndex + 1);
-			//glVertexAttribPointer(attribIndex + 1, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (GLvoid*)(vec4Size));
 			glDisableVertexAttribArray(attribIndex + 2);
-			//glVertexAttribPointer(attribIndex + 2, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (GLvoid*)(2 * vec4Size));
 			glDisableVertexAttribArray(attribIndex + 3);
-			//glVertexAttribPointer(attribIndex + 3, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (GLvoid*)(3 * vec4Size));
-
 			glVertexAttribDivisor(attribIndex + 0, 0);
 			glVertexAttribDivisor(attribIndex + 1, 0);
 			glVertexAttribDivisor(attribIndex + 2, 0);

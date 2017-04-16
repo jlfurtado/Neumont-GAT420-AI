@@ -40,7 +40,7 @@
 // EngineDemo.cpp
 // The game
 
-const float objectSpacing = 500.0f;
+const float objectSpacing = 400.0f;
 const int OBJECTS_PER_ROW = 7;
 const int NUM_OBJECTS_DEMO1 = OBJECTS_PER_ROW * OBJECTS_PER_ROW;
 const int NUM_OBJECTS_DEMO2 = OBJECTS_PER_ROW * OBJECTS_PER_ROW;
@@ -48,12 +48,11 @@ const float OBJECT_PLANE_OFFSET = 1000.0f;
 const float LIGHT_HEIGHT = 15.0f;
 const int NUM_USED_SHADERS = 10;
 const int NUM_OBJECTS_TOTAL = NUM_OBJECTS_DEMO1;
-const int NUM_DEMO_OBJECTS = NUM_OBJECTS_TOTAL + 3;
 Engine::GraphicalObject m_grid;
-Engine::GraphicalObject m_demoObjects[NUM_DEMO_OBJECTS];
-Engine::GraphicalObject m_lights[NUM_DEMO_OBJECTS];
+Engine::GraphicalObject m_demoObjects[NUM_OBJECTS_TOTAL];
+Engine::GraphicalObject m_lights[NUM_OBJECTS_TOTAL];
 Engine::GraphicalObject playerGraphicalObject;
-int m_texIDs[NUM_DEMO_OBJECTS]{ 0 };
+int m_texIDs[NUM_OBJECTS_TOTAL]{ 0 };
 const float EngineDemo::RENDER_DISTANCE = 3500.0f;
 Engine::Entity player;
 Engine::ChaseCameraComponent playerCamera(Engine::Vec3(0, 30, 50), Engine::Vec3(0, 5, 0), Engine::Vec3(0), false);
@@ -234,18 +233,30 @@ void EngineDemo::Update(float dt)
 	thing1Gob.CalcFullTransform();
 	thing1.Update(dt);
 
-	if (paused) { return; }
 
-	for (int i = 0; i < NUM_DEMO_OBJECTS; ++i)
+	static int lastX = 0;
+	static int lastZ = 0;
+	static Engine::CollisionLayer lastCollisionLayer;
+	static bool objectMoved = false;
+
+	float x = playerGraphicalObject.GetPos().GetX();
+	float z = playerGraphicalObject.GetPos().GetZ();
+	int cX = Engine::CollisionTester::GetGridIndexFromPosX(x, Engine::CollisionLayer::STATIC_GEOMETRY);
+	int cZ = Engine::CollisionTester::GetGridIndexFromPosZ(z, Engine::CollisionLayer::STATIC_GEOMETRY);
+	if (cX != lastX || cZ != lastZ || lastCollisionLayer != currentCollisionLayer || objectMoved)
 	{
-		m_demoObjects[i].SetRotation(m_demoObjects[i].GetRotation() + dt * m_demoObjects[i].GetRotationRate());
-		m_demoObjects[i].SetRotMat(Engine::Mat4::RotationAroundAxis(m_demoObjects[i].GetRotationAxis(), m_demoObjects[i].GetRotation()));
-
-		m_lights[i].CalcFullTransform();
-		m_demoObjects[i].CalcFullTransform();
+		char buffer[50], buffer2[50];
+		sprintf_s(buffer2, 50, "Layer [%s]:\n", Engine::CollisionTester::LayerString(currentCollisionLayer));
+		if (Engine::CollisionTester::GetTriangleCountForSpace(x, z) < 0) { sprintf_s(buffer, 50, "Outside Spatial Grid!\n"); }
+		else { sprintf_s(buffer, 50, "[%d] triangles in [%d] [%d]\n", Engine::CollisionTester::GetTriangleCountForSpace(x, z, currentCollisionLayer), cX, cZ); }
+		m_objectText.SetupText(0.20f, 0.75f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, buffer);
+		m_layerText.SetupText(0.20f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, buffer2);
+		lastX = cX;
+		lastZ = cZ;
+		objectMoved = false;
 	}
 
-	m_grid.CalcFullTransform();
+	if (paused) { return; }
 
 	if (!backgroundMusic.GetIsPlaying())
 	{
@@ -257,17 +268,33 @@ void EngineDemo::Update(float dt)
 		Engine::RayCastingOutput rco = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, currentCollisionLayer);
 		if (rco.m_didIntersect)
 		{
-			bool found = false;
-			for (int i = 0; i < NUM_DEMO_OBJECTS; ++i)
+			for (int i = 0; i < NUM_OBJECTS_TOTAL; ++i)
 			{
 				if (rco.m_belongsTo == &m_demoObjects[i])
 				{
 					m_demoObjects[i].GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
 					m_demoObjects[i].GetMatPtr()->m_ambientReflectivity = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
-					found = true;
+					m_demoObjects[i].SetTransMat(Engine::Mat4::Translation(m_demoObjects[i].GetPos() + 100.0f * Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY())));
+
+					Engine::Mat4 translate = m_demoObjects[i].GetTransMat();
+					Engine::Mat4 rotate = m_demoObjects[i].GetRotMat();
+					Engine::Mat4 scale = m_demoObjects[i].GetScaleMat();
+					*m_demoObjects[i].GetFullTransformPtr() = rotate * translate * scale;
+					objectMoved = true;
+
+					Engine::CollisionLayer thisObjLayer = (Engine::CollisionLayer)(1 + (i % ((int)Engine::CollisionLayer::NUM_LAYERS - 1)));
+					if (!Engine::CollisionTester::DoesFitInGrid(&m_demoObjects[i], thisObjLayer))
+					{
+						m_demoObjects[i].SetEnabled(false);
+						Engine::RenderEngine::RemoveGraphicalObject(&m_demoObjects[i]);
+						Engine::CollisionTester::RemoveGraphicalObjectFromLayer(&m_demoObjects[i], thisObjLayer);
+					}
+
+					Engine::CollisionTester::CalculateGrid(thisObjLayer);
+					break;
+
 				}
 			}
-
 		}
 	}
 
@@ -278,24 +305,6 @@ void EngineDemo::Update(float dt)
 	fractalSeed.GetAddress()[1] += fsy.GetX() * dt; if (fractalSeed.GetY() < fsy.GetY()) { fractalSeed.GetAddress()[1] = fsy.GetY(); fsy.GetAddress()[0] *= -1.0f; } if (fractalSeed.GetY() > fsy.GetZ()) { fractalSeed.GetAddress()[1] = fsy.GetZ(); fsy.GetAddress()[0] *= -1.0f; }
 
 	m_lights[0].SetTransMat(Engine::Mat4::Translation(playerGraphicalObject.GetPos() + Engine::Vec3(0.0f, 15.0f, 0.0f)));
-
-	static int lastX = 0;
-	static int lastZ = 0;
-	static Engine::CollisionLayer lastCollisionLayer;
-
-	float x = playerGraphicalObject.GetPos().GetX();
-	float z = playerGraphicalObject.GetPos().GetZ();
-	int cX = Engine::CollisionTester::GetGridIndexFromPosX(x, Engine::CollisionLayer::STATIC_GEOMETRY);
-	int cZ = Engine::CollisionTester::GetGridIndexFromPosZ(z, Engine::CollisionLayer::STATIC_GEOMETRY);
-	if (cX != lastX || cZ != lastZ || lastCollisionLayer != currentCollisionLayer)
-	{
-		char buffer[50], buffer2[50];
-		sprintf_s(buffer2, 50, "Layer [%s]:\n", Engine::CollisionTester::LayerString(currentCollisionLayer));
-		sprintf_s(buffer, 50, "[%d] triangles in [%d] [%d]\n", Engine::CollisionTester::GetTriangleCountForSpace(x, z, currentCollisionLayer), cX, cZ);
-		m_objectText.SetupText(0.20f, 0.75f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, buffer);
-		m_layerText.SetupText(0.20f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, buffer2);
-
-	}
 
 	m_gazebo.CalcFullTransform();
 	lastCollisionLayer = currentCollisionLayer;
@@ -664,6 +673,9 @@ bool EngineDemo::UglyDemoCode()
 		m_demoObjects[i].AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_demoObjects[i].GetMatPtr()->m_ambientReflectivity, tintIntensityLoc));
 		m_demoObjects[i].GetMatPtr()->m_materialColor = Engine::Vec3(0.0f, 0.0f, 0.0f);
 		m_demoObjects[i].GetMatPtr()->m_ambientReflectivity = Engine::Vec3(1.0f, 1.0f, 1.0f);
+		//m_demoObjects[i].SetRotationAxis(Engine::Vec3(0.0f, 1.0f, 0.0f));
+		//m_demoObjects[i].SetRotationRate(i / (NUM_OBJECTS_TOTAL * 2.0f) + 0.5f);
+		//m_demoObjects[i].SetRotation(0.0f);
 
 		// random fun stuff
 		Engine::RenderEngine::AddGraphicalObject(&m_demoObjects[i]);
@@ -671,9 +683,10 @@ bool EngineDemo::UglyDemoCode()
 
 	}
 
+
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Gazebo.PTN.Scene", &m_gazebo, m_shaderPrograms[6].GetProgramId(), "..\\Data\\Textures\\WhiteMarble3.bmp");
 	m_gazebo.SetTransMat(Engine::Mat4::Translation(Engine::Vec3(-200.0f, 5.0f, 0.0f)));
-	m_gazebo.SetScaleMat(Engine::Mat4::Scale(60.0f));
+	m_gazebo.SetScaleMat(Engine::Mat4::Scale(40.0f));
 	m_gazebo.AddPhongUniforms(modelToWorldMatLoc, worldToViewMatLoc, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), perspectiveMatLoc, m_perspective.GetPerspectivePtr()->GetAddress(),
 		tintColorLoc, diffuseColorLoc, ambientColorLoc, specularColorLoc, specularPowerLoc, diffuseIntensityLoc, ambientIntensityLoc, specularIntensityLoc,
 		&playerGraphicalObject.GetMatPtr()->m_materialColor, cameraPosLoc, playerCamera.GetPosPtr(), lightLoc, m_lights[0].GetLocPtr());
@@ -691,6 +704,8 @@ bool EngineDemo::UglyDemoCode()
 
 	Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer);
 
+	SetObjPosDataPtrs();
+
 	return true;
 }
 
@@ -702,5 +717,18 @@ void EngineDemo::InitIndicesForMeshNames(const char *const meshNames, int *indic
 	for (int i = 0; meshIndex < numMeshes; ++i)
 	{
 		if (*(meshNames + i) == '\0') { indices[meshIndex] = i + 1; meshIndex++; }
+	}
+}
+
+void EngineDemo::SetObjPosDataPtrs()
+{
+	for (int i = 0; i < NUM_OBJECTS_TOTAL; ++i)
+	{
+		Engine::Mat4 translate = m_demoObjects[i].GetTransMat();
+		Engine::Mat4 rotate = m_demoObjects[i].GetRotMat();
+		Engine::Mat4 scale = m_demoObjects[i].GetScaleMat();
+		*m_demoObjects[i].GetFullTransformPtr() = rotate * translate * scale;
+
+		m_lights[i].CalcFullTransform();
 	}
 }

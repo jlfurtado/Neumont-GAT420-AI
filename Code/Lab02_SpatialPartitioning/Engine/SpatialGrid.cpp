@@ -113,6 +113,8 @@ namespace Engine
 	void SpatialGrid::CalculateStatisticsFromCounts()
 	{
 		m_totalTriangleCount = 0;
+		m_minGridTriangleCount = -1;
+		m_maxGridTriangleCount = -1;
 
 		for (int i = 0; i < m_totalGridSections; ++i)
 		{
@@ -157,18 +159,18 @@ namespace Engine
 
 	bool SpatialGrid::AddTrianglesToPartitions()
 	{
-		static bool first = true;
-
 		// allow method to be called repeatedly
-		if (!first) { CleanUp(); }
-		else { first = false; }
+		if (!m_firstCalculation) { CleanUp(); }
+		else { m_firstCalculation = false; }
 
 		m_pGridStartIndices = new int[m_totalGridSections] {0};
 		m_pGridTriangleCounts = new int[m_totalGridSections] {0};
 		if (!m_pGridStartIndices) { GameLogger::Log(MessageType::cFatal_Error, "Failed to allocate memory for [%d] ints!\n", m_totalGridSections); return false; }
 		if (!m_pGridTriangleCounts) { GameLogger::Log(MessageType::cFatal_Error, "Failed to allocate memory for [%d] ints!\n", m_totalGridSections); return false; }
 
-		if (!SetGridStartIndices()) { GameLogger::Log(MessageType::cFatal_Error, "Failed to set grid start indices!\n"); return false; }
+		if (!SetGridStartIndices()) { GameLogger::Log(MessageType::cFatal_Error, "Failed to set grid start indices!\n"); 
+		return false;
+		}
 
 		CalculateStatisticsFromCounts();
 		m_pData = new SpatialTriangleData[m_totalTriangleCount];
@@ -179,7 +181,7 @@ namespace Engine
 			m_pGridTriangleCounts[i] = 0;
 		}
 
-		m_objectList.WalkList(SpatialGrid::AddGraphicalObjectToGridPassThrough, this);
+		if (!m_objectList.WalkList(SpatialGrid::AddGraphicalObjectToGridPassThrough, this)) { return false; }
 
 		GameLogger::Log(MessageType::Process, "Successfully re-calculated spatial grid!\n");
 		return true;
@@ -209,7 +211,9 @@ namespace Engine
 
 	bool SpatialGrid::SetGridStartIndices()
 	{
-		m_objectList.WalkList(SpatialGrid::SetGridStartIndicesForObjectPassThrough, this);
+		if (!m_objectList.WalkList(SpatialGrid::SetGridStartIndicesForObjectPassThrough, this)) {
+			return false;
+		}
 
 		int c = 0;
 		for (int x = 0; x < m_gridSectionsWidth; ++x)
@@ -235,7 +239,7 @@ namespace Engine
 	bool SpatialGrid::SetGridStartIndicesForObject(GraphicalObject * pCurrent)
 	{
 		// model to world matrix
-		Mat4 modelToWorld = pCurrent->GetTransMat() * (pCurrent->GetScaleMat() * pCurrent->GetRotMat());
+		Mat4 modelToWorld = *pCurrent->GetFullTransformPtr();
 
 		SpatialCallbackPassData data;
 		data.modelToWorld = modelToWorld;
@@ -244,7 +248,7 @@ namespace Engine
 
 		pCurrent->GetMeshPointer()->WalkTriangles(SpatialGrid::ProcessTrianglesPassThrough, this, &data);
 
-		return true;
+		return data.m_success;
 	}
 	
 	bool SpatialGrid::AddGraphicalObjectToGridPassThrough(GraphicalObject * pGraphicalObjectToAdd, void * pClassInstance)
@@ -256,7 +260,7 @@ namespace Engine
 	bool SpatialGrid::AddGraphicalObjectToGrid(GraphicalObject * pGraphicalObjectToAdd)
 	{
 		// model to world matrix
-		Mat4 modelToWorld = pGraphicalObjectToAdd->GetTransMat() * (pGraphicalObjectToAdd->GetScaleMat() * pGraphicalObjectToAdd->GetRotMat());
+		Mat4 modelToWorld = *pGraphicalObjectToAdd->GetFullTransformPtr();
 
 		SpatialCallbackPassData data;
 		data.modelToWorld = modelToWorld;
@@ -267,7 +271,7 @@ namespace Engine
 
 		// indicate success
 		GameLogger::Log(MessageType::Process, "Successfully added GraphicalObject to SpatialGrid!\n");
-		return true;
+		return data.m_success;
 	}
 
 	bool SpatialGrid::ProcessTrianglesPassThrough(int index, const void * pVert1, const void * pVert2, const void * pVert3, void * pClassInstance, void * pPassThroughData)
@@ -296,21 +300,26 @@ namespace Engine
 		int maxGridZ = (int)fmaxf(fmaxf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
 
 		// error checking
-		if (minGridX < 0 || minGridX > m_gridSectionsWidth || minGridZ < 0 || minGridZ > m_gridSectionsHeight || maxGridX < 0 || maxGridX > m_gridSectionsWidth || maxGridZ < 0 || maxGridZ > m_gridSectionsHeight)
+		if (minGridX < 0 || minGridX >= m_gridSectionsWidth || minGridZ < 0 || minGridZ >= m_gridSectionsHeight || maxGridX < 0 || maxGridX >= m_gridSectionsWidth || maxGridZ < 0 || maxGridZ >= m_gridSectionsHeight)
 		{
-			GameLogger::Log(MessageType::cWarning, "Tried to AddGraphicalObject to SpatialGrid but some triangles were out of grid range!\n");
+			if (pData->callback) { GameLogger::Log(MessageType::cWarning, "Tried to AddGraphicalObject to SpatialGrid but some triangles were out of grid range!\n"); }
+			pData->m_success = false;
 			return false;
 		}
 
-		// add to all grid cells in range
-		for (int x = minGridX; x <= maxGridX; ++x)
+		if (pData->callback)
 		{
-			for (int z = minGridZ; z <= maxGridZ; ++z)
+			// add to all grid cells in range
+			for (int x = minGridX; x <= maxGridX; ++x)
 			{
-				pData->callback(x, z, pData->pObj, index, this);
+				for (int z = minGridZ; z <= maxGridZ; ++z)
+				{
+					pData->callback(x, z, pData->pObj, index, this);
+				}
 			}
 		}
 
+		pData->m_success = true;
 		return true;
 	}
 
@@ -345,8 +354,22 @@ namespace Engine
 
 	void SpatialGrid::CleanUp()
 	{
-		if (m_pData) { delete[] m_pData; }
-		if (m_pGridStartIndices) { delete[] m_pGridStartIndices; }
-		if (m_pGridTriangleCounts) { delete[] m_pGridTriangleCounts; }
+		if (m_pData) { delete[] m_pData; m_pData = nullptr; }
+		if (m_pGridStartIndices) { delete[] m_pGridStartIndices; m_pGridStartIndices = nullptr; }
+		if (m_pGridTriangleCounts) { delete[] m_pGridTriangleCounts; m_pGridTriangleCounts = nullptr; }
+	}
+
+	bool SpatialGrid::DoesFitInGrid(GraphicalObject * pGraphicalObjectToTest)
+	{
+		// model to world matrix
+		Mat4 modelToWorld = *pGraphicalObjectToTest->GetFullTransformPtr();
+
+		SpatialCallbackPassData data;
+		data.modelToWorld = modelToWorld;
+		data.callback = nullptr;
+		data.pObj = pGraphicalObjectToTest;
+
+		pGraphicalObjectToTest->GetMeshPointer()->WalkTriangles(SpatialGrid::ProcessTrianglesPassThrough, this, &data);
+		return data.m_success;
 	}
 }

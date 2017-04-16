@@ -62,6 +62,7 @@ namespace Engine
 				{
 					// if it is, remove it
 					RemoveSingleNode(pLastNode, pCurrentNode);
+					break;
 				}
 
 				// move over to the next node
@@ -71,7 +72,7 @@ namespace Engine
 			} while (pCurrentNode); // keep checking while there's nodes
 		}
 
-		void WalkList(LinkedListIterationCallback callback, void *pClassInstance)
+		bool WalkList(LinkedListIterationCallback callback, void *pClassInstance)
 		{
 			// grab the first node in the list
 			Node *pCurrentNode = m_pHeadNode;
@@ -79,9 +80,11 @@ namespace Engine
 			// while there are nodes, call the callback, stopping if indicated by return value, otherwise moving to the next node
 			while (pCurrentNode)
 			{
-				if (!callback(pCurrentNode->m_pData, pClassInstance)) { break; } // Callback can return false to stop iterating list - like if we only wanted to walk part of it
+				if (!callback(pCurrentNode->m_pData, pClassInstance)) { return false; } // Callback can return false to stop iterating list - like if we only wanted to walk part of it
 				pCurrentNode = pCurrentNode->m_pNextNode;
 			}
+
+			return true;
 		}
 
 		void ClearList()
