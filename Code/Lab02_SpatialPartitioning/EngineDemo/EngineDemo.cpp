@@ -731,4 +731,6 @@ void EngineDemo::SetObjPosDataPtrs()
 
 		m_lights[i].CalcFullTransform();
 	}
+
+	m_gazebo.CalcFullTransform();
 }
