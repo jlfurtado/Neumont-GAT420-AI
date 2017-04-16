@@ -20,23 +20,31 @@ namespace Engine
 	const int INDICES_PER_QUAD = 6;
 	const int VERTICES_PER_QUAD = 4;
 
-	GLuint TextObject::s_textBufferID = 0;
-	GLuint TextObject::s_textIndexBufferID = 0;
 	GLint TextObject::s_matLoc = -1;
 	GLint TextObject::s_tintLoc = -1;
 	const float TextObject::BASE_FONT_SCALE = 1.0f / 100.0f;
 
 	bool TextObject::Initialize(GLint matLoc, GLint tintLoc)
 	{
+		s_matLoc = matLoc;
+		s_tintLoc = tintLoc;
+
+		// hooray all is good
+		GameLogger::Log(MessageType::Process, "TextObject initialized successfully!\n");
+		return true;
+	}
+
+	bool TextObject::MakeBuffers()
+	{
 		// setup buffers for data
-		glGenBuffers(1, &s_textBufferID);
-		glBindBuffer(GL_ARRAY_BUFFER, s_textBufferID);
+		glGenBuffers(1, &m_textBufferID);
+		glBindBuffer(GL_ARRAY_BUFFER, m_textBufferID);
 		glBufferData(GL_ARRAY_BUFFER, VERTEX_BUFFER_SIZE_BYTES, nullptr, GL_STATIC_DRAW);
 		glEnableVertexAttribArray(0);
 
 		// setup indices for buffers (file stores in quads according to doc, must use indices to convert to tris!)
-		glGenBuffers(1, &s_textIndexBufferID);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_textIndexBufferID);
+		glGenBuffers(1, &m_textIndexBufferID);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_textIndexBufferID);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, INDEX_BUFFER_SIZE_BYTES, nullptr, GL_STATIC_DRAW);
 
 		// check for gl errors
@@ -46,16 +54,14 @@ namespace Engine
 			return false;
 		}
 
-		s_matLoc = matLoc;
-		s_tintLoc = tintLoc;
-
-		// hooray all is good
-		GameLogger::Log(MessageType::Process, "TextObject initialized successfully!\n");
 		return true;
 	}
 
 	void TextObject::SetupText(GLfloat xPos, GLfloat yPos, GLfloat zPos, GLfloat rValue, GLfloat gValue, GLfloat bValue, GLfloat fontScaleX, GLfloat fontScaleY, GLchar * text)
 	{
+		Vertex m_vertices[VERTEX_BUFFER_SIZE_COUNT];
+		GLuint m_indices[INDEX_BUFFER_SIZE_COUNT];
+
 		// Defensive coding
 		if (StringFuncs::StringLen(text) > MAX_STRING_SIZE)
 		{
@@ -82,6 +88,15 @@ namespace Engine
 		// fill in zPos space and fix y-axis
 		// ================================================
 		ConvertData(xPos, yPos, zPos, &quadData[0], &m_vertices[0], &m_indices[0], m_numQuads);
+
+		// use current buffers incase outside binds different buffers
+		glBindBuffer(GL_ARRAY_BUFFER, m_textBufferID);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, m_vertices[0].GetStride(), (void *)0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_textIndexBufferID);
+
+		// Update them with the data for this text
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_numQuads*VERTICES_PER_QUAD*FLOATS_PER_VERTEX * sizeof(GLfloat), &m_vertices[0]);
+		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, (m_numQuads*INDICES_PER_QUAD * sizeof(GLuint)), &m_indices[0]);
 	}
 
 	void TextObject::RenderText(ShaderProgram *pShaderProgram, GLint debugColorLoc)
@@ -93,15 +108,10 @@ namespace Engine
 
 		pShaderProgram->UseProgram();
 
-		// Buffers already created, but they need to be sub-data-ed and drawn
 		// use current buffers incase outside binds different buffers
-		glBindBuffer(GL_ARRAY_BUFFER, s_textBufferID);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, m_vertices[0].GetStride(), (void *)0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_textIndexBufferID);
-
-		// Update them with the data for this text
-		glBufferSubData(GL_ARRAY_BUFFER, 0, m_numQuads*VERTICES_PER_QUAD*FLOATS_PER_VERTEX*sizeof(GLfloat), &m_vertices[0]);
-		glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, (m_numQuads*INDICES_PER_QUAD*sizeof(GLuint)), &m_indices[0]);
+		glBindBuffer(GL_ARRAY_BUFFER, m_textBufferID);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, Vertex().GetStride(), (void *)0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_textIndexBufferID);
 
 		// Draw the data for this text
 		Mat4 temp = Mat4();

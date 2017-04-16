@@ -87,9 +87,14 @@ namespace Engine
 		return true;
 	}
 
-	float SpatialGrid::GetGridScale()
+	int SpatialGrid::GetGridIndexFromXPos(float xPos)
 	{
-		return m_gridScale;
+		return (int)floorf((xPos / m_gridScale) + (m_gridSectionsWidth*0.5f));
+	}
+
+	int SpatialGrid::GetGridIndexFromZPos(float zPos)
+	{
+		return (int)floorf((zPos / m_gridScale) + (m_gridSectionsHeight*0.5f));
 	}
 
 	int SpatialGrid::GetGridTriangleCount(int gridX, int gridZ)
@@ -98,6 +103,11 @@ namespace Engine
 		int i = gridZ*m_gridSectionsWidth + gridX;
 
 		return m_pGridTriangleCounts[i];
+	}
+
+	float SpatialGrid::GetGridScale()
+	{
+		return m_gridScale;
 	}
 
 	void SpatialGrid::CalculateStatisticsFromCounts()
@@ -172,6 +182,28 @@ namespace Engine
 		m_objectList.WalkList(SpatialGrid::AddGraphicalObjectToGridPassThrough, this);
 
 		GameLogger::Log(MessageType::Process, "Successfully re-calculated spatial grid!\n");
+		return true;
+	}
+
+	void SpatialGrid::EnableObjects()
+	{
+		m_objectList.WalkList(SpatialGrid::EnableObject, nullptr);
+	}
+
+	void SpatialGrid::DisableObjects()
+	{
+		m_objectList.WalkList(SpatialGrid::DisableObject, nullptr);
+	}
+
+	bool SpatialGrid::EnableObject(GraphicalObject * pGob, void * /*pInstance*/)
+	{
+		pGob->SetEnabled(true);
+		return true;
+	}
+
+	bool SpatialGrid::DisableObject(GraphicalObject * pGob, void * /*pInstance*/)
+	{
+		pGob->SetEnabled(false);
 		return true;
 	}
 
@@ -278,6 +310,8 @@ namespace Engine
 				pData->callback(x, z, pData->pObj, index, this);
 			}
 		}
+
+		return true;
 	}
 
 	bool SpatialGrid::SetTriangleIndexPassThrough(int x, int z, GraphicalObject * pObj, int index, void *pClassInstance)
@@ -286,7 +320,7 @@ namespace Engine
 		return pInstance->SetTriangleIndex(x, z, pObj, index);
 	}
 
-	bool SpatialGrid::SetTriangleIndex(int x, int z, GraphicalObject * pObj, int index)
+	bool SpatialGrid::SetTriangleIndex(int x, int z, GraphicalObject * /*pObj*/, int /*index*/)
 	{
 		m_pGridTriangleCounts[z*m_gridSectionsWidth + x]++;
 		return true;

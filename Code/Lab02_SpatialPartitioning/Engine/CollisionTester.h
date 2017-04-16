@@ -26,31 +26,40 @@ namespace Engine
 		Vec3 m_intersectionPoint{ 0.0f, 0.0f, 0.0f };
 	};
 
+	enum class ENGINE_SHARED CollisionLayer
+	{
+		STATIC_GEOMETRY = 0,
+		LAYER_1,
+		LAYER_2,
+		LAYER_3,
+		LAYER_4,
+		
+		NUM_LAYERS // LAST ON PURPOSE
+	};
+
 	class ENGINE_SHARED CollisionTester
 	{
 	public:
-		static bool InitializeGridDebugShapes(int gridIndex, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc);
-		static void DrawGrid(int gridIndex);
+		static const char *LayerString(CollisionLayer layer);
+		static bool InitializeGridDebugShapes(CollisionLayer gridLayer, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc);
+		static void DrawGrid(CollisionLayer gridLayer);
 		static void ConsoleLogOutput();
-		static int GetGridWidthSections();
-		static int GetGridHeightSections();
-		static float GetGridScale();
-		static RayCastingOutput FindWall(const Vec3& rayPosition, const Vec3& rayDirection, float checkDist);
-		static RayCastingOutput FindWall(Entity *pEntity, float checkDist);
-		static RayCastingOutput FindFloor(Entity *pEntity, float checkDist);
-		static RayCastingOutput FindCeiling(Entity *pEntity, float checkDist);
+		static RayCastingOutput FindWall(const Vec3& rayPosition, const Vec3& rayDirection, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
+		static RayCastingOutput FindWall(Entity *pEntity, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
+		static RayCastingOutput FindFloor(Entity *pEntity, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
+		static RayCastingOutput FindCeiling(Entity *pEntity, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
 		static RayCastingOutput RayTriangleIntersect(const Vec3& rayPosition, const Vec3& rayDirection, const Vec3& p0, const Vec3& p1, const Vec3& p2, float currentClosest);
-		static bool AddGraphicalObject(GraphicalObject *pGraphicalObjectToAdd);
-		static void RemoveGraphicalObject(GraphicalObject *pGobToRemove);
-		static int GetTriangleCountForSpace(float xPos, float zPos);
-		static int GetGridIndexFromPosX(float xPos);
-		static int GetGridIndexFromPosZ(float zPos);
-		static RayCastingOutput FindFromMousePos(int pixelX, int pixelY, float checkDist);
-		static bool CalculateGrid();
+		static bool AddGraphicalObjectToLayer(GraphicalObject *pGraphicalObjectToAdd, CollisionLayer layer);
+		static void RemoveGraphicalObjectFromLayer(GraphicalObject *pGobToRemove, CollisionLayer layer);
+		static int GetTriangleCountForSpace(float xPos, float zPos, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
+		static int GetGridIndexFromPosX(float xPos, CollisionLayer layer);
+		static int GetGridIndexFromPosZ(float zPos, CollisionLayer layer);
+		static RayCastingOutput FindFromMousePos(int pixelX, int pixelY, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
+		static bool CalculateGrid(CollisionLayer layer = CollisionLayer::NUM_LAYERS);
+		static void OnlyShowLayer(CollisionLayer layer = CollisionLayer::NUM_LAYERS);
 
 	private:
-		static GraphicalObject *s_pHeadNode;
-		static SpatialGrid s_spatialGrid;
+		static SpatialGrid s_spatialGrids[(unsigned)CollisionLayer::NUM_LAYERS];
 
 	};
 }

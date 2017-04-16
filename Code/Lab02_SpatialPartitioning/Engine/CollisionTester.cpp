@@ -1,6 +1,8 @@
 #include "CollisionTester.h"
 #include "CollisionTester.h"
 #include "CollisionTester.h"
+#include "CollisionTester.h"
+#include "CollisionTester.h"
 #include "GraphicalObject.h"
 #include "Mesh.h"
 #include "Entity.h"
@@ -15,42 +17,60 @@
 
 namespace Engine
 {
-	GraphicalObject *CollisionTester::s_pHeadNode = nullptr;
-	SpatialGrid CollisionTester::s_spatialGrid;
-
-	bool CollisionTester::InitializeGridDebugShapes(int gridIndex, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc)
+	char *collisionLayerStrings[]
 	{
-		return s_spatialGrid.InitializeDisplayGrid(color, pCamMat, pPerspMat, tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
+		"STATIC_GEOMETRY",
+		"LAYER_1",
+		"LAYER_2",
+		"LAYER_3",
+		"LAYER_4",
+		"ALL_LAYERS"
+	};
+
+	SpatialGrid CollisionTester::s_spatialGrids[(unsigned)CollisionLayer::NUM_LAYERS];
+
+	const char * CollisionTester::LayerString(CollisionLayer layer)
+	{
+		return collisionLayerStrings[(int)layer];
 	}
 
-	void CollisionTester::DrawGrid(int gridIndex)
+	bool CollisionTester::InitializeGridDebugShapes(CollisionLayer layer, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc)
 	{
-		s_spatialGrid.DrawDebugShapes(); // TEMPORARY TODO REPLACE
+		return s_spatialGrids[(unsigned)layer].InitializeDisplayGrid(color, pCamMat, pPerspMat, tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
+	}
+
+	void CollisionTester::DrawGrid(CollisionLayer layer)
+	{
+		s_spatialGrids[(unsigned)layer].DrawDebugShapes(); // TEMPORARY TODO REPLACE
 	}
 
 	void CollisionTester::ConsoleLogOutput()
 	{
-		s_spatialGrid.CalculateStatisticsFromCounts();
-		s_spatialGrid.ConsoleLogStats();
+		for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i)
+		{
+			GameLogger::Log(MessageType::ConsoleOnly, "Begin Spatial grid [%d] -----\n", i);
+			s_spatialGrids[i].CalculateStatisticsFromCounts();
+			s_spatialGrids[i].ConsoleLogStats();
+			GameLogger::Log(MessageType::ConsoleOnly, "End Spatial grid [%d] -----\n", i);
+		}
 	}
 
-	int CollisionTester::GetGridWidthSections()
+	RayCastingOutput CollisionTester::FindWall(const Vec3 & rayPosition, const Vec3 & rayDirection, float checkDist, CollisionLayer layer)
 	{
-		return s_spatialGrid.GetGridWidth();
-	}
+		if (layer == CollisionLayer::NUM_LAYERS) 
+		{
+			RayCastingOutput multiLayerOutput = CollisionTester::FindWall(rayPosition, rayDirection, checkDist, CollisionLayer::STATIC_GEOMETRY);
 
-	int CollisionTester::GetGridHeightSections()
-	{
-		return s_spatialGrid.GetGridHeight();
-	}
+			for (unsigned int i = 1; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i)
+			{
+				float cd = (multiLayerOutput.m_didIntersect && multiLayerOutput.m_distance < checkDist) ? multiLayerOutput.m_distance : checkDist;
+				RayCastingOutput thisLayerOutput = CollisionTester::FindWall(rayPosition, rayDirection, cd, (CollisionLayer)i);
+				if ((thisLayerOutput.m_didIntersect && thisLayerOutput.m_distance < multiLayerOutput.m_distance) || !multiLayerOutput.m_didIntersect) { multiLayerOutput = thisLayerOutput; }
+			}
 
-	float CollisionTester::GetGridScale()
-	{
-		return s_spatialGrid.GetGridScale();
-	}
+			return multiLayerOutput;
+		}
 
-	RayCastingOutput CollisionTester::FindWall(const Vec3 & rayPosition, const Vec3 & rayDirection, float checkDist)
-	{
 		// normalize input for future ray casts
 		Vec3 rd = rayDirection.Normalize();
 
@@ -58,8 +78,8 @@ namespace Engine
 		RayCastingOutput finalOutput;
 
 		// grab scale and calculate end position
-		float gridScale = s_spatialGrid.GetGridScale();
-		Vec3 rp = rayPosition + Vec3(0.5f * gridScale* s_spatialGrid.GetGridWidth(), 0.0f, 0.5f*gridScale*s_spatialGrid.GetGridHeight());
+		float gridScale = s_spatialGrids[(unsigned)layer].GetGridScale();
+		Vec3 rp = rayPosition + Vec3(0.5f * gridScale* s_spatialGrids[(unsigned)layer].GetGridWidth(), 0.0f, 0.5f*gridScale*s_spatialGrids[(unsigned)layer].GetGridHeight());
 		Vec3 endPosition = rp + rd*checkDist;
 
 		/// calculate the begining and end grid indices from the positions
@@ -86,9 +106,9 @@ namespace Engine
 
 		for (;;)
 		{
-			SpatialTriangleData *pFirst = s_spatialGrid.GetTriangleDataByGrid(i, j);
+			SpatialTriangleData *pFirst = s_spatialGrids[(unsigned)layer].GetTriangleDataByGrid(i, j);
 
-			for (int c = 0; c < s_spatialGrid.GetGridTriangleCount(i, j); ++c)
+			for (int c = 0; c < s_spatialGrids[(unsigned)layer].GetGridTriangleCount(i, j); ++c)
 			{
 				SpatialTriangleData *pCurrent = pFirst + c;
 				if (pCurrent)
@@ -133,34 +153,34 @@ namespace Engine
 		return finalOutput;
 	}
 
-	RayCastingOutput CollisionTester::FindWall(Entity * pEntity, float checkDist)
+	RayCastingOutput CollisionTester::FindWall(Entity * pEntity, float checkDist, CollisionLayer layer)
 	{
 		if (!pEntity) { GameLogger::Log(MessageType::cError, "Failed to find wall for entity! Entity passed was nullptr!\n"); return RayCastingOutput(); }
 
 		SpatialComponent *pSpatial = pEntity->GetComponentByType<SpatialComponent>();
 		if (!pSpatial) { GameLogger::Log(MessageType::cError, "Failed to find wall for entity! Entity has no spatial component!\n"); return RayCastingOutput(); }
 
-		return FindWall(pSpatial->GetPosition(), pSpatial->GetForward(), checkDist);
+		return FindWall(pSpatial->GetPosition(), pSpatial->GetForward(), checkDist, layer);
 	}
 
-	RayCastingOutput CollisionTester::FindFloor(Entity * pEntity, float checkDist)
+	RayCastingOutput CollisionTester::FindFloor(Entity * pEntity, float checkDist, CollisionLayer layer)
 	{
 		if (!pEntity) { GameLogger::Log(MessageType::cError, "Failed to find floor for entity! Entity passed was nullptr!\n"); return RayCastingOutput(); }
 
 		SpatialComponent *pSpatial = pEntity->GetComponentByType<SpatialComponent>();
 		if (!pSpatial) { GameLogger::Log(MessageType::cError, "Failed to find floor for entity! Entity has no spatial component!\n"); return RayCastingOutput(); }
 
-		return FindWall(pSpatial->GetPosition(), Vec3(0.0f, -1.0f, 0.0f), checkDist);
+		return FindWall(pSpatial->GetPosition(), Vec3(0.0f, -1.0f, 0.0f), checkDist, layer);
 	}
 
-	RayCastingOutput CollisionTester::FindCeiling(Entity * pEntity, float checkDist)
+	RayCastingOutput CollisionTester::FindCeiling(Entity * pEntity, float checkDist, CollisionLayer layer)
 	{
 		if (!pEntity) { GameLogger::Log(MessageType::cError, "Failed to find ceiling for entity! Entity passed was nullptr!\n"); return RayCastingOutput(); }
 
 		SpatialComponent *pSpatial = pEntity->GetComponentByType<SpatialComponent>();
 		if (!pSpatial) { GameLogger::Log(MessageType::cError, "Failed to find ceiling for entity! Entity has no spatial component!\n"); return RayCastingOutput(); }
 
-		return FindWall(pSpatial->GetPosition(), Vec3(0.0f, 1.0f, 0.0f), checkDist);
+		return FindWall(pSpatial->GetPosition(), Vec3(0.0f, 1.0f, 0.0f), checkDist, layer);
 	}
 
 	RayCastingOutput CollisionTester::RayTriangleIntersect(const Vec3 & rayPosition, const Vec3 & rayDirection, const Vec3 & p0, const Vec3 & p1, const Vec3 & p2, float currentClosest)
@@ -307,49 +327,69 @@ namespace Engine
 		return output;
 	}
 
-	bool CollisionTester::AddGraphicalObject(GraphicalObject * pGraphicalObjectToAdd)
+	bool CollisionTester::AddGraphicalObjectToLayer(GraphicalObject * pGraphicalObjectToAdd, CollisionLayer layer)
 	{
 		if (!pGraphicalObjectToAdd) { GameLogger::Log(MessageType::cError, "Failed to AddGraphicalObject to CollisionTester! GraphicalObject to-be-added was nullptr!\n"); return false; }
-		if (pGraphicalObjectToAdd == s_pHeadNode) { GameLogger::Log(MessageType::cError, "Failed to AddGraphicalObject to CollisionTester! GrapicalObject to-be-added was the same as the head node! (Object would point to itself and list could not be iterated over)\n"); return false; }
-
-		return s_spatialGrid.AddGraphicalObject(pGraphicalObjectToAdd);
+		if (layer == CollisionLayer::NUM_LAYERS) { GameLogger::Log(MessageType::cWarning, "Tried to AddGraphicalObjectToLayer for NUM_LAYERS!\n"); return false; }
+		return s_spatialGrids[(unsigned)layer].AddGraphicalObject(pGraphicalObjectToAdd);
 	}
 
-	void CollisionTester::RemoveGraphicalObject(GraphicalObject * pGobToRemove)
+	void CollisionTester::RemoveGraphicalObjectFromLayer(GraphicalObject * pGobToRemove, CollisionLayer layer)
 	{
-		s_spatialGrid.RemoveGraphicalObject(pGobToRemove);
+		if (!pGobToRemove) { GameLogger::Log(MessageType::cError, "Failed to RemoveGraphicalObjectFromLayer for CollisionTester! GraphicalObject to-be-added was nullptr!\n"); return; }
+		if (layer == CollisionLayer::NUM_LAYERS) { GameLogger::Log(MessageType::cWarning, "Tried to RemoveGraphicalObjectFromLayer for NUM_LAYERS!\n"); return; }
+		s_spatialGrids[(unsigned)layer].RemoveGraphicalObject(pGobToRemove);
 	}
 
-	int CollisionTester::GetTriangleCountForSpace(float xPos, float zPos)
+	int CollisionTester::GetTriangleCountForSpace(float xPos, float zPos, CollisionLayer layer)
 	{
-		static int lastGridX = -1;
-		static int lastGridZ = -1;
-		int gridX = GetGridIndexFromPosX(xPos);
-		int gridZ = GetGridIndexFromPosZ(zPos);
-		if (lastGridX == gridX && gridZ == lastGridZ) { return -1; }
-		else {
-			return s_spatialGrid.GetGridTriangleCount(gridX, gridZ);
+		if (layer == CollisionLayer::NUM_LAYERS)
+		{ 
+			unsigned int sum = 0;
+			for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i) { sum += GetTriangleCountForSpace(xPos, zPos, (CollisionLayer)i); } 
+			return sum;
 		}
+
+		int gridX = GetGridIndexFromPosX(xPos, layer);
+		int gridZ = GetGridIndexFromPosZ(zPos, layer);
+		return s_spatialGrids[(unsigned)layer].GetGridTriangleCount(gridX, gridZ);
 	}
 
-	int CollisionTester::GetGridIndexFromPosX(float xPos)
+	int CollisionTester::GetGridIndexFromPosX(float xPos, CollisionLayer layer)
 	{
-		return  (int)floorf((xPos / s_spatialGrid.GetGridScale()) + (s_spatialGrid.GetGridWidth()*0.5f));
+		if (layer == CollisionLayer::NUM_LAYERS) { GameLogger::Log(MessageType::cWarning, "Tried to GetGridIndexFromPosX for NUM_LAYERS!\n"); return -1; }
+		return s_spatialGrids[(unsigned)layer].GetGridIndexFromZPos(xPos);
 	}
 
-	int CollisionTester::GetGridIndexFromPosZ(float zPos)
+	int CollisionTester::GetGridIndexFromPosZ(float zPos, CollisionLayer layer)
 	{
-		return (int)floorf((zPos / s_spatialGrid.GetGridScale()) + (s_spatialGrid.GetGridHeight()*0.5f));
+		if (layer == CollisionLayer::NUM_LAYERS) { GameLogger::Log(MessageType::cWarning, "Tried to GetGridIndexFromPosZ for NUM_LAYERS!\n"); return -1; }
+		return s_spatialGrids[(unsigned)layer].GetGridIndexFromZPos(zPos);
 	}
 
-	RayCastingOutput CollisionTester::FindFromMousePos(int pixelX, int pixelY, float checkDist)
+	RayCastingOutput CollisionTester::FindFromMousePos(int pixelX, int pixelY, float checkDist, CollisionLayer layer)
 	{
-		return FindWall(MousePicker::GetOrigin(pixelX, pixelY), MousePicker::GetDirection(pixelX, pixelY), checkDist);
+		return FindWall(MousePicker::GetOrigin(pixelX, pixelY), MousePicker::GetDirection(pixelX, pixelY), checkDist, layer);
 	}
 
-	bool CollisionTester::CalculateGrid()
+	bool CollisionTester::CalculateGrid(CollisionLayer layer)
 	{
-		return s_spatialGrid.AddTrianglesToPartitions();
+		if (layer == CollisionLayer::NUM_LAYERS)
+		{
+			for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i) { if (!CalculateGrid((CollisionLayer)i)) { return false; } }
+			return true; 
+		}
+
+		return s_spatialGrids[(unsigned)layer].AddTrianglesToPartitions();
+	}
+
+	void CollisionTester::OnlyShowLayer(CollisionLayer layer)
+	{
+		for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i)
+		{
+			if (i == (unsigned)layer || layer == CollisionLayer::NUM_LAYERS) { s_spatialGrids[i].EnableObjects(); }
+			else { s_spatialGrids[i].DisableObjects(); };
+		}
 	}
 
 }

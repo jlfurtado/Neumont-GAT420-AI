@@ -62,6 +62,7 @@ private:
 	Engine::Perspective m_perspective;
 	Engine::TextObject m_fpsTextObject;
 	Engine::TextObject m_objectText;
+	Engine::TextObject m_layerText;
 	// Engine::TextObject m_EngineDemoInfoObject;
 	Engine::MyWindow *m_pWindow{ nullptr };
 	Engine::ShaderProgram m_shaderPrograms[NUM_SHADER_PROGRAMS];

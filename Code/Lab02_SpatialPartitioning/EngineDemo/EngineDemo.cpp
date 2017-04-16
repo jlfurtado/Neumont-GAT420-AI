@@ -89,6 +89,8 @@ Engine::GraphicalObjectComponent thing1GobComp;
 Engine::SpatialComponent thing1SpatialComp;
 StarComp thing1Comp;
 bool drawGrid = true;
+bool allLayersEnabled = true;
+Engine::CollisionLayer currentCollisionLayer;
 
 bool EngineDemo::Initialize(Engine::MyWindow *window)
 {
@@ -130,7 +132,8 @@ bool EngineDemo::Initialize(Engine::MyWindow *window)
 	if (!keyboardManager.AddKeys("XTWASDRFLGCM QE012345678`9iKNJB")
 		|| !keyboardManager.AddKey(VK_OEM_4) || !keyboardManager.AddKey(VK_OEM_6) || !keyboardManager.AddKey(VK_OEM_5)
 		|| !keyboardManager.AddKey(VK_PRIOR) || !keyboardManager.AddKey(VK_NEXT)
-		|| !keyboardManager.AddKey(VK_OEM_PERIOD) || !keyboardManager.AddKey(VK_SHIFT))
+		|| !keyboardManager.AddKey(VK_OEM_PERIOD) || !keyboardManager.AddKey(VK_SHIFT)
+		|| !keyboardManager.AddKey(VK_UP) || !keyboardManager.AddKey(VK_DOWN))
 	{
 		Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to add keys!\n");
 		return false;
@@ -251,7 +254,7 @@ void EngineDemo::Update(float dt)
 
 	if (Engine::MouseManager::IsLeftMouseClicked())
 	{
-		Engine::RayCastingOutput rco = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), 1000.0f);
+		Engine::RayCastingOutput rco = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), 1000.0f, currentCollisionLayer);
 		if (rco.m_didIntersect)
 		{
 			bool found = false;
@@ -278,18 +281,24 @@ void EngineDemo::Update(float dt)
 
 	static int lastX = 0;
 	static int lastZ = 0;
+	static Engine::CollisionLayer lastCollisionLayer;
 
 	float x = playerGraphicalObject.GetPos().GetX();
 	float z = playerGraphicalObject.GetPos().GetZ();
-	int cX = Engine::CollisionTester::GetGridIndexFromPosX(x);
-	int cZ = Engine::CollisionTester::GetGridIndexFromPosZ(z);
-
-	if (cX != lastX || cZ != lastZ)
+	int cX = Engine::CollisionTester::GetGridIndexFromPosX(x, Engine::CollisionLayer::STATIC_GEOMETRY);
+	int cZ = Engine::CollisionTester::GetGridIndexFromPosZ(z, Engine::CollisionLayer::STATIC_GEOMETRY);
+	if (cX != lastX || cZ != lastZ || lastCollisionLayer != currentCollisionLayer)
 	{
-		char buffer[50];
-		sprintf_s(buffer, 50, "[%d] triangles in [%d] [%d]\n", Engine::CollisionTester::GetTriangleCountForSpace(x, z), cX, cZ);
-		m_objectText.SetupText(0.2f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, buffer);
+		char buffer[50], buffer2[50];
+		sprintf_s(buffer2, 50, "Layer [%s]:\n", Engine::CollisionTester::LayerString(currentCollisionLayer));
+		sprintf_s(buffer, 50, "[%d] triangles in [%d] [%d]\n", Engine::CollisionTester::GetTriangleCountForSpace(x, z, currentCollisionLayer), cX, cZ);
+		m_objectText.SetupText(0.20f, 0.75f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, buffer);
+		m_layerText.SetupText(0.20f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, buffer2);
+
 	}
+
+	lastCollisionLayer = currentCollisionLayer;
+
 }
 
 void EngineDemo::Draw()
@@ -299,10 +308,12 @@ void EngineDemo::Draw()
 
 
 	Engine::RenderEngine::Draw();
-	if (drawGrid) { Engine::CollisionTester::DrawGrid(0); }
+	if (drawGrid) { Engine::CollisionTester::DrawGrid(Engine::CollisionLayer::STATIC_GEOMETRY); }
 
 	m_fpsTextObject.RenderText(&m_shaderPrograms[0], debugColorLoc);
 	m_objectText.RenderText(&m_shaderPrograms[0], debugColorLoc);
+	m_layerText.RenderText(&m_shaderPrograms[0], debugColorLoc);
+
 }
 
 void EngineDemo::OnResizeWindow()
@@ -514,6 +525,13 @@ bool EngineDemo::ProcessInput(float dt)
 		playerCamera.SetRotateSpeed(Engine::MathUtility::Clamp(playerCamera.GetRotateSpeed() * 1.25f, MIN_ROTATION_SPEED, MAX_ROTATION_SPEED));
 	}
 
+	if (keyboardManager.KeyWasPressed('0')) { currentCollisionLayer = Engine::CollisionLayer::STATIC_GEOMETRY; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+	if (keyboardManager.KeyWasPressed('1')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_1; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+	if (keyboardManager.KeyWasPressed('2')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_2; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+	if (keyboardManager.KeyWasPressed('3')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_3; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+	if (keyboardManager.KeyWasPressed('4')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_4; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+	if (keyboardManager.KeyWasPressed('5')) { currentCollisionLayer = Engine::CollisionLayer::NUM_LAYERS; Engine::CollisionTester::OnlyShowLayer(Engine::CollisionLayer::NUM_LAYERS); }
+
 	//if (keyboardManager.KeyWasPressed('1')) { currentFractalTexID = fractalGradientTextureID; }
 	//if (keyboardManager.KeyWasPressed('2')) { currentFractalTexID = fractalGradientAlternateTextureID; }
 	if (keyboardManager.KeyWasPressed('X')) { Shutdown(); return false; }
@@ -595,8 +613,14 @@ bool EngineDemo::UglyDemoCode()
 	thing1.AddComponent(&thing1Comp, "thing1StarComp");
 	thing1.Initialize();
 
+	m_fpsTextObject.MakeBuffers();
+	m_objectText.MakeBuffers();
+	m_layerText.MakeBuffers();
+
 	m_fpsTextObject.SetupText(-0.9f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "FPS: 0\n");
-	m_objectText.SetupText(0.2f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "TRIANGLEs: 0\n");
+	m_objectText.SetupText(0.0f, 0.75f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "TRIANGLES: 0\n");
+	m_layerText.SetupText(0.20f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "LAYER NOT DISPLAYED YET");
+
 	m_perspective.SetPerspective(m_pWindow->width() / static_cast<float>(m_pWindow->height()), Engine::MathUtility::ToRadians(60.0f), 1.0f, RENDER_DISTANCE);
 	m_perspective.SetScreenDimmensions(static_cast<float>(m_pWindow->width()), static_cast<float>(m_pWindow->height()));
 	Engine::MousePicker::SetPerspectiveInfo(m_perspective.GetFOVY(), m_perspective.GetNearDist(), m_perspective.GetWidth(), m_perspective.GetHeight());
@@ -631,11 +655,11 @@ bool EngineDemo::UglyDemoCode()
 
 		// random fun stuff
 		Engine::RenderEngine::AddGraphicalObject(&m_demoObjects[i]);
-		Engine::CollisionTester::AddGraphicalObject(&m_demoObjects[i]);
+		Engine::CollisionTester::AddGraphicalObjectToLayer(&m_demoObjects[i], (Engine::CollisionLayer)i);
 
 	}
 
-	Engine::CollisionTester::InitializeGridDebugShapes(0, Engine::Vec3(1.0f, 0.0f, 0.0f), playerCamera.GetWorldToViewMatrixPtr()->GetAddress(),
+	Engine::CollisionTester::InitializeGridDebugShapes(Engine::CollisionLayer::STATIC_GEOMETRY, Engine::Vec3(1.0f, 0.0f, 0.0f), playerCamera.GetWorldToViewMatrixPtr()->GetAddress(),
 		m_perspective.GetPerspectivePtr()->GetAddress(), tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
 
 	return true;

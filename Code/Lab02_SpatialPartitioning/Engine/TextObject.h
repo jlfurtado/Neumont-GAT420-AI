@@ -24,6 +24,7 @@ namespace Engine
 	{
 	public:
 		static bool Initialize(GLint matLoc, GLint tintLoc);
+		bool MakeBuffers();
 		void SetupText(GLfloat xPos, GLfloat yPos, GLfloat zPos, GLfloat rValue, GLfloat gValue, GLfloat bValue, GLfloat fontScaleX, GLfloat fontScaleY, GLchar *text);
 		void RenderText(ShaderProgram *pShaderProgram, GLint debugColorLoc);
 		static bool Shutdown();
@@ -42,12 +43,10 @@ namespace Engine
 		static const int INDEX_BUFFER_SIZE_COUNT = INDEX_BUFFER_SIZE_BYTES / sizeof(GLuint);
 		static const int FLOATS_PER_VERTEX = 6;
 		static const float BASE_FONT_SCALE;
-		static GLuint s_textBufferID;
-		static GLuint s_textIndexBufferID;
+		GLuint m_textBufferID;
+		GLuint m_textIndexBufferID;
 		static GLint s_matLoc;
 		static GLint s_tintLoc;
-		Vertex m_vertices[VERTEX_BUFFER_SIZE_COUNT];
-		GLuint m_indices[INDEX_BUFFER_SIZE_COUNT];
 		GLint m_numQuads;
 		GLfloat m_fontScaleX;
 		GLfloat m_fontScaleY;

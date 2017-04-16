@@ -25,14 +25,20 @@ namespace Engine
 		SpatialTriangleData *GetTriangleDataByGrid(int gridX, int gridZ);
 		SpatialTriangleData *GetTriangleDataByGridAtPosition(float worldX, float worldZ);
 		bool AddGraphicalObject(GraphicalObject *pGraphicalObjectToAdd);
-		float GetGridScale();
+		int GetGridIndexFromXPos(float xPos);
+		int GetGridIndexFromZPos(float zPos);
 		int GetGridTriangleCount(int gridX, int gridZ);
+		float GetGridScale();
 		void CalculateStatisticsFromCounts();
 		void RemoveGraphicalObject(GraphicalObject *pGobToRemove);
 		int GetGridWidth();
 		int GetGridHeight();
 		void ConsoleLogStats();
 		bool AddTrianglesToPartitions();
+		void EnableObjects();
+		void DisableObjects();
+		static bool EnableObject(GraphicalObject *pGob, void *pInstance);
+		static bool DisableObject(GraphicalObject *pGob, void *pInstance);
 
 		// TODO: Move!??!?!?!
 
