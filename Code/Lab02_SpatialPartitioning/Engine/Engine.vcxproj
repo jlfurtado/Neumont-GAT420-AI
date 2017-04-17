@@ -202,9 +202,6 @@
     <ClCompile Include="Keyboard.cpp" />
     <ClCompile Include="KeyValuePair.cpp" />
     <ClCompile Include="KeyValuePairs.cpp" />
-    <ClCompile Include="Mat2.cpp" />
-    <ClCompile Include="Mat3.cpp" />
-    <ClCompile Include="Mat4.cpp" />
     <ClCompile Include="MathUtility.cpp" />
     <ClCompile Include="MessageType.cpp" />
     <ClCompile Include="MouseManager.cpp" />
@@ -223,9 +220,6 @@
     <ClCompile Include="TextCharacter.cpp" />
     <ClCompile Include="TextObject.cpp" />
     <ClCompile Include="UniformData.cpp" />
-    <ClCompile Include="Vec2.cpp" />
-    <ClCompile Include="Vec3.cpp" />
-    <ClCompile Include="Vec4.cpp" />
     <ClCompile Include="VertexFormat.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

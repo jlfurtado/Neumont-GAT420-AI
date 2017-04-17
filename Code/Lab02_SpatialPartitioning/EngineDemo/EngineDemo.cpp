@@ -746,7 +746,7 @@ bool EngineDemo::UglyDemoCode()
 	rayData[1] = Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc);
 	rayData[2] = Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr()->GetAddress(), perspectiveMatLoc);
 
-	const float edge = 2000.0f;
+	const float edge = 1500.0f;
 	for (int i = 0; i < NUM_DARGONS; ++i)
 	{
 		Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Dargon.PT.scene", &m_dargons[i], m_shaderPrograms[7].GetProgramId(), "..\\Data\\Textures\\DargonSkin.bmp");
@@ -760,7 +760,7 @@ bool EngineDemo::UglyDemoCode()
 		m_dargons[i].AddUniformData(Engine::UniformData(GL_FLOAT, &m_dargons[i].GetMatPtr()->m_specularIntensity, tintIntensityLoc));
 		m_dargons[i].GetMatPtr()->m_specularIntensity = 0.0f;
 		m_dargons[i].SetTransMat(Engine::Mat4::Translation(Engine::Vec3(edge, 0.0f, i % 2 ? -edge : edge)));
-		m_dargons[i].SetScaleMat(Engine::Mat4::Scale(10.0f));
+		m_dargons[i].SetScaleMat(Engine::Mat4::Scale(i % 2 ? 10.0f : 250.0f));
 		m_dargons[i].CalcFullTransform();
 		Engine::CollisionTester::AddGraphicalObjectToLayer(&m_dargons[i], Engine::CollisionLayer::STATIC_GEOMETRY);
 	}
@@ -841,10 +841,10 @@ void EngineDemo::DrawFlagRays()
 	Engine::Vec3 toTopRight = (m_flag.GetPos() + flagTopRight - nearPlaneCenter);
 	Engine::Vec3 toBottomRight = (m_flag.GetPos() + flagBottomRight - nearPlaneCenter);
 
-	Engine::CollisionTester::DrawRay(nearPlaneCenter, toCenter.Normalize(), Engine::MathUtility::Min(toCenter.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toCenter.Length()), m_shaderPrograms[1].GetProgramId(), rayData);
-	Engine::CollisionTester::DrawRay(nearPlaneCenter, toTopLeft.Normalize(), Engine::MathUtility::Min(toTopLeft.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toTopLeft.Length()), m_shaderPrograms[1].GetProgramId(), rayData);
-	Engine::CollisionTester::DrawRay(nearPlaneCenter, toBottomLeft.Normalize(), Engine::MathUtility::Min(toBottomLeft.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toBottomLeft.Length()), m_shaderPrograms[1].GetProgramId(), rayData);
-	Engine::CollisionTester::DrawRay(nearPlaneCenter, toTopRight.Normalize(), Engine::MathUtility::Min(toTopRight.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toTopRight.Length()), m_shaderPrograms[1].GetProgramId(), rayData);
-	Engine::CollisionTester::DrawRay(nearPlaneCenter, toBottomRight.Normalize(), Engine::MathUtility::Min(toBottomRight.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toBottomRight.Length()), m_shaderPrograms[1].GetProgramId(), rayData);
+	Engine::CollisionTester::DrawRay(nearPlaneCenter, toCenter.Normalize(), Engine::MathUtility::Min(toCenter.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toCenter.Length()), rayData);
+	Engine::CollisionTester::DrawRay(nearPlaneCenter, toTopLeft.Normalize(), Engine::MathUtility::Min(toTopLeft.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toTopLeft.Length()), rayData);
+	Engine::CollisionTester::DrawRay(nearPlaneCenter, toBottomLeft.Normalize(), Engine::MathUtility::Min(toBottomLeft.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toBottomLeft.Length()), rayData);
+	Engine::CollisionTester::DrawRay(nearPlaneCenter, toTopRight.Normalize(), Engine::MathUtility::Min(toTopRight.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toTopRight.Length()), rayData);
+	Engine::CollisionTester::DrawRay(nearPlaneCenter, toBottomRight.Normalize(), Engine::MathUtility::Min(toBottomRight.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toBottomRight.Length()), rayData);
 
 }

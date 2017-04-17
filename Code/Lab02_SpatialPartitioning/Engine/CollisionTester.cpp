@@ -114,18 +114,9 @@ namespace Engine
 					SpatialTriangleData *pCurrent = pFirst + c;
 					if (pCurrent)
 					{
-						Mesh *pMesh = pCurrent->m_pTriangleOwner->GetMeshPointer();
-						Mat4 modelToWorld = *pCurrent->m_pTriangleOwner->GetFullTransformPtr();
-						void *pVertices = pMesh->GetVertexPointer();
-						int meshFormatSize = VertexFormatSize(pMesh->GetVertexFormat());
-
 						if (pCurrent->m_pTriangleOwner->IsEnabled())
 						{
-							Vec3 p0 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * pCurrent->m_triangleVertexZeroIndex))));
-							Vec3 p1 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (pCurrent->m_triangleVertexZeroIndex + 1)))));
-							Vec3 p2 = modelToWorld * (*(reinterpret_cast<Vec3 *>(reinterpret_cast<char *>(pVertices) + (meshFormatSize * (pCurrent->m_triangleVertexZeroIndex + 2)))));
-
-							RayCastingOutput output = RayTriangleIntersect(rayPosition, rd, p0, p1, p2, finalOutput.m_distance);
+							RayCastingOutput output = RayTriangleIntersect(rayPosition, rd, pCurrent->p0, pCurrent->p1, pCurrent->p2, finalOutput.m_distance);
 							if (output.m_didIntersect && output.m_distance < finalOutput.m_distance) { finalOutput = output; finalOutput.m_belongsTo = pCurrent->m_pTriangleOwner; finalOutput.m_vertexIndex = pCurrent->m_triangleVertexZeroIndex; }
 						}
 					}
@@ -399,7 +390,7 @@ namespace Engine
 		}
 	}
 
-	bool CollisionTester::DrawRay(const Vec3 & rayPosition, const Vec3 & rayDirection, float rayLength, int pcShaderId, UniformData data[3])
+	bool CollisionTester::DrawRay(const Vec3 & rayPosition, const Vec3 & rayDirection, float rayLength, UniformData data[3])
 	{
 		GraphicalObject rayObj;
 		ShapeGenerator::MakeDebugArrow(&rayObj, Vec3(1.0f, 0.0f, 0.0f), Vec3(1.0f, 1.0f, 0.0f));
