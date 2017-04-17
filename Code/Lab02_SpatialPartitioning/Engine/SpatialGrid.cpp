@@ -321,7 +321,7 @@ namespace Engine
 		return true;
 	}
 
-	bool SpatialGrid::SetTriangleIndexPassThrough(int x, int z, GraphicalObject * pObj, int index, Vec3 p0, Vec3 p1, Vec3 p2, void *pClassInstance)
+	bool SpatialGrid::SetTriangleIndexPassThrough(int x, int z, GraphicalObject * pObj, int index, const Vec3& p0, const Vec3& p1, const Vec3& p2, void *pClassInstance)
 	{
 		SpatialGrid *pInstance = reinterpret_cast<SpatialGrid *>(pClassInstance);
 		return pInstance->SetTriangleIndex(x, z, pObj, index);
@@ -333,13 +333,13 @@ namespace Engine
 		return true;
 	}
 
-	bool SpatialGrid::AddSpatialTrianglePassThrough(int x, int z, GraphicalObject * pObj, int index, Vec3 p0, Vec3 p1, Vec3 p2, void *pClassInstance)
+	bool SpatialGrid::AddSpatialTrianglePassThrough(int x, int z, GraphicalObject * pObj, int index, const Vec3& p0, const Vec3& p1, const Vec3& p2, void *pClassInstance)
 	{
 		SpatialGrid *pInstance = reinterpret_cast<SpatialGrid *>(pClassInstance);
 		return pInstance->AddSpatialTriangle(x, z, pObj, p0, p1, p2, index);
 	}
 
-	bool SpatialGrid::AddSpatialTriangle(int x, int z, GraphicalObject * pObj, Vec3 p0, Vec3 p1, Vec3 p2, int index)
+	bool SpatialGrid::AddSpatialTriangle(int x, int z, GraphicalObject * pObj, const Vec3& p0, const Vec3& p1, const Vec3& p2, int index)
 	{
 		SpatialTriangleData newData;
 		newData.p0 = p0;
