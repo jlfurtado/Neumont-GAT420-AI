@@ -76,6 +76,19 @@ namespace Engine
 					0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
+	Mat4 Mat4::Scale(float scale, Vec3 axis)
+	{
+		Vec3 axisNormalized = axis.Normalize();
+		float kMinusOne = scale - 1.0f;
+		float x = axisNormalized.GetX();
+		float y = axisNormalized.GetY();
+		float z = axisNormalized.GetZ();
+		return Mat4(1 + kMinusOne*x*x, kMinusOne*x*y, kMinusOne*x*z, 0.0f,
+					kMinusOne*x*y, 1 + kMinusOne*y*y, kMinusOne*y*z, 0.0f,
+					kMinusOne*x*z, kMinusOne*y*z, 1+kMinusOne*z*z, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f);
+	}
+
 	Mat4 Mat4::Translation(float x, float y, float z)
 	{
 		return Mat4(1.0f, 0.0f, 0.0f, x,

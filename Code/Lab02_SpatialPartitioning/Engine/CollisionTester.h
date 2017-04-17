@@ -58,6 +58,7 @@ namespace Engine
 		static RayCastingOutput FindFromMousePos(int pixelX, int pixelY, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
 		static bool CalculateGrid(CollisionLayer layer = CollisionLayer::NUM_LAYERS);
 		static void OnlyShowLayer(CollisionLayer layer = CollisionLayer::NUM_LAYERS);
+		static bool DrawRay(const Vec3& rayPosition, const Vec3& rayDirection, float rayLength, int pcShaderId, UniformData uniformData[3]);
 
 	private:
 		static SpatialGrid s_spatialGrids[(unsigned)CollisionLayer::NUM_LAYERS];

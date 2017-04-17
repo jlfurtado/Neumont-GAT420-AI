@@ -181,6 +181,8 @@
     <None Include="..\Data\Shaders\PC.vert.shader" />
     <None Include="..\Data\Shaders\PhongPhong.frag.shader" />
     <None Include="..\Data\Shaders\PhongPhong.vert.shader" />
+    <None Include="..\Data\Shaders\PT.frag.shader" />
+    <None Include="..\Data\Shaders\PT.vert.shader" />
     <None Include="..\Data\Shaders\SimpleTexture.frag.shader" />
     <None Include="..\Data\Shaders\SimpleTexture.vert.shader" />
     <None Include="..\Data\Shaders\SkyBox.frag.shader" />

@@ -48,10 +48,12 @@ const float OBJECT_PLANE_OFFSET = 1000.0f;
 const float LIGHT_HEIGHT = 15.0f;
 const int NUM_USED_SHADERS = 10;
 const int NUM_OBJECTS_TOTAL = NUM_OBJECTS_DEMO1;
+const int NUM_DARGONS = 2;
 Engine::GraphicalObject m_grid;
 Engine::GraphicalObject m_demoObjects[NUM_OBJECTS_TOTAL];
 Engine::GraphicalObject m_lights[NUM_OBJECTS_TOTAL];
 Engine::GraphicalObject playerGraphicalObject;
+Engine::GraphicalObject m_dargons[NUM_DARGONS];
 int m_texIDs[NUM_OBJECTS_TOTAL]{ 0 };
 const float EngineDemo::RENDER_DISTANCE = 3500.0f;
 Engine::Entity player;
@@ -89,7 +91,11 @@ Engine::SpatialComponent thing1SpatialComp;
 StarComp thing1Comp;
 bool drawGrid = true;
 bool allLayersEnabled = true;
+bool drawRays = true;
 Engine::CollisionLayer currentCollisionLayer;
+Engine::Vec3 rayColor(1.0f);
+Engine::UniformData rayData[3];
+Engine::RayCastingOutput flagRCO[6];
 
 bool EngineDemo::Initialize(Engine::MyWindow *window)
 {
@@ -298,6 +304,10 @@ void EngineDemo::Update(float dt)
 		}
 	}
 
+	if (drawRays)
+	{
+		RaycastFlag();
+	}
 
 	//Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "fractalSeed : (%.3f, %.3f)\n", fractalSeed.GetX(), fractalSeed.GetY()); // Amazingly useful for debugging fractal shader
 	shaderOffset += step * dt; if (shaderOffset > maxBorder) { shaderOffset = maxBorder; step *= -1.0f; } if (shaderOffset < minBorder) { shaderOffset = minBorder; step *= -1.0f; }
@@ -318,7 +328,13 @@ void EngineDemo::Draw()
 
 
 	Engine::RenderEngine::Draw();
+
 	if (drawGrid) { Engine::CollisionTester::DrawGrid(Engine::CollisionLayer::STATIC_GEOMETRY); }
+
+	if (drawRays)
+	{
+		DrawFlagRays();
+	}
 
 	m_fpsTextObject.RenderText(&m_shaderPrograms[0], debugColorLoc);
 	m_objectText.RenderText(&m_shaderPrograms[0], debugColorLoc);
@@ -444,6 +460,14 @@ bool EngineDemo::InitializeGL()
 		m_shaderPrograms[6].UseProgram();
 	}
 
+	if (m_shaderPrograms[7].Initialize())
+	{					 
+		m_shaderPrograms[7].AddVertexShader("..\\Data\\Shaders\\PT.vert.shader");
+		m_shaderPrograms[7].AddFragmentShader("..\\Data\\Shaders\\PT.frag.shader");
+		m_shaderPrograms[7].LinkProgram();
+		m_shaderPrograms[7].UseProgram();
+	}
+
 	// Text Shader Program
 
 	if (m_shaderProgramText.Initialize())
@@ -550,6 +574,7 @@ bool EngineDemo::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('3')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_3; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
 	if (keyboardManager.KeyWasPressed('4')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_4; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
 	if (keyboardManager.KeyWasPressed('5')) { currentCollisionLayer = Engine::CollisionLayer::NUM_LAYERS; Engine::CollisionTester::OnlyShowLayer(Engine::CollisionLayer::NUM_LAYERS); }
+	if (keyboardManager.KeyWasPressed('8')) { drawRays = !drawRays; }
 
 	//if (keyboardManager.KeyWasPressed('1')) { currentFractalTexID = fractalGradientTextureID; }
 	//if (keyboardManager.KeyWasPressed('2')) { currentFractalTexID = fractalGradientAlternateTextureID; }
@@ -639,7 +664,6 @@ bool EngineDemo::UglyDemoCode()
 	m_fpsTextObject.SetupText(-0.9f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "FPS: 0\n");
 	m_objectText.SetupText(0.0f, 0.75f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "TRIANGLES: 0\n");
 	m_layerText.SetupText(0.20f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "LAYER NOT DISPLAYED YET");
-
 	m_perspective.SetPerspective(m_pWindow->width() / static_cast<float>(m_pWindow->height()), Engine::MathUtility::ToRadians(60.0f), 1.0f, RENDER_DISTANCE);
 	m_perspective.SetScreenDimmensions(static_cast<float>(m_pWindow->width()), static_cast<float>(m_pWindow->height()));
 	Engine::MousePicker::SetPerspectiveInfo(m_perspective.GetFOVY(), m_perspective.GetNearDist(), m_perspective.GetWidth(), m_perspective.GetHeight());
@@ -704,6 +728,43 @@ bool EngineDemo::UglyDemoCode()
 
 	Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer);
 
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Flag.P.Scene", &m_flag, m_shaderPrograms[0].GetProgramId());
+	m_flag.SetTransMat(Engine::Mat4::Translation(Engine::Vec3(-430.0f, 540.0f, -105.0f)));
+	m_flag.SetScaleMat(Engine::Mat4::Scale(10.0f));
+	m_flag.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_flag.GetFullTransformPtr()->GetAddress(), modelToWorldMatLoc));
+	m_flag.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc));
+	m_flag.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr()->GetAddress(), perspectiveMatLoc));
+	m_flag.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_flag.GetMatPtr()->m_materialColor, tintColorLoc));
+	m_flag.AddUniformData(Engine::UniformData(GL_FLOAT, &m_flag.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
+	m_flag.GetMatPtr()->m_specularIntensity = 1.0f;
+	m_flag.GetMatPtr()->m_materialColor = Engine::Vec3(0.0f, 0.0f, 1.0f);
+	Engine::RenderEngine::AddGraphicalObject(&m_flag);
+	Engine::CollisionTester::AddGraphicalObjectToLayer(&m_flag, Engine::CollisionLayer::STATIC_GEOMETRY);
+	m_flag.CalcFullTransform();
+
+	rayData[0] = Engine::UniformData(GL_FLOAT_MAT4, &identity, modelToWorldMatLoc);
+	rayData[1] = Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc);
+	rayData[2] = Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr()->GetAddress(), perspectiveMatLoc);
+
+	const float edge = 2000.0f;
+	for (int i = 0; i < NUM_DARGONS; ++i)
+	{
+		Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Dargon.PT.scene", &m_dargons[i], m_shaderPrograms[7].GetProgramId(), "..\\Data\\Textures\\DargonSkin.bmp");
+		Engine::RenderEngine::AddGraphicalObject(&m_dargons[i]);
+		m_gazebo.AddUniformData(Engine::UniformData(GL_TEXTURE0, m_gazebo.GetMeshPointer()->GetTextureIDPtr(), texLoc));
+		m_dargons[i].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_dargons[i].GetFullTransformPtr()->GetAddress(), modelToWorldMatLoc));
+		m_dargons[i].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc));
+		m_dargons[i].AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr()->GetAddress(), perspectiveMatLoc));
+		m_dargons[i].AddUniformData(Engine::UniformData(GL_TEXTURE0, m_dargons[i].GetMeshPointer()->GetTextureIDPtr(), texLoc));
+		m_dargons[i].AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_dargons[i].GetMatPtr()->m_materialColor, tintColorLoc));
+		m_dargons[i].AddUniformData(Engine::UniformData(GL_FLOAT, &m_dargons[i].GetMatPtr()->m_specularIntensity, tintIntensityLoc));
+		m_dargons[i].GetMatPtr()->m_specularIntensity = 0.0f;
+		m_dargons[i].SetTransMat(Engine::Mat4::Translation(Engine::Vec3(edge, 0.0f, i % 2 ? -edge : edge)));
+		m_dargons[i].SetScaleMat(Engine::Mat4::Scale(10.0f));
+		m_dargons[i].CalcFullTransform();
+		Engine::CollisionTester::AddGraphicalObjectToLayer(&m_dargons[i], Engine::CollisionLayer::STATIC_GEOMETRY);
+	}
+
 	SetObjPosDataPtrs();
 
 	return true;
@@ -733,4 +794,57 @@ void EngineDemo::SetObjPosDataPtrs()
 	}
 
 	m_gazebo.CalcFullTransform();
+}
+
+const Engine::Vec3 flagTopLeft(0.0f, 100.0f, 10.0f);
+const Engine::Vec3 flagCenter(0.0f, 75.0f, -35.0f);
+const Engine::Vec3 flagBottomLeft(0.0f, 50.0f, 10.0f);
+const Engine::Vec3 flagTopRight(0.0f, 100.0f, -70.0f);
+const Engine::Vec3 flagBottomRight(0.0f, 50.0f, -70.0f);
+void EngineDemo::RaycastFlag()
+{
+	Engine::Vec3 nearPlaneCenter = playerGraphicalObject.GetPos();
+	Engine::Vec3 toCenter = (m_flag.GetPos() + flagCenter - nearPlaneCenter);
+	Engine::Vec3 toTopLeft = (m_flag.GetPos() + flagTopLeft - nearPlaneCenter);
+	Engine::Vec3 toBottomLeft = (m_flag.GetPos() + flagBottomLeft - nearPlaneCenter);
+	Engine::Vec3 toTopRight = (m_flag.GetPos() + flagTopRight - nearPlaneCenter);
+	Engine::Vec3 toBottomRight = (m_flag.GetPos() + flagBottomRight - nearPlaneCenter);
+
+	// we only need to check static geometry for this
+	flagRCO[0] = Engine::CollisionTester::FindWall(nearPlaneCenter, toCenter.Normalize(), toCenter.Length(), currentCollisionLayer);
+	flagRCO[1] = Engine::CollisionTester::FindWall(nearPlaneCenter, toTopLeft.Normalize(), toTopLeft.Length(), currentCollisionLayer);
+	flagRCO[2] = Engine::CollisionTester::FindWall(nearPlaneCenter, toBottomLeft.Normalize(), toBottomLeft.Length(), currentCollisionLayer);
+	flagRCO[3] = Engine::CollisionTester::FindWall(nearPlaneCenter, toTopRight.Normalize(), toTopRight.Length(), currentCollisionLayer);
+	flagRCO[4] = Engine::CollisionTester::FindWall(nearPlaneCenter, toBottomRight.Normalize(), toBottomRight.Length(), currentCollisionLayer);
+	
+	if ((flagRCO[0].m_didIntersect && flagRCO[0].m_belongsTo == &m_flag) 
+		|| (flagRCO[1].m_didIntersect && flagRCO[1].m_belongsTo == &m_flag)
+		|| (flagRCO[2].m_didIntersect && flagRCO[2].m_belongsTo == &m_flag) 
+		|| (flagRCO[3].m_didIntersect && flagRCO[3].m_belongsTo == &m_flag)
+		|| (flagRCO[4].m_didIntersect && flagRCO[4].m_belongsTo == &m_flag))
+	{
+		glClearColor(1.0f, 1.0f, 0.0f, 1.0f);
+	}
+	else
+	{
+		glClearColor(backgroundColor.GetX(), backgroundColor.GetY(), backgroundColor.GetZ(), 1.0f);
+	}
+}
+
+void EngineDemo::DrawFlagRays()
+{
+	Engine::Vec3 nearPlaneCenter = playerGraphicalObject.GetPos();
+
+	Engine::Vec3 toCenter = (m_flag.GetPos() + flagCenter - nearPlaneCenter);
+	Engine::Vec3 toTopLeft = (m_flag.GetPos() + flagTopLeft - nearPlaneCenter);
+	Engine::Vec3 toBottomLeft = (m_flag.GetPos() + flagBottomLeft - nearPlaneCenter);
+	Engine::Vec3 toTopRight = (m_flag.GetPos() + flagTopRight - nearPlaneCenter);
+	Engine::Vec3 toBottomRight = (m_flag.GetPos() + flagBottomRight - nearPlaneCenter);
+
+	Engine::CollisionTester::DrawRay(nearPlaneCenter, toCenter.Normalize(), Engine::MathUtility::Min(toCenter.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toCenter.Length()), m_shaderPrograms[1].GetProgramId(), rayData);
+	Engine::CollisionTester::DrawRay(nearPlaneCenter, toTopLeft.Normalize(), Engine::MathUtility::Min(toTopLeft.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toTopLeft.Length()), m_shaderPrograms[1].GetProgramId(), rayData);
+	Engine::CollisionTester::DrawRay(nearPlaneCenter, toBottomLeft.Normalize(), Engine::MathUtility::Min(toBottomLeft.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toBottomLeft.Length()), m_shaderPrograms[1].GetProgramId(), rayData);
+	Engine::CollisionTester::DrawRay(nearPlaneCenter, toTopRight.Normalize(), Engine::MathUtility::Min(toTopRight.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toTopRight.Length()), m_shaderPrograms[1].GetProgramId(), rayData);
+	Engine::CollisionTester::DrawRay(nearPlaneCenter, toBottomRight.Normalize(), Engine::MathUtility::Min(toBottomRight.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toBottomRight.Length()), m_shaderPrograms[1].GetProgramId(), rayData);
+
 }

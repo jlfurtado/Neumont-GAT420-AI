@@ -28,6 +28,7 @@ namespace Engine
 		static Mat4 RotationAroundAxis(const Vec3& axisToRotateAbout, float radians);
 		static Mat4 Scale(float scale);
 		static Mat4 Scale(float xScale, float yScale, float zScale);
+		static Mat4 Scale(float scale, Vec3 axis);
 		static Mat4 Translation(float x, float y, float z);
 		static Mat4 Translation(const Vec3& translationVector);
 		static Mat4 Perspective(float fieldOfViewY, float aspectRatio, float nearPlane, float farPlane);

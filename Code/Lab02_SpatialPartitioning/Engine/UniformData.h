@@ -21,6 +21,7 @@ namespace Engine
 		bool PassUniform();
 		void **GetUniformDataPtrPtr();
 		int GetUniformDataLoc() const;
+		GLenum GetType() const;
 
 	private:
 		int m_uniformDataLoc;

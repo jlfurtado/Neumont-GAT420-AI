@@ -1,8 +1,5 @@
-#include "CollisionTester.h"
-#include "CollisionTester.h"
-#include "CollisionTester.h"
-#include "CollisionTester.h"
-#include "CollisionTester.h"
+#include "RenderEngine.h"
+#include "MathUtility.h"
 #include "CollisionTester.h"
 #include "GraphicalObject.h"
 #include "Mesh.h"
@@ -10,6 +7,7 @@
 #include "SpatialComponent.h"
 #include "GameLogger.h"
 #include "MousePicker.h"
+#include "ShapeGenerator.h"
 
 // Justin Furtado
 // 8/21/2016
@@ -399,6 +397,25 @@ namespace Engine
 			if (i == (unsigned)layer || layer == CollisionLayer::NUM_LAYERS) { s_spatialGrids[i].EnableObjects(); }
 			else { s_spatialGrids[i].DisableObjects(); };
 		}
+	}
+
+	bool CollisionTester::DrawRay(const Vec3 & rayPosition, const Vec3 & rayDirection, float rayLength, int pcShaderId, UniformData data[3])
+	{
+		GraphicalObject rayObj;
+		ShapeGenerator::MakeDebugArrow(&rayObj, Vec3(1.0f, 0.0f, 0.0f), Vec3(1.0f, 1.0f, 0.0f));
+		rayObj.AddUniformData(UniformData(data[0].GetType(), rayObj.GetFullTransformPtr(), data[0].GetUniformDataLoc()));
+		rayObj.AddUniformData(data[1]);
+		rayObj.AddUniformData(data[2]);
+		//Vec3 otherVec
+		rayObj.SetRotMat(Mat4::RotationAroundAxis(Vec3(1.0f, 0.0f, 0.0f).Cross(rayDirection), MathUtility::GetVectorAngleRadians(Vec3(1.0f, 0.0f, 0.0f), rayDirection)));
+		Vec3 halfRay = rayLength / 2.0f * rayDirection;
+		rayObj.SetScaleMat(Mat4::Scale(rayLength / 2.0f, rayDirection));
+		rayObj.SetTransMat(Mat4::Translation(rayPosition + (halfRay)));
+		rayObj.CalcFullTransform();
+		RenderEngine::AddGraphicalObject(&rayObj);
+		RenderEngine::DrawSingleObjectRegularly(&rayObj);
+		RenderEngine::RemoveGraphicalObject(&rayObj);
+		return true;
 	}
 
 }

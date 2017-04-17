@@ -56,9 +56,12 @@ private:
 	bool UglyDemoCode();
 	void InitIndicesForMeshNames(const char *const meshNames, int *indices, int numMeshes);
 	void SetObjPosDataPtrs();
+	void RaycastFlag();
+	void DrawFlagRays();
+
 
 	//data
-	static const int NUM_SHADER_PROGRAMS = 7;
+	static const int NUM_SHADER_PROGRAMS = 8;
 	bool paused = false;
 	Engine::Perspective m_perspective;
 	Engine::TextObject m_fpsTextObject;
@@ -94,6 +97,7 @@ private:
 	GLint halfWidthLoc;
 	GLint repeatScaleLoc;
 	Engine::GraphicalObject m_gazebo;
+	Engine::GraphicalObject m_flag;
 	float repeatScale;
 	GLint numIterationsLoc;
 	int numIterations;

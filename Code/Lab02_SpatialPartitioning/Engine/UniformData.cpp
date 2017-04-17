@@ -91,6 +91,10 @@ namespace Engine
 	{
 		return m_uniformDataLoc;
 	}
+	GLenum UniformData::GetType() const
+	{
+		return m_uniformType;
+	}
 }
 
 

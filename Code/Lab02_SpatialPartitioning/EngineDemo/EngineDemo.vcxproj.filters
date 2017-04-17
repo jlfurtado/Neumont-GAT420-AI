@@ -116,5 +116,11 @@
     <None Include="..\Data\Shaders\DebugInstanced.Vert.shader">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="..\Data\Shaders\PT.frag.shader">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\Data\Shaders\PT.vert.shader">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>
