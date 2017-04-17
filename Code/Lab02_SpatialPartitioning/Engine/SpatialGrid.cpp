@@ -321,7 +321,7 @@ namespace Engine
 		return true;
 	}
 
-	bool SpatialGrid::SetTriangleIndexPassThrough(int x, int z, GraphicalObject * pObj, int index, const Vec3& p0, const Vec3& p1, const Vec3& p2, void *pClassInstance)
+	bool SpatialGrid::SetTriangleIndexPassThrough(int x, int z, GraphicalObject * pObj, int index, const Vec3& /*p0*/, const Vec3& /*p1*/, const Vec3& /*p2*/, void *pClassInstance)
 	{
 		SpatialGrid *pInstance = reinterpret_cast<SpatialGrid *>(pClassInstance);
 		return pInstance->SetTriangleIndex(x, z, pObj, index);

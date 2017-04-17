@@ -121,8 +121,8 @@ namespace Engine
 
 							if (!pCurrent->m_pTriangleOwner->GetMeshPointer()->IsCullingEnabledForObject())
 							{
-								RayCastingOutput output = RayTriangleIntersect(rayPosition, rd, pCurrent->p2, pCurrent->p1, pCurrent->p0, finalOutput.m_distance);
-								if (output.m_didIntersect && output.m_distance < finalOutput.m_distance) { finalOutput = output; finalOutput.m_belongsTo = pCurrent->m_pTriangleOwner; finalOutput.m_vertexIndex = pCurrent->m_triangleVertexZeroIndex; }
+								RayCastingOutput output2 = RayTriangleIntersect(rayPosition, rd, pCurrent->p2, pCurrent->p1, pCurrent->p0, finalOutput.m_distance);
+								if (output2.m_didIntersect && output2.m_distance < finalOutput.m_distance) { finalOutput = output2; finalOutput.m_belongsTo = pCurrent->m_pTriangleOwner; finalOutput.m_vertexIndex = pCurrent->m_triangleVertexZeroIndex; }
 							}
 						}
 					}
