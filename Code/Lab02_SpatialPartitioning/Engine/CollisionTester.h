@@ -42,7 +42,7 @@ namespace Engine
 	public:
 		static const char *LayerString(CollisionLayer layer);
 		static bool InitializeGridDebugShapes(CollisionLayer gridLayer, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc);
-		static void DrawGrid(CollisionLayer gridLayer);
+		static void DrawGrid(CollisionLayer gridLayer, const Vec3& centerPos);
 		static void ConsoleLogOutput();
 		static RayCastingOutput FindWall(const Vec3& rayPosition, const Vec3& rayDirection, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
 		static RayCastingOutput FindWall(Entity *pEntity, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
@@ -52,8 +52,9 @@ namespace Engine
 		static bool AddGraphicalObjectToLayer(GraphicalObject *pGraphicalObjectToAdd, CollisionLayer layer);
 		static bool DoesFitInGrid(GraphicalObject *pGraphicalObjectToTest, CollisionLayer layer);
 		static void RemoveGraphicalObjectFromLayer(GraphicalObject *pGobToRemove, CollisionLayer layer);
-		static int GetTriangleCountForSpace(float xPos, float zPos, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
+		static int GetTriangleCountForSpace(float xPos, float yPos, float zPos, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
 		static int GetGridIndexFromPosX(float xPos, CollisionLayer layer);
+		static int GetGridIndexFromPosY(float yPos, CollisionLayer layer);
 		static int GetGridIndexFromPosZ(float zPos, CollisionLayer layer);
 		static RayCastingOutput FindFromMousePos(int pixelX, int pixelY, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);
 		static bool CalculateGrid(CollisionLayer layer = CollisionLayer::NUM_LAYERS);

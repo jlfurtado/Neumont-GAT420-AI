@@ -29,6 +29,8 @@ namespace Engine
 		static ENGINE_SHARED Vec3 GetNormalFromRayCastingOutput(RayCastingOutput output);
 		static ENGINE_SHARED float GetVectorAngleRadians(const Vec3& left, const Vec3& right);
 		static ENGINE_SHARED Vec3 GetQuadification(int index, int objectsX, int objectsZ, float spacing);
+		static ENGINE_SHARED Vec3 GetCubification(int index, int objectsX, int objectsY, int objectsZ, float spacing);
+
 	};
 }
 

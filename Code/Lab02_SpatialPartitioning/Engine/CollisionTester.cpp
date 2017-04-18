@@ -38,9 +38,9 @@ namespace Engine
 		return s_spatialGrids[(unsigned)layer].InitializeDisplayGrid(color, pCamMat, pPerspMat, tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
 	}
 
-	void CollisionTester::DrawGrid(CollisionLayer layer)
+	void CollisionTester::DrawGrid(CollisionLayer layer, const Vec3& centerPos)
 	{
-		s_spatialGrids[(unsigned)layer].DrawDebugShapes(); // TEMPORARY TODO REPLACE
+		s_spatialGrids[(unsigned)layer].DrawDebugShapes(centerPos); // TEMPORARY TODO REPLACE
 	}
 
 	void CollisionTester::ConsoleLogOutput()
@@ -78,18 +78,21 @@ namespace Engine
 
 		// grab scale and calculate end position
 		float gridScale = s_spatialGrids[(unsigned)layer].GetGridScale();
-		Vec3 rp = rayPosition + Vec3(0.5f * gridScale* s_spatialGrids[(unsigned)layer].GetGridWidth(), 0.0f, 0.5f*gridScale*s_spatialGrids[(unsigned)layer].GetGridHeight());
+		Vec3 rp = rayPosition + Vec3(0.5f * gridScale* s_spatialGrids[(unsigned)layer].GetGridWidth(), 0.5f * gridScale* s_spatialGrids[(unsigned)layer].GetGridDepth(), 0.5f*gridScale*s_spatialGrids[(unsigned)layer].GetGridHeight());
 		Vec3 endPosition = rp + rd*checkDist;
 
 		/// calculate the begining and end grid indices from the positions
 		int i = (int)floorf(rp.GetX() / gridScale);
 		int j = (int)floorf(rp.GetZ() / gridScale);
+		int k = (int)floorf(rp.GetY() / gridScale);
 		int iEnd = (int)floorf(endPosition.GetX() / gridScale);
 		int jEnd = (int)floorf(endPosition.GetZ() / gridScale);
+		int kEnd = (int)floorf(endPosition.GetY() / gridScale);
 
 		// pick the directions to step in
 		int deltaI = ((rp.GetX() < endPosition.GetX()) ? 1 : ((rp.GetX() > endPosition.GetX()) ? -1 : 0));
 		int deltaJ = ((rp.GetZ() < endPosition.GetZ()) ? 1 : ((rp.GetZ() > endPosition.GetZ()) ? -1 : 0));
+		int deltaK = ((rp.GetY() < endPosition.GetY()) ? 1 : ((rp.GetY() > endPosition.GetY()) ? -1 : 0));
 
 		// MATHS!!! 
 		float minX = gridScale * floorf(rp.GetX() / gridScale);
@@ -98,18 +101,23 @@ namespace Engine
 		float minZ = gridScale * floorf(rp.GetZ() / gridScale);
 		float maxZ = gridScale + minZ;
 		float tz = ((rp.GetZ() > endPosition.GetZ()) ? (rp.GetZ() - minZ) : (maxZ - rp.GetZ())) / fabsf(endPosition.GetZ() - rp.GetZ());
+		float minY = gridScale * floorf(rp.GetY() / gridScale);
+		float maxY = minY + gridScale;
+		float ty = ((rp.GetY() > endPosition.GetY()) ? (rp.GetY() - minY) : (maxY - rp.GetY())) / fabsf(endPosition.GetY() - rp.GetY());
 
 		// calculate more things
 		float dx = gridScale / fabsf(endPosition.GetX() - rp.GetX());
 		float dz = gridScale / fabsf(endPosition.GetZ() - rp.GetZ());
+		float dy = gridScale / fabsf(endPosition.GetY() - rp.GetY());
+
 
 		for (;;)
 		{
-			SpatialTriangleData *pFirst = s_spatialGrids[(unsigned)layer].GetTriangleDataByGrid(i, j);
+			SpatialTriangleData *pFirst = s_spatialGrids[(unsigned)layer].GetTriangleDataByGrid(i, k, j);
 
 			if (pFirst)
 			{
-				for (int c = 0; c < s_spatialGrids[(unsigned)layer].GetGridTriangleCount(i, j); ++c)
+				for (int c = 0; c < s_spatialGrids[(unsigned)layer].GetGridTriangleCount(i, k, j); ++c)
 				{
 					SpatialTriangleData *pCurrent = pFirst + c;
 					if (pCurrent)
@@ -135,11 +143,17 @@ namespace Engine
 			// TODO: BETTER FIX FOR BUG WITH TRIANGLE COMPARISON ORDER
 
 
-			if (tx <= tz)
+			if (tx <= tz && tx <= ty)
 			{
 				if (i == iEnd) { break; }
 				tx += dx;
 				i += deltaI;
+			}
+			else if (ty <= tx && ty <= tz) 
+			{
+				if (k == kEnd) { break; }
+				ty += dy;
+				k += deltaK;
 			}
 			else
 			{
@@ -345,24 +359,31 @@ namespace Engine
 		s_spatialGrids[(unsigned)layer].RemoveGraphicalObject(pGobToRemove);
 	}
 
-	int CollisionTester::GetTriangleCountForSpace(float xPos, float zPos, CollisionLayer layer)
+	int CollisionTester::GetTriangleCountForSpace(float xPos, float yPos, float zPos, CollisionLayer layer)
 	{
 		if (layer == CollisionLayer::NUM_LAYERS)
 		{ 
 			unsigned int sum = 0;
-			for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i) { sum += GetTriangleCountForSpace(xPos, zPos, (CollisionLayer)i); } 
+			for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i) { sum += GetTriangleCountForSpace(xPos, yPos, zPos, (CollisionLayer)i); } 
 			return sum;
 		}
 
 		int gridX = GetGridIndexFromPosX(xPos, layer);
+		int gridY = GetGridIndexFromPosY(yPos, layer);
 		int gridZ = GetGridIndexFromPosZ(zPos, layer);
-		return s_spatialGrids[(unsigned)layer].GetGridTriangleCount(gridX, gridZ);
+		return s_spatialGrids[(unsigned)layer].GetGridTriangleCount(gridX, gridY, gridZ);
 	}
 
 	int CollisionTester::GetGridIndexFromPosX(float xPos, CollisionLayer layer)
 	{
 		if (layer == CollisionLayer::NUM_LAYERS) { GameLogger::Log(MessageType::cWarning, "Tried to GetGridIndexFromPosX for NUM_LAYERS!\n"); return -1; }
-		return s_spatialGrids[(unsigned)layer].GetGridIndexFromZPos(xPos);
+		return s_spatialGrids[(unsigned)layer].GetGridIndexFromXPos(xPos);
+	}
+
+	int CollisionTester::GetGridIndexFromPosY(float yPos, CollisionLayer layer)
+	{
+		if (layer == CollisionLayer::NUM_LAYERS) { GameLogger::Log(MessageType::cWarning, "Tried to GetGridIndexFromPosY for NUM_LAYERS!\n"); return -1; }
+		return s_spatialGrids[(unsigned)layer].GetGridIndexFromYPos(yPos);
 	}
 
 	int CollisionTester::GetGridIndexFromPosZ(float zPos, CollisionLayer layer)

@@ -242,22 +242,27 @@ void EngineDemo::Update(float dt)
 
 	static int lastX = 0;
 	static int lastZ = 0;
+	static int lastY = 0;
 	static Engine::CollisionLayer lastCollisionLayer;
 	static bool objectMoved = false;
 
 	float x = playerGraphicalObject.GetPos().GetX();
+	float y = playerGraphicalObject.GetPos().GetY();
 	float z = playerGraphicalObject.GetPos().GetZ();
 	int cX = Engine::CollisionTester::GetGridIndexFromPosX(x, Engine::CollisionLayer::STATIC_GEOMETRY);
+	int cY = Engine::CollisionTester::GetGridIndexFromPosX(y, Engine::CollisionLayer::STATIC_GEOMETRY);
 	int cZ = Engine::CollisionTester::GetGridIndexFromPosZ(z, Engine::CollisionLayer::STATIC_GEOMETRY);
-	if (cX != lastX || cZ != lastZ || lastCollisionLayer != currentCollisionLayer || objectMoved)
+
+	if (cX != lastX || cZ != lastZ || cY != lastY || lastCollisionLayer != currentCollisionLayer || objectMoved)
 	{
-		char buffer[50], buffer2[50];
-		sprintf_s(buffer2, 50, "Layer [%s]:\n", Engine::CollisionTester::LayerString(currentCollisionLayer));
-		if (Engine::CollisionTester::GetTriangleCountForSpace(x, z) < 0) { sprintf_s(buffer, 50, "Outside Spatial Grid!\n"); }
-		else { sprintf_s(buffer, 50, "[%d] triangles in [%d] [%d]\n", Engine::CollisionTester::GetTriangleCountForSpace(x, z, currentCollisionLayer), cX, cZ); }
+		char buffer[75], buffer2[75];
+		sprintf_s(buffer2, 75, "Layer [%s]:\n", Engine::CollisionTester::LayerString(currentCollisionLayer));
+		if (Engine::CollisionTester::GetTriangleCountForSpace(x, y, z) < 0) { sprintf_s(buffer, 50, "Outside Spatial Grid!\n"); }
+		else { sprintf_s(buffer, 75, "[%d] triangles in [%d] [%d] [%d]\n", Engine::CollisionTester::GetTriangleCountForSpace(x, y, z, currentCollisionLayer), cX, cY, cZ); }
 		m_objectText.SetupText(0.20f, 0.75f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, buffer);
 		m_layerText.SetupText(0.20f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, buffer2);
 		lastX = cX;
+		lastY = cY;
 		lastZ = cZ;
 		objectMoved = false;
 	}
@@ -329,7 +334,7 @@ void EngineDemo::Draw()
 
 	Engine::RenderEngine::Draw();
 
-	if (drawGrid) { Engine::CollisionTester::DrawGrid(Engine::CollisionLayer::STATIC_GEOMETRY); }
+	if (drawGrid) { Engine::CollisionTester::DrawGrid(Engine::CollisionLayer::STATIC_GEOMETRY, playerGraphicalObject.GetPos()); }
 
 	if (drawRays)
 	{

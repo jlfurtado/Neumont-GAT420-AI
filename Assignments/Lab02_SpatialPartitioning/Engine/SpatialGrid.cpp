@@ -39,14 +39,14 @@ namespace Engine
 		m_gridDisplayObject.AddUniformData(Engine::UniformData(GL_FLOAT, &m_gridDisplayObject.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
 		m_gridDisplayObject.GetMatPtr()->m_materialColor = color;
 
-		GLuint numSections = GetGridWidth() * GetGridHeight();
+		GLuint numSections = 10 * 10 * 10;
 
 		Mat4* modelMatrices;
 		modelMatrices = new Engine::Mat4[numSections]{ Mat4() };
 
 		for (GLuint i = 0; i < numSections; ++i)
 		{
-			modelMatrices[i] = Mat4::Translation(MathUtility::GetQuadification(i, GetGridWidth(), GetGridHeight(), GetGridScale())) * Mat4::Scale(m_gridScale, 0.0001f, m_gridScale);
+			modelMatrices[i] = Mat4::Translation(MathUtility::GetCubification(i, 10, 10, 10, GetGridScale())) * Mat4::Scale(m_gridScale, m_gridScale, m_gridScale);
 		}
 
 		m_gridInstanceBuffer.Initialize(modelMatrices, 16 * sizeof(float), numSections, 16 * numSections);
@@ -60,24 +60,29 @@ namespace Engine
 		return true;
 	}
 
-	void SpatialGrid::DrawDebugShapes()
+	void SpatialGrid::DrawDebugShapes(const Vec3& centerPos)
 	{
+		m_gridDisplayObject.SetTransMat(Mat4::Translation(m_gridScale * Vec3(GetGridIndexFromXPos(centerPos.GetX()) - floorf(0.5f * m_gridSectionsWidth),
+																			 GetGridIndexFromYPos(centerPos.GetY()) - floorf(0.5f * m_gridSectionsDepth),
+																			 GetGridIndexFromZPos(centerPos.GetZ()) - floorf(0.5f * m_gridSectionsHeight))));
+		m_gridDisplayObject.CalcFullTransform();
 		m_gridDisplayObject.SetEnabled(true);
 		Engine::RenderEngine::DrawInstanced(&m_gridDisplayObject, &m_gridInstanceBuffer);
 		m_gridDisplayObject.SetEnabled(false);
 	}
 
-	SpatialTriangleData * SpatialGrid::GetTriangleDataByGrid(int gridX, int gridZ)
+	SpatialTriangleData * SpatialGrid::GetTriangleDataByGrid(int gridX, int gridY, int gridZ)
 	{
-		if (gridX < 0 || gridX >= m_gridSectionsWidth || gridZ < 0 || gridZ >= m_gridSectionsHeight) { return nullptr; }
-		int i = gridZ*m_gridSectionsWidth + gridX;
+		if (!AreGridIndicesValid(gridX, gridY, gridZ)) { return nullptr; }
+		int i = GetArrayIndexFromXYZIndices(gridX, gridY, gridZ);
+
 		//GameLogger::Log(MessageType::ConsoleOnly, "i = %d\n", i);
 		return &m_pData[m_pGridStartIndices[i]];
 	}
 
-	SpatialTriangleData * SpatialGrid::GetTriangleDataByGridAtPosition(float worldX, float worldZ)
+	SpatialTriangleData * SpatialGrid::GetTriangleDataByGridAtPosition(float worldX, float worldY, float worldZ)
 	{
-		return GetTriangleDataByGrid(int(worldX / m_gridScale - 0.5f*m_gridSectionsWidth), int(worldZ / m_gridScale - 0.5f*m_gridSectionsHeight));
+		return GetTriangleDataByGrid(GetGridIndexFromXPos(worldX), GetGridIndexFromYPos(worldY), GetGridIndexFromZPos(worldZ));
 	}
 
 	bool SpatialGrid::AddGraphicalObject(GraphicalObject * pGraphicalObjectToAdd)
@@ -92,15 +97,20 @@ namespace Engine
 		return (int)floorf((xPos / m_gridScale) + (m_gridSectionsWidth*0.5f));
 	}
 
+	int SpatialGrid::GetGridIndexFromYPos(float yPos)
+	{
+		return (int)floorf((yPos / m_gridScale) + (m_gridSectionsDepth*0.5f));
+	}
+
 	int SpatialGrid::GetGridIndexFromZPos(float zPos)
 	{
 		return (int)floorf((zPos / m_gridScale) + (m_gridSectionsHeight*0.5f));
 	}
 
-	int SpatialGrid::GetGridTriangleCount(int gridX, int gridZ)
+	int SpatialGrid::GetGridTriangleCount(int gridX, int gridY, int gridZ)
 	{
-		if (gridX < 0 || gridX >= m_gridSectionsWidth || gridZ < 0 || gridZ >= m_gridSectionsHeight) { return -1; }
-		int i = gridZ*m_gridSectionsWidth + gridX;
+		if (!AreGridIndicesValid(gridX, gridY, gridZ)) { return -1; }
+		int i = GetArrayIndexFromXYZIndices(gridX, gridY, gridZ);
 
 		return m_pGridTriangleCounts[i];
 	}
@@ -147,6 +157,11 @@ namespace Engine
 	int SpatialGrid::GetGridHeight()
 	{
 		return m_gridSectionsHeight;
+	}
+
+	int SpatialGrid::GetGridDepth()
+	{
+		return m_gridSectionsDepth;
 	}
 
 	void SpatialGrid::ConsoleLogStats()
@@ -216,10 +231,14 @@ namespace Engine
 		int c = 0;
 		for (int x = 0; x < m_gridSectionsWidth; ++x)
 		{
-			for (int z = 0; z < m_gridSectionsHeight; ++z)
+			for (int y = 0; y < m_gridSectionsDepth; ++y)
 			{
-				m_pGridStartIndices[z*m_gridSectionsWidth + x] = c;
-				c += m_pGridTriangleCounts[z*m_gridSectionsWidth + x];
+				for (int z = 0; z < m_gridSectionsHeight; ++z)
+				{
+					int i = GetArrayIndexFromXYZIndices(x, y, z);
+					m_pGridStartIndices[i] = c;
+					c += m_pGridTriangleCounts[i];
+				}
 			}
 		}
 
@@ -247,6 +266,19 @@ namespace Engine
 		pCurrent->GetMeshPointer()->WalkTriangles(SpatialGrid::ProcessTrianglesPassThrough, this, &data);
 
 		return data.m_success;
+	}
+
+	bool SpatialGrid::AreGridIndicesValid(int gridX, int gridY, int gridZ)
+	{
+		return ((gridX >= 0 && gridX < m_gridSectionsWidth) 
+				&& (gridY >= 0 && gridY < m_gridSectionsDepth)
+				&& (gridZ >= 0 & gridZ < m_gridSectionsHeight));
+	}
+
+	int SpatialGrid::GetArrayIndexFromXYZIndices(int gridX, int gridY, int gridZ)
+	{
+		if (!AreGridIndicesValid(gridX, gridY, gridZ)) { return -1; }
+		return (gridZ * (m_gridSectionsWidth * m_gridSectionsDepth)) + (gridY * (m_gridSectionsWidth)) + (gridX);
 	}
 	
 	bool SpatialGrid::AddGraphicalObjectToGridPassThrough(GraphicalObject * pGraphicalObjectToAdd, void * pClassInstance)
@@ -291,14 +323,17 @@ namespace Engine
 		// TODO: investigate the case where a triangle is added to a grid in which the bounding quad intersects but the triangle does not
 		// NOTE: if the grid size is larger than the triangle size, the triangle can be in at most four grid spaces, and the above would only have a small effect
 		float offsetX = 0.5f*m_gridSectionsWidth;
+		float offsetY = 0.5f*m_gridSectionsDepth;
 		float offsetZ = 0.5f*m_gridSectionsHeight;
 		int minGridX = (int)fminf(fminf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
+		int minGridY = (int)fminf(fminf(p0.GetY() / m_gridScale + offsetY, p1.GetY() / m_gridScale + offsetY), p2.GetY() / m_gridScale + offsetY);
 		int minGridZ = (int)fminf(fminf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
 		int maxGridX = (int)fmaxf(fmaxf(p0.GetX() / m_gridScale + offsetX, p1.GetX() / m_gridScale + offsetX), p2.GetX() / m_gridScale + offsetX);
+		int maxGridY = (int)fmaxf(fmaxf(p0.GetY() / m_gridScale + offsetY, p1.GetY() / m_gridScale + offsetY), p2.GetY() / m_gridScale + offsetY);
 		int maxGridZ = (int)fmaxf(fmaxf(p0.GetZ() / m_gridScale + offsetZ, p1.GetZ() / m_gridScale + offsetZ), p2.GetZ() / m_gridScale + offsetZ);
 
 		// error checking
-		if (minGridX < 0 || minGridX >= m_gridSectionsWidth || minGridZ < 0 || minGridZ >= m_gridSectionsHeight || maxGridX < 0 || maxGridX >= m_gridSectionsWidth || maxGridZ < 0 || maxGridZ >= m_gridSectionsHeight)
+		if (!AreGridIndicesValid(minGridX, minGridY, minGridZ) || !AreGridIndicesValid(maxGridX, maxGridY, maxGridZ))
 		{
 			if (pData->callback) { GameLogger::Log(MessageType::cWarning, "Tried to AddGraphicalObject to SpatialGrid but some triangles were out of grid range!\n"); }
 			pData->m_success = false;
@@ -310,9 +345,12 @@ namespace Engine
 			// add to all grid cells in range
 			for (int x = minGridX; x <= maxGridX; ++x)
 			{
-				for (int z = minGridZ; z <= maxGridZ; ++z)
+				for (int y = minGridY; y <= maxGridY; ++y)
 				{
-					pData->callback(x, z, pData->pObj, index, p0, p1, p2, this);
+					for (int z = minGridZ; z <= maxGridZ; ++z)
+					{
+						pData->callback(x, y, z, pData->pObj, index, p0, p1, p2, this);
+					}
 				}
 			}
 		}
@@ -321,35 +359,36 @@ namespace Engine
 		return true;
 	}
 
-	bool SpatialGrid::SetTriangleIndexPassThrough(int x, int z, GraphicalObject * pObj, int index, const Vec3& /*p0*/, const Vec3& /*p1*/, const Vec3& /*p2*/, void *pClassInstance)
+	bool SpatialGrid::SetTriangleIndexPassThrough(int x, int y, int z, GraphicalObject * pObj, int index, const Vec3& /*p0*/, const Vec3& /*p1*/, const Vec3& /*p2*/, void *pClassInstance)
 	{
 		SpatialGrid *pInstance = reinterpret_cast<SpatialGrid *>(pClassInstance);
-		return pInstance->SetTriangleIndex(x, z, pObj, index);
+		return pInstance->SetTriangleIndex(x, y, z, pObj, index);
 	}
 
-	bool SpatialGrid::SetTriangleIndex(int x, int z, GraphicalObject * /*pObj*/, int /*index*/)
+	bool SpatialGrid::SetTriangleIndex(int x, int y, int z, GraphicalObject * /*pObj*/, int /*index*/)
 	{
-		m_pGridTriangleCounts[z*m_gridSectionsWidth + x]++;
+		m_pGridTriangleCounts[GetArrayIndexFromXYZIndices(x, y, z)]++;
 		return true;
 	}
 
-	bool SpatialGrid::AddSpatialTrianglePassThrough(int x, int z, GraphicalObject * pObj, int index, const Vec3& p0, const Vec3& p1, const Vec3& p2, void *pClassInstance)
+	bool SpatialGrid::AddSpatialTrianglePassThrough(int x, int y, int z, GraphicalObject * pObj, int index, const Vec3& p0, const Vec3& p1, const Vec3& p2, void *pClassInstance)
 	{
 		SpatialGrid *pInstance = reinterpret_cast<SpatialGrid *>(pClassInstance);
-		return pInstance->AddSpatialTriangle(x, z, pObj, p0, p1, p2, index);
+		return pInstance->AddSpatialTriangle(x, y, z, pObj, p0, p1, p2, index);
 	}
 
-	bool SpatialGrid::AddSpatialTriangle(int x, int z, GraphicalObject * pObj, const Vec3& p0, const Vec3& p1, const Vec3& p2, int index)
+	bool SpatialGrid::AddSpatialTriangle(int x, int y, int z, GraphicalObject * pObj, const Vec3& p0, const Vec3& p1, const Vec3& p2, int index)
 	{
+		int arrayIndex = GetArrayIndexFromXYZIndices(x, y, z);
 		SpatialTriangleData newData;
 		newData.p0 = p0;
 		newData.p1 = p1;
 		newData.p2 = p2;
 		newData.m_pTriangleOwner = pObj;
 		newData.m_triangleVertexZeroIndex = index; // pIndices[i] is index of p0
-		int w = m_pGridStartIndices[z*m_gridSectionsWidth + x] + m_pGridTriangleCounts[z*m_gridSectionsWidth + x];
+		int w = m_pGridStartIndices[arrayIndex] + m_pGridTriangleCounts[arrayIndex];
 		m_pData[w] = newData;
-		m_pGridTriangleCounts[z*m_gridSectionsWidth + x]++;
+		m_pGridTriangleCounts[arrayIndex]++;
 		return true;
 	}
 
