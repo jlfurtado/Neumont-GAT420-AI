@@ -272,7 +272,7 @@ namespace Engine
 	{
 		return ((gridX >= 0 && gridX < m_gridSectionsWidth) 
 				&& (gridY >= 0 && gridY < m_gridSectionsDepth)
-				&& (gridZ >= 0 & gridZ < m_gridSectionsHeight));
+				&& (gridZ >= 0 && gridZ < m_gridSectionsHeight));
 	}
 
 	int SpatialGrid::GetArrayIndexFromXYZIndices(int gridX, int gridY, int gridZ)
