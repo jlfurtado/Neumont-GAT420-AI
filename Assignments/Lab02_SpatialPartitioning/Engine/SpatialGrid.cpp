@@ -67,8 +67,8 @@ namespace Engine
 			GetGridIndexFromYPos(centerPos.GetY()) - floorf(0.5f * m_gridSectionsDepth),
 			GetGridIndexFromZPos(centerPos.GetZ()) - floorf(0.5f * m_gridSectionsHeight));
 		Vec3 halfDirVec(-floorf(0.5f * (m_gridSectionsWidth - SECTIONS_PER_DIRECTION)),
-			-floorf(0.5f * (m_gridSectionsDepth - SECTIONS_PER_DIRECTION)),
-			-floorf(0.5f * (m_gridSectionsHeight - SECTIONS_PER_DIRECTION)));
+					-floorf(0.5f * (m_gridSectionsDepth - SECTIONS_PER_DIRECTION)),
+					-floorf(0.5f * (m_gridSectionsHeight - SECTIONS_PER_DIRECTION)));
 		m_gridDisplayObject.SetTransMat(Mat4::Translation(m_gridScale * MathUtility::Clamp(indexVec, halfDirVec, -halfDirVec)));
 		m_gridDisplayObject.CalcFullTransform();
 		m_gridDisplayObject.SetEnabled(true);

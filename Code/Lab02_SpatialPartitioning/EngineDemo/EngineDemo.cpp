@@ -134,7 +134,7 @@ bool EngineDemo::Initialize(Engine::MyWindow *window)
 	}
 
 	// ` for numpad 0
-	if (!keyboardManager.AddKeys("XTWASDRFLGCM QE012345678`9iKNJB")
+	if (!keyboardManager.AddKeys("XTWASDRFLGCM QE012345678`9iKNJBU")
 		|| !keyboardManager.AddKey(VK_OEM_4) || !keyboardManager.AddKey(VK_OEM_6) || !keyboardManager.AddKey(VK_OEM_5)
 		|| !keyboardManager.AddKey(VK_PRIOR) || !keyboardManager.AddKey(VK_NEXT)
 		|| !keyboardManager.AddKey(VK_OEM_PERIOD) || !keyboardManager.AddKey(VK_SHIFT)
@@ -558,16 +558,16 @@ bool EngineDemo::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('T')) { Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "%f\n", dt); }
 	if (keyboardManager.KeyWasReleased('C')) { Engine::CollisionTester::ConsoleLogOutput(); }
 	if (keyboardManager.KeyWasPressed('`')) { Engine::ConfigReader::pReader->ProcessConfigFile(); }
-	if (keyboardManager.KeyWasPressed('M')) { Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "(%.3f, %.3f, %.3f)\n", playerGraphicalObject.GetPos().GetX(), playerGraphicalObject.GetPos().GetY(), playerGraphicalObject.GetPos().GetZ()); }
+	if (keyboardManager.KeyWasPressed('I')) { Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "(%.3f, %.3f, %.3f)\n", playerGraphicalObject.GetPos().GetX(), playerGraphicalObject.GetPos().GetY(), playerGraphicalObject.GetPos().GetZ()); }
 	if (keyboardManager.KeyWasPressed('L')) { Engine::RenderEngine::LogStats(); }
 	if (keyboardManager.KeyWasPressed('G')) { drawGrid = !drawGrid; }
-	if (keyboardManager.KeyWasPressed('7'))
+	if (keyboardManager.KeyWasPressed('N'))
 	{
 		playerCamera.SetSpeed(Engine::MathUtility::Clamp(playerCamera.GetSpeed() * 0.75f, MIN_SPEED, MAX_SPEED));
 		playerCamera.SetRotateSpeed(Engine::MathUtility::Clamp(playerCamera.GetRotateSpeed() * 0.75f, MIN_ROTATION_SPEED, MAX_ROTATION_SPEED));
 
 	}
-	if (keyboardManager.KeyWasPressed('6')) 
+	if (keyboardManager.KeyWasPressed('M')) 
 	{ 
 		playerCamera.SetSpeed(Engine::MathUtility::Clamp(playerCamera.GetSpeed() * 1.25f, MIN_SPEED, MAX_SPEED));
 		playerCamera.SetRotateSpeed(Engine::MathUtility::Clamp(playerCamera.GetRotateSpeed() * 1.25f, MIN_ROTATION_SPEED, MAX_ROTATION_SPEED));
@@ -578,8 +578,14 @@ bool EngineDemo::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('2')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_2; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
 	if (keyboardManager.KeyWasPressed('3')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_3; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
 	if (keyboardManager.KeyWasPressed('4')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_4; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
-	if (keyboardManager.KeyWasPressed('5')) { currentCollisionLayer = Engine::CollisionLayer::NUM_LAYERS; Engine::CollisionTester::OnlyShowLayer(Engine::CollisionLayer::NUM_LAYERS); }
-	if (keyboardManager.KeyWasPressed('8')) { drawRays = !drawRays; }
+	if (keyboardManager.KeyWasPressed('5')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_5; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+	if (keyboardManager.KeyWasPressed('6')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_6; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+	if (keyboardManager.KeyWasPressed('7')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_7; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+	if (keyboardManager.KeyWasPressed('8')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_8; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+	if (keyboardManager.KeyWasPressed('9')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_9; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+
+	if (keyboardManager.KeyWasPressed('U')) { currentCollisionLayer = Engine::CollisionLayer::NUM_LAYERS; Engine::CollisionTester::OnlyShowLayer(Engine::CollisionLayer::NUM_LAYERS); }
+	if (keyboardManager.KeyWasPressed('B')) { drawRays = !drawRays; }
 
 	//if (keyboardManager.KeyWasPressed('1')) { currentFractalTexID = fractalGradientTextureID; }
 	//if (keyboardManager.KeyWasPressed('2')) { currentFractalTexID = fractalGradientAlternateTextureID; }
