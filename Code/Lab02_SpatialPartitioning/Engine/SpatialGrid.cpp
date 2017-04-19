@@ -28,6 +28,7 @@ namespace Engine
 		CleanUp();
 	}
 
+	const int SECTIONS_PER_DIRECTION = 10;
 	bool SpatialGrid::InitializeDisplayGrid(Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc)
 	{
 		Engine::ShapeGenerator::MakeDebugCube(&m_gridDisplayObject, color);
@@ -39,14 +40,14 @@ namespace Engine
 		m_gridDisplayObject.AddUniformData(Engine::UniformData(GL_FLOAT, &m_gridDisplayObject.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
 		m_gridDisplayObject.GetMatPtr()->m_materialColor = color;
 
-		GLuint numSections = 10 * 10 * 10;
+		GLuint numSections = SECTIONS_PER_DIRECTION * SECTIONS_PER_DIRECTION * SECTIONS_PER_DIRECTION;
 
 		Mat4* modelMatrices;
 		modelMatrices = new Engine::Mat4[numSections]{ Mat4() };
 
 		for (GLuint i = 0; i < numSections; ++i)
 		{
-			modelMatrices[i] = Mat4::Translation(MathUtility::GetCubification(i, 10, 10, 10, GetGridScale())) * Mat4::Scale(m_gridScale, m_gridScale, m_gridScale);
+			modelMatrices[i] = Mat4::Translation(MathUtility::GetCubification(i, SECTIONS_PER_DIRECTION, SECTIONS_PER_DIRECTION, SECTIONS_PER_DIRECTION, GetGridScale())) * Mat4::Scale(m_gridScale, m_gridScale, m_gridScale);
 		}
 
 		m_gridInstanceBuffer.Initialize(modelMatrices, 16 * sizeof(float), numSections, 16 * numSections);
@@ -62,9 +63,13 @@ namespace Engine
 
 	void SpatialGrid::DrawDebugShapes(const Vec3& centerPos)
 	{
-		m_gridDisplayObject.SetTransMat(Mat4::Translation(m_gridScale * Vec3(GetGridIndexFromXPos(centerPos.GetX()) - floorf(0.5f * m_gridSectionsWidth),
-																			 GetGridIndexFromYPos(centerPos.GetY()) - floorf(0.5f * m_gridSectionsDepth),
-																			 GetGridIndexFromZPos(centerPos.GetZ()) - floorf(0.5f * m_gridSectionsHeight))));
+		Vec3 indexVec(GetGridIndexFromXPos(centerPos.GetX()) - floorf(0.5f * m_gridSectionsWidth),
+			GetGridIndexFromYPos(centerPos.GetY()) - floorf(0.5f * m_gridSectionsDepth),
+			GetGridIndexFromZPos(centerPos.GetZ()) - floorf(0.5f * m_gridSectionsHeight));
+		Vec3 halfDirVec(-floorf(0.5f * (m_gridSectionsWidth - SECTIONS_PER_DIRECTION)),
+					-floorf(0.5f * (m_gridSectionsDepth - SECTIONS_PER_DIRECTION)),
+					-floorf(0.5f * (m_gridSectionsHeight - SECTIONS_PER_DIRECTION)));
+		m_gridDisplayObject.SetTransMat(Mat4::Translation(m_gridScale * MathUtility::Clamp(indexVec, halfDirVec, -halfDirVec)));
 		m_gridDisplayObject.CalcFullTransform();
 		m_gridDisplayObject.SetEnabled(true);
 		Engine::RenderEngine::DrawInstanced(&m_gridDisplayObject, &m_gridInstanceBuffer);

@@ -32,6 +32,13 @@ namespace Engine
 		return result;
 	}
 
+	 Vec3 MathUtility::Clamp(Vec3 value, Vec3 min, Vec3 max)
+	{
+		return Vec3(Clamp(value.GetX(), min.GetX(), max.GetX()), 
+					Clamp(value.GetY(), min.GetY(), max.GetY()),
+					Clamp(value.GetZ(), min.GetZ(), max.GetZ()));
+	}
+
 	int MathUtility::Clamp(int value, int min, int max)
 	{
 		int result = value;
