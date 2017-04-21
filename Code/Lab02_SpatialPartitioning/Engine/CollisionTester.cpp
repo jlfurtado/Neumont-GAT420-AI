@@ -45,7 +45,7 @@ namespace Engine
 
 	void CollisionTester::DrawGrid(CollisionLayer layer, const Vec3& centerPos)
 	{
-		s_spatialGrids[(unsigned)layer].DrawDebugShapes(centerPos); // TEMPORARY TODO REPLACE
+		s_spatialGrids[(unsigned)layer].DrawDebugShapes(centerPos); 
 	}
 
 	void CollisionTester::ConsoleLogOutput()
