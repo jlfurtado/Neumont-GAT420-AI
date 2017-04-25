@@ -225,7 +225,7 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 				Engine::Vec3 movementAmount = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat)))).ProjectOnto(d);
 
 				float scaleAmount = d.Dot(movementAmount) > 0.0f ? 1 + pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length() : 1 - pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length();
-				pEditor->m_pSelected->SetScaleMat(pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(scaleAmount, movementAmount.Normalize()));
+				pEditor->m_pSelected->SetScaleMat((pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(1.0f, movementAmount.Normalize())) * Engine::Mat4::Scale(scaleAmount, movementAmount.Normalize()));
 				pEditor->m_pSelected->CalcFullTransform();
 
 				v = v + lastOrigin - newOrigin + movementAmount;
@@ -713,7 +713,6 @@ void WorldEditor::SwapToTranslate()
 
 	SetHighlightColor(YELLOW);
 	DeMouseOver();
-	SetArrowEnabled(false);
 	m_adjustmentSpeedMultiplier = 1.0f; // good for translate
 }
 
@@ -725,8 +724,7 @@ void WorldEditor::SwapToRotate()
 
 	SetHighlightColor(YELLOW);
 	DeMouseOver();
-	SetArrowEnabled(false);
-
+	m_adjustmentSpeedMultiplier = 1.0f; // to be adjusted
 }
 
 void WorldEditor::SwapToScale()
@@ -737,7 +735,6 @@ void WorldEditor::SwapToScale()
 	
 	SetHighlightColor(YELLOW);
 	DeMouseOver();
-	SetArrowEnabled(false);
 	m_adjustmentSpeedMultiplier = 0.1f; // scale is too fast normally
 }
 
