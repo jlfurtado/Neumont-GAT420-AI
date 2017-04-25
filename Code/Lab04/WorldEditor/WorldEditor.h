@@ -70,6 +70,10 @@ private:
 	bool UglyDemoCode();
 	void SetHighlightColor(Engine::Vec3 color);
 	void SetupModeText(char *str);
+	void SetArrowEnabled(bool enabled);
+	void MoveSelectedObjectTo(Engine::Vec3 newPos);
+	void AttachArrowsTo(Engine::Vec3 pos);
+	void SelectedObjectChanged();
 
 	static const int NUM_SHADER_PROGRAMS = 5;
 	Engine::ShaderProgram m_shaderPrograms[NUM_SHADER_PROGRAMS];
@@ -95,10 +99,16 @@ private:
 	Engine::RayCastingOutput m_rco;
 	Engine::GraphicalObject *m_pLastHit;
 	Engine::GraphicalObject *m_pSelected;
+	Engine::GraphicalObject m_xArrow;
+	Engine::GraphicalObject m_yArrow;
+	Engine::GraphicalObject m_zArrow;
 	ActionCallback m_currentMode{ WorldEditor::PlaceObject };
 
-	Engine::Vec3 red{ 1.0f, 0.0f, 0.0f };
-	Engine::Vec3 yellow{ 1.0f, 1.0f, 0.0f };
+	static const Engine::Vec3 RED;
+	static const Engine::Vec3 YELLOW;
+	static const Engine::Vec3 GREEN;
+	static const Engine::Vec3 BLUE;
+
 };
 
 #endif // ifndef WORLDEDITOR_H

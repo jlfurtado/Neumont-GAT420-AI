@@ -98,7 +98,7 @@ namespace Engine
 		int GetIndexAt(unsigned int indexIndex)
 		{
 			if (indexIndex > m_indexCount) { GameLogger::Log(MessageType::cWarning, "Tried to GetIndexAt [%d] but it was out of range!\n", indexIndex); return 0; }
-			return *reinterpret_cast<int*>(reinterpret_cast<char*>(m_pIndices) + (int)m_indexSize);
+			return *reinterpret_cast<int*>(reinterpret_cast<char*>(m_pIndices) + indexIndex*(int)m_indexSize);
 		}
 
 		void *GetPointerToVertexAt(unsigned int index)

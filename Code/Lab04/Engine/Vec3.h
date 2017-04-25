@@ -68,6 +68,13 @@ namespace Engine
 			return ((GetX() * other.GetX()) + (GetY() * other.GetY()) + (GetZ() * other.GetZ()));
 		}
 
+		Vec3 ProjectOnto(const Vec3& other) const
+		{
+			float lenSquared = other.LengthSquared();
+			if (lenSquared == 0.0f) { GameLogger::Log(MessageType::Error, "Cannot calculate projection of length 0 vector!\n"); return *this; }
+			else return (other * (Dot(other))) / lenSquared;
+		}
+
 		Vec3 Cross(const Vec3 & other) const
 		{
 			return Vec3((GetY()*other.GetZ()) - (GetZ()*other.GetY()),

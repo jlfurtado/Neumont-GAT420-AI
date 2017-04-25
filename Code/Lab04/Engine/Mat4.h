@@ -59,6 +59,14 @@ namespace Engine
 
 		}
 
+		static Mat4 RotationToFace(const Vec3& baseDir, const Vec3& newDir)
+		{
+			Vec3 bd = baseDir.Normalize();
+			Vec3 nd = newDir.Normalize();
+			Vec3 pD = bd.Cross(nd);
+			return RotationAroundAxis(pD,acosf(bd.Dot(nd)));
+		}
+
 		static Mat4 Scale(float scale)
 		{
 			return Mat4(scale, 0.0f, 0.0f, 0.0f,
