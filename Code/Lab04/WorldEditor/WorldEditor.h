@@ -103,7 +103,7 @@ private:
 	Engine::GraphicalObject m_yArrow;
 	Engine::GraphicalObject m_zArrow;
 	ActionCallback m_currentMode{ WorldEditor::PlaceObject };
-
+	float m_adjustmentSpeedMultiplier{ 1.0f };
 	static const Engine::Vec3 RED;
 	static const Engine::Vec3 YELLOW;
 	static const Engine::Vec3 GREEN;

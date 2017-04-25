@@ -129,6 +129,7 @@ void WorldEditor::RemoveObject(WorldEditor *pEditor)
 	}
 }
 
+// TODO: REFACTOR
 const float tolerance = 0.00001f;
 void WorldEditor::TranslateObject(WorldEditor *pEditor)
 {
@@ -164,7 +165,7 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 			{
 				Engine::Vec3 movementAmount = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat)))).ProjectOnto(d);
 
-				pEditor->MoveSelectedObjectTo(pEditor->m_pSelected->GetPos() + movementAmount);
+				pEditor->MoveSelectedObjectTo(pEditor->m_pSelected->GetPos() + pEditor->m_adjustmentSpeedMultiplier*movementAmount);
 				pEditor->AttachArrowsTo(pEditor->m_pSelected->GetPos());
 
 				v = v + lastOrigin - newOrigin + movementAmount;
@@ -191,9 +192,55 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 
 void WorldEditor::ScaleObject(WorldEditor *pEditor)
 {
+	static Engine::Vec3 lastOrigin;
+	static Engine::Vec3 v;
+	static Engine::Vec3 d;
+	static bool arrowClicked = false;
+
+	// enable selection and de-selection of objects
 	pEditor->DoSelection();
 
-	// ...
+	if (pEditor->m_pSelected)
+	{
+		Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
+
+		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
+		{
+			arrowClicked = true;
+			d = (arrowCheck.m_belongsTo->GetPos() - pEditor->m_pSelected->GetPos()).Normalize();
+			lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
+			v = arrowCheck.m_intersectionPoint - lastOrigin;
+		}
+		else if (Engine::MouseManager::IsLeftMouseDown() && arrowClicked)
+		{
+			Engine::Vec3 newOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
+			Engine::Vec3 r = Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY()) + (newOrigin - lastOrigin);
+
+			// HOLY MATH BATMAN!!!
+			Engine::Vec3 vhat = v.Normalize();
+			Engine::Vec3 rhat = r.Normalize();
+			Engine::Vec3 innerCross = rhat.Cross(vhat);
+			if (innerCross.LengthSquared() > tolerance)
+			{
+				Engine::Vec3 movementAmount = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat)))).ProjectOnto(d);
+
+				float scaleAmount = d.Dot(movementAmount) > 0.0f ? 1 + pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length() : 1 - pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length();
+				pEditor->m_pSelected->SetScaleMat(pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(scaleAmount, movementAmount.Normalize()));
+				pEditor->m_pSelected->CalcFullTransform();
+
+				v = v + lastOrigin - newOrigin + movementAmount;
+				lastOrigin = newOrigin;
+			}
+		}
+
+
+		if (Engine::MouseManager::IsLeftMouseReleased())
+		{
+			arrowClicked = false;
+			Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
+			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
+		}
+	}
 }
 
 bool WorldEditor::Initialize(Engine::MyWindow * pWindow)
@@ -239,7 +286,7 @@ bool WorldEditor::Initialize(Engine::MyWindow * pWindow)
 	}
 
 	// setup keys for the world editor
-	if (!keyboardManager.AddKeys("XWASD1234567890") || !keyboardManager.AddKey(VK_SHIFT)
+	if (!keyboardManager.AddKeys("XWASD1234567890MN") || !keyboardManager.AddKey(VK_SHIFT)
 		|| !keyboardManager.AddToggle('G', &drawGrid))
 	{
 		Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to add keys for WorldEditor!\n");
@@ -458,6 +505,9 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('4')) { SwapToRotate(); }
 	if (keyboardManager.KeyWasPressed('5')) { SwapToScale(); }
 
+	if (keyboardManager.KeyWasPressed('M')) { m_adjustmentSpeedMultiplier *= 1.1f; }
+	if (keyboardManager.KeyWasPressed('N')) { m_adjustmentSpeedMultiplier *= 0.9f; }
+
 	return true;
 }
 
@@ -619,7 +669,7 @@ void WorldEditor::AttachArrowsTo(Engine::Vec3 pos)
 
 void WorldEditor::SelectedObjectChanged()
 {
-	if (m_currentMode == WorldEditor::TranslateObject)
+	if (m_currentMode == WorldEditor::TranslateObject || m_currentMode == WorldEditor::ScaleObject)
 	{
 		if (m_pSelected)
 		{
@@ -664,6 +714,7 @@ void WorldEditor::SwapToTranslate()
 	SetHighlightColor(YELLOW);
 	DeMouseOver();
 	SetArrowEnabled(false);
+	m_adjustmentSpeedMultiplier = 1.0f; // good for translate
 }
 
 void WorldEditor::SwapToRotate()
@@ -687,7 +738,7 @@ void WorldEditor::SwapToScale()
 	SetHighlightColor(YELLOW);
 	DeMouseOver();
 	SetArrowEnabled(false);
-
+	m_adjustmentSpeedMultiplier = 0.1f; // scale is too fast normally
 }
 
 void WorldEditor::DoMouseOverHighlight()
