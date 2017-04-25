@@ -185,6 +185,7 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 
 void WorldEditor::RotateObject(WorldEditor *pEditor)
 {
+	static Engine::Mat4 startRot;
 	static Engine::Vec3 lastOrigin;
 	static Engine::Vec3 v;
 	static Engine::Vec3 d;
@@ -200,6 +201,7 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
 		{
 			arrowClicked = true;
+			startRot = pEditor->m_pSelected->GetRotMat();
 			d = arrowCheck.m_belongsTo->GetRotMat() * BASE_ARROW_DIR;
 			lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
 			v = arrowCheck.m_intersectionPoint - lastOrigin;
@@ -219,7 +221,7 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 				Engine::Vec3 rminusv = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat))));
 				Engine::Vec3 d2 = s1 + rminusv;
 
-				pEditor->m_pSelected->SetRotMat( Engine::Mat4::RotationToFace(d, d2));
+				pEditor->m_pSelected->SetRotMat(Engine::Mat4::RotationToFace(d, d2) * startRot);
 				pEditor->m_pSelected->CalcFullTransform();
 				pEditor->AttachArrowsTo(pEditor->m_pSelected);
 

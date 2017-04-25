@@ -430,7 +430,6 @@ namespace Engine
 		rayObj.AddUniformData(UniformData(data[0].GetType(), rayObj.GetFullTransformPtr(), data[0].GetUniformDataLoc()));
 		rayObj.AddUniformData(data[1]);
 		rayObj.AddUniformData(data[2]);
-		//Vec3 otherVec
 		rayObj.SetRotMat(Mat4::RotationAroundAxis(BASE_RAY_DIR.Cross(rayDirection), MathUtility::GetVectorAngleRadians(BASE_RAY_DIR, rayDirection)));
 		Vec3 halfRay = rayLength / 2.0f * rayDirection;
 		rayObj.SetScaleMat(Mat4::Scale(rayLength / 2.0f, BASE_RAY_DIR));
