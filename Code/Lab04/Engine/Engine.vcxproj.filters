@@ -174,9 +174,6 @@
     <ClInclude Include="LinkedList.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="WorldFileIO.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameLogger.cpp">
@@ -297,9 +294,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TextCharacter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="WorldFileIO.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,4 +1,6 @@
 #include "WorldEditor.h"
+#include "StringFuncs.h"
+#include "BinaryWriter.h"
 #include "GameLogger.h"
 #include <iostream>
 #include "Mat4.h"
@@ -15,6 +17,9 @@
 // WorldEditor.h
 // Enables editing of the world!
 
+const int PLENTY = 1024 * 8;
+char saveBuffer[PLENTY]{ '\0' };
+int nextBufferSlot{ 0 };
 
 const float MOVE_MORE = 0.5f;
 const Engine::Vec3 BASE_ARROW_DIR = Engine::Vec3(1.0f, 0.0f, 0.0f);
@@ -25,7 +30,6 @@ const float ARROW_SCALE = 10.0f;
 const Engine::Vec3 X_ARROW_OFFSET = PLUS_X * (ARROW_SCALE + MOVE_MORE);
 const Engine::Vec3 Y_ARROW_OFFSET = PLUS_Y * (ARROW_SCALE + MOVE_MORE);
 const Engine::Vec3 Z_ARROW_OFFSET = PLUS_Z * (ARROW_SCALE + MOVE_MORE);
-
 
 const Engine::Vec3 WorldEditor::RED{ 1.0f, 0.0f, 0.0f };
 const Engine::Vec3 WorldEditor::YELLOW{ 1.0f, 1.0f, 0.0f };
@@ -83,6 +87,16 @@ bool WorldEditor::DestroyObjsCallback(Engine::GraphicalObject * pObj, void *pCla
 
 	pEditor->m_objCount--;
 	
+	return true;
+}
+
+bool WorldEditor::TransformVerts(int index, const void * /*pVertex*/, void * /*pClassInstance*/, void * pPassThroughData)
+{
+	PassThroughData *pPTD = reinterpret_cast<PassThroughData*>(pPassThroughData);
+	Engine::Vec3 *pVertexPositionData = reinterpret_cast<Engine::Vec3*>(pPTD->pMesh->GetPointerToVertexAt(index));
+	//Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "%.3f, %.3f, %.3f\n", pVertexPositionData->GetX(), pVertexPositionData->GetY(), pVertexPositionData->GetZ());
+	*pVertexPositionData = pPTD->fullTransform * (*pVertexPositionData);
+
 	return true;
 }
 
@@ -382,29 +396,29 @@ void WorldEditor::Update(float dt)
 	ShowFrameRate(dt);
 	wtv = m_camera.GetWorldToViewMatrix();
 
-	//static int lastX = 0;
-	//static int lastZ = 0;
-	//static int lastY = 0;
-	//static Engine::CollisionLayer lastCollisionLayer;
+	static int lastX = 0;
+	static int lastZ = 0;
+	static int lastY = 0;
+	static Engine::CollisionLayer lastCollisionLayer;
 
-	//float x = m_camera.GetPosition().GetX();
-	//float y = m_camera.GetPosition().GetY();
-	//float z = m_camera.GetPosition().GetZ();
-	//int cX = Engine::CollisionTester::GetGridIndexFromPosX(x, EDITOR_ITEMS);
-	//int cY = Engine::CollisionTester::GetGridIndexFromPosX(y, EDITOR_ITEMS);
-	//int cZ = Engine::CollisionTester::GetGridIndexFromPosZ(z, EDITOR_ITEMS);
+	float x = m_camera.GetPosition().GetX();
+	float y = m_camera.GetPosition().GetY();
+	float z = m_camera.GetPosition().GetZ();
+	int cX = Engine::CollisionTester::GetGridIndexFromPosX(x, EDITOR_LIST_OBJS);
+	int cY = Engine::CollisionTester::GetGridIndexFromPosX(y, EDITOR_LIST_OBJS);
+	int cZ = Engine::CollisionTester::GetGridIndexFromPosZ(z, EDITOR_LIST_OBJS);
 
-	//if (cX != lastX || cZ != lastZ || cY != lastY)
-	//{
-	//	char buffer[75], buffer2[75];
-	//	if (Engine::CollisionTester::GetTriangleCountForSpace(x, y, z) < 0) { sprintf_s(buffer, 50, "Outside Spatial Grid!\n"); }
-	//	else { sprintf_s(buffer, 75, "[%d] triangles in [%d] [%d] [%d]\n", Engine::CollisionTester::GetTriangleCountForSpace(x, y, z, EDITOR_ITEMS), cX, cY, cZ); }
-	//	Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "%s\n", buffer);
+	if (cX != lastX || cZ != lastZ || cY != lastY)
+	{
+		char buffer[75], buffer2[75];
+		if (Engine::CollisionTester::GetTriangleCountForSpace(x, y, z) < 0) { sprintf_s(buffer, 50, "Outside Spatial Grid!\n"); }
+		else { sprintf_s(buffer, 75, "[%d] triangles in [%d] [%d] [%d]\n", Engine::CollisionTester::GetTriangleCountForSpace(x, y, z, EDITOR_LIST_OBJS), cX, cY, cZ); }
+		Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "%s\n", buffer);
 
-	//	lastX = cX;
-	//	lastY = cY;
-	//	lastZ = cZ;
-	//}
+		lastX = cX;
+		lastY = cY;
+		lastZ = cZ;
+	}
 
 	Engine::MousePicker::SetCameraInfo(m_camera.GetPosition(), m_camera.GetViewDir(), m_camera.GetUp());
 
@@ -537,6 +551,8 @@ bool WorldEditor::InitializeGL()
 
 bool WorldEditor::ProcessInput(float dt)
 {
+	static char c1 = '0', c2 = '0';
+
 	if (keyboardManager.KeyWasPressed('X')) { Shutdown(); return false; }
 
 	if (keyboardManager.KeyIsDown('W')) { m_camera.MoveForward(dt); }
@@ -551,6 +567,43 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('6')) { SwapToMakeCube(); }
 	if (keyboardManager.KeyWasPressed('7')) { SwapToMakeHideout(); }
 	if (keyboardManager.KeyWasPressed('8')) { SwapToMakeHouse(); }
+	if (keyboardManager.KeyWasPressed('9')) 
+	{
+		char buffer[256]{ '\0' };
+		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputFile", buffer))
+		{
+			int len = Engine::StringFuncs::StringLen(buffer);
+			buffer[len] = c1;
+			buffer[len+1] = c2;
+
+			c2++; if (c2 > '9') { c2 = '0'; c1++; if (c1 > '9') { Engine::GameLogger::Log(Engine::MessageType::cError, "Your ugly hard coded string thing you probably forgot about ran out of space, ctrl+f for this log!\n"); return false; } }
+			Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "[%s]\n", &buffer[0]);
+			WriteFile(&buffer[0], m_pSelected);
+		}
+	}
+
+	if (keyboardManager.KeyWasPressed('0'))
+	{
+		char buffer[256]{ '\0' };
+		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.InputFile", buffer))
+		{
+			int len = Engine::StringFuncs::StringLen(buffer);
+			char lc1, lc2;
+			lc1 = c1;
+			lc2 = c2 - 1;
+			if (lc2 < '0') { lc2 = '9'; lc1--; if (lc1 < '0') { Engine::GameLogger::Log(Engine::MessageType::cError, "Your ugly hard coded string thing you probably forgot about went negative, ctrl+f for this log!\n"); return false; } }
+
+			buffer[len] = lc1;
+			buffer[len + 1] = lc2;
+
+			int pos = Engine::StringFuncs::StringConcatIntoBuffer(&saveBuffer[0], &buffer[0], "\0", &saveBuffer[0], PLENTY);
+
+			Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "[%s]\n", &saveBuffer[nextBufferSlot]);
+			AddObj(&saveBuffer[nextBufferSlot]);
+			nextBufferSlot = pos;
+
+		}
+	}
 
 	if (keyboardManager.KeyWasPressed('M')) { m_adjustmentSpeedMultiplier *= 1.1f; }
 	if (keyboardManager.KeyWasPressed('N')) { m_adjustmentSpeedMultiplier *= 0.9f; }
@@ -726,6 +779,78 @@ void WorldEditor::SelectedObjectChanged()
 void WorldEditor::SetupPlacingText(char * str)
 {
 	m_placingText.SetupText(0.3f, 0.7f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, str);
+}
+
+void WorldEditor::AddObj(const char * const fp)
+{
+	// make an obj
+	Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile(fp, pNewObj, m_shaderPrograms[1].GetProgramId());
+
+	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pNewObj->GetFullTransformPtr(), modelToWorldMatLoc));
+	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
+	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
+	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pNewObj->GetMatPtr()->m_materialColor, tintLoc));
+	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pNewObj->GetMatPtr()->m_specularIntensity, tintIntensityLoc));
+	pNewObj->GetMatPtr()->m_materialColor = Engine::Vec3(0.5f, 0.25f, 1.0f);
+	pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
+
+	// add it to the necessary things, it'll get deleted on shutdown or remove
+	Engine::RenderEngine::AddGraphicalObject(pNewObj);
+	Engine::CollisionTester::AddGraphicalObjectToLayer(pNewObj, EDITOR_LIST_OBJS);
+	Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
+
+	m_objs.AddToList(pNewObj);
+	m_objCount++;
+}
+
+void WorldEditor::WriteFile(const char * const filePath, Engine::GraphicalObject * pObj)
+{
+	// variable to hold length in bytes 
+	int dataLen = sizeof(*pObj->GetMeshPointer()) + pObj->GetMeshPointer()->GetIndexSizeInBytes() + pObj->GetMeshPointer()->GetVertexSizeInBytes();
+
+	// allocate space for size specified in file
+	char *data = new char[dataLen];
+
+	// zero out newly allocated memory
+	memset(data, 0, dataLen);
+
+	// Convert data read to mesh
+	Engine::Mesh *pMeshCopy = reinterpret_cast<Engine::Mesh*>(data);
+
+	// get pointer to data vertices
+	// vertices stored right after mesh
+	char *pVertices = data + sizeof(Engine::Mesh);
+	std::memcpy(pVertices, pObj->GetMeshPointer()->GetVertexPointer(), pObj->GetMeshPointer()->GetVertexSizeInBytes());
+
+	// get pointer to indices
+	// indices stored right after vertices
+	char *pIndices = pVertices + (pObj->GetMeshPointer()->GetSizeOfVertex()*pObj->GetMeshPointer()->GetVertexCount());
+	std::memcpy(pIndices, pObj->GetMeshPointer()->GetIndexPointer(), pObj->GetMeshPointer()->GetIndexSizeInBytes());
+
+	// finish meshing it up (puns are great)
+	*pMeshCopy = Engine::Mesh(pObj->GetMeshPointer()->GetVertexCount(), pObj->GetMeshPointer()->GetIndexCount(), pVertices, pIndices, pObj->GetMeshPointer()->GetMeshMode(), Engine::IndexSizeInBytes::Uint, 0, pObj->GetMeshPointer()->GetVertexFormat(), pObj->GetMeshPointer()->IsCullingEnabledForObject());
+	
+	pObj->CalcFullTransform();
+
+	// data for callback
+	PassThroughData ptd;
+	ptd.pMesh = pMeshCopy;
+	ptd.fullTransform = *pObj->GetFullTransformPtr();
+
+	// now we can mesh with our copy (again with the puns!)
+	pMeshCopy->WalkVertices(WorldEditor::TransformVerts, this, &ptd);
+
+	Engine::BinaryWriter writer;
+
+	if (!writer.WriteCustomBinaryFile(filePath, pMeshCopy))
+	{
+		Engine::GameLogger::Log(Engine::MessageType::cError, "Failed to write out mesh copy to [%s]... let the crying begin!\n", filePath);
+		delete[] data;
+		return;
+	}
+
+	Engine::GameLogger::Log(Engine::MessageType::Info, "Wrote out mesh copy to [%s]... let the crying cease!\n", filePath);
 }
 
 Engine::Vec3 WorldEditor::GetArrowDir(Engine::GraphicalObject * pArrow)

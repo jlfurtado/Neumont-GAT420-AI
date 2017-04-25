@@ -19,6 +19,12 @@
 
 class WorldEditor
 {
+	struct PassThroughData
+	{
+		Engine::Mesh *pMesh;
+		Engine::Mat4 fullTransform;
+	};
+
 public:
 	static bool InitializeCallback(void *game, Engine::MyWindow *pWindow);
 	static void UpdateCallback(void *game, float dt);
@@ -32,6 +38,7 @@ private:
 	typedef void(*ActionCallback)(WorldEditor *);
 	typedef Engine::GraphicalObject *(*MakeObjectCallback)(WorldEditor *);
 
+	static bool TransformVerts(int index, const void *pVertex, void *pClassInstance, void *pPassThroughData);
 	static void PlaceObject(WorldEditor *pEditor);
 	static void RemoveObject(WorldEditor *pEditor);
 	static void TranslateObject(WorldEditor *pEditor);
@@ -84,6 +91,8 @@ private:
 	void AttachArrowsTo(Engine::GraphicalObject *pObj);
 	void SelectedObjectChanged();
 	void SetupPlacingText(char *str);
+	void AddObj(const char * const fp);
+	void WriteFile(const char *const filePath, Engine::GraphicalObject *pObj);
 
 	static const int NUM_SHADER_PROGRAMS = 5;
 	Engine::ShaderProgram m_shaderPrograms[NUM_SHADER_PROGRAMS];
