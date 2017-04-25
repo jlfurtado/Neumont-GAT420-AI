@@ -114,10 +114,11 @@ void WorldEditor::PlaceObject(WorldEditor *pEditor)
 		// add it to the necessary things, it'll get deleted on shutdown or remove
 		Engine::RenderEngine::AddGraphicalObject(pNewObj);
 		Engine::CollisionTester::AddGraphicalObjectToLayer(pNewObj, EDITOR_LIST_OBJS);
-		Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
 		
 		pEditor->m_objs.AddToList(pNewObj);
 		pEditor->m_objCount++;
+
+		pEditor->HandleOutsideGrid(pNewObj);
 	}
 }
 
@@ -183,7 +184,7 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 		if (Engine::MouseManager::IsLeftMouseReleased())
 		{
 			arrowClicked = false;
-			Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
+			pEditor->HandleOutsideGrid(pEditor->m_pSelected);
 			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
 		}
 	}
@@ -240,7 +241,7 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 		if (Engine::MouseManager::IsLeftMouseReleased())
 		{
 			arrowClicked = false;
-			Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
+			pEditor->HandleOutsideGrid(pEditor->m_pSelected);
 			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
 		}
 	}
@@ -294,7 +295,7 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 		if (Engine::MouseManager::IsLeftMouseReleased())
 		{
 			arrowClicked = false;
-			Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
+			pEditor->HandleOutsideGrid(pEditor->m_pSelected);
 			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
 		}
 	}
@@ -567,7 +568,7 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('6')) { SwapToMakeCube(); }
 	if (keyboardManager.KeyWasPressed('7')) { SwapToMakeHideout(); }
 	if (keyboardManager.KeyWasPressed('8')) { SwapToMakeHouse(); }
-	if (keyboardManager.KeyWasPressed('9')) 
+	if (keyboardManager.KeyWasPressed('9') && m_pSelected) 
 	{
 		char buffer[256]{ '\0' };
 		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputFile", buffer))
@@ -869,6 +870,21 @@ void WorldEditor::WriteFile(const char * const filePath, Engine::GraphicalObject
 	}
 
 	Engine::GameLogger::Log(Engine::MessageType::Info, "Wrote out mesh copy to [%s]... let the crying cease!\n", filePath);
+}
+
+void WorldEditor::HandleOutsideGrid(Engine::GraphicalObject * pObjToCheck)
+{
+	if (!Engine::CollisionTester::DoesFitInGrid(pObjToCheck, EDITOR_LIST_OBJS))
+	{
+		DeSelect();
+		DestroyObjsCallback(pObjToCheck, this);
+		m_objs.RemoveFromList(pObjToCheck);
+		SetArrowEnabled(false);
+		AttachArrowsTo(&m_grid);
+	}
+
+	Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
+	
 }
 
 Engine::Vec3 WorldEditor::GetArrowDir(Engine::GraphicalObject * pArrow)
