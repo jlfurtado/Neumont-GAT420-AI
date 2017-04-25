@@ -396,7 +396,7 @@ void WorldEditor::Update(float dt)
 	ShowFrameRate(dt);
 	wtv = m_camera.GetWorldToViewMatrix();
 
-	static int lastX = 0;
+	/*static int lastX = 0;
 	static int lastZ = 0;
 	static int lastY = 0;
 	static Engine::CollisionLayer lastCollisionLayer;
@@ -418,7 +418,7 @@ void WorldEditor::Update(float dt)
 		lastX = cX;
 		lastY = cY;
 		lastZ = cZ;
-	}
+	}*/
 
 	Engine::MousePicker::SetCameraInfo(m_camera.GetPosition(), m_camera.GetViewDir(), m_camera.GetUp());
 
@@ -839,7 +839,7 @@ void WorldEditor::WriteFile(const char * const filePath, Engine::GraphicalObject
 	ptd.fullTransform = *pObj->GetFullTransformPtr();
 
 	// now we can mesh with our copy (again with the puns!)
-	pMeshCopy->WalkVertices(WorldEditor::TransformVerts, this, &ptd);
+	pMeshCopy->WalkVertices(WorldEditor::TransformVerts, this, &ptd, true);
 
 	Engine::BinaryWriter writer;
 

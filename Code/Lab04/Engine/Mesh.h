@@ -59,9 +59,9 @@ namespace Engine
 		GLuint GetTextureID() { return m_textureID; }
 		GLuint *GetTextureIDPtr() { return &m_textureID; }
 
-		void WalkVertices(VertexIterationCallback callback, void *pClassInstance, void *pPassThroughData)
+		void WalkVertices(VertexIterationCallback callback, void *pClassInstance, void *pPassThroughData, bool ignoreIndices = false)
 		{
-			if (m_indexed)
+			if (m_indexed && !ignoreIndices)
 			{
 				for (unsigned int i = 0; i < m_indexCount; ++i)
 				{
