@@ -620,7 +620,7 @@ bool WorldEditor::UglyDemoCode()
 
 	m_xArrow.SetTransMat(Engine::Mat4::Translation(X_ARROW_OFFSET));
 	m_xArrow.SetRotMat(Engine::Mat4::RotationToFace(BASE_ARROW_DIR, PLUS_X));
-	m_xArrow.SetScaleMat(Engine::Mat4::Scale(ARROW_SCALE, PLUS_X));
+	m_xArrow.SetScaleMat(Engine::Mat4::Scale(ARROW_SCALE, BASE_ARROW_DIR));
 	m_xArrow.CalcFullTransform();
 
 	Engine::RenderEngine::AddGraphicalObject(&m_xArrow);
@@ -640,7 +640,7 @@ bool WorldEditor::UglyDemoCode()
 
 	m_yArrow.SetTransMat(Engine::Mat4::Translation(Y_ARROW_OFFSET));
 	m_yArrow.SetRotMat(Engine::Mat4::RotationToFace(BASE_ARROW_DIR, PLUS_Y));
-	m_yArrow.SetScaleMat(Engine::Mat4::Scale(ARROW_SCALE, PLUS_Y));
+	m_yArrow.SetScaleMat(Engine::Mat4::Scale(ARROW_SCALE, BASE_ARROW_DIR));
 	m_yArrow.CalcFullTransform();
 
 	Engine::RenderEngine::AddGraphicalObject(&m_yArrow);
@@ -660,7 +660,7 @@ bool WorldEditor::UglyDemoCode()
 
 	m_zArrow.SetTransMat(Engine::Mat4::Translation(Z_ARROW_OFFSET));
 	m_zArrow.SetRotMat(Engine::Mat4::RotationToFace(BASE_ARROW_DIR, PLUS_Z));
-	m_zArrow.SetScaleMat(Engine::Mat4::Scale(ARROW_SCALE, PLUS_Z));
+	m_zArrow.SetScaleMat(Engine::Mat4::Scale(ARROW_SCALE, BASE_ARROW_DIR));
 	m_zArrow.CalcFullTransform();
 
 	Engine::RenderEngine::AddGraphicalObject(&m_zArrow);
