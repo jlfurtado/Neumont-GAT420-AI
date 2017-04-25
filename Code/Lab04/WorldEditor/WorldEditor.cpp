@@ -129,9 +129,9 @@ void WorldEditor::RemoveObject(WorldEditor *pEditor)
 	}
 }
 
+const float tolerance = 0.00001f;
 void WorldEditor::TranslateObject(WorldEditor *pEditor)
 {
-	static Engine::Vec3 lastIntersection;
 	static Engine::Vec3 lastOrigin;
 	static Engine::Vec3 v;
 	static Engine::Vec3 d;
@@ -157,19 +157,27 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 			Engine::Vec3 r = Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY()) + (newOrigin - lastOrigin);
 			
 			// HOLY MATH BATMAN!!!
-			Engine::Vec3 movementAmount = (v.Normalize().Cross(r.Normalize().Cross(v.Normalize())) * v.Length() * tanf(acosf(v.Normalize().Dot(r.Normalize()))));
+			Engine::Vec3 vhat = v.Normalize();
+			Engine::Vec3 rhat = r.Normalize();
+			Engine::Vec3 innerCross = rhat.Cross(vhat);
+			if (innerCross.LengthSquared() > tolerance)
+			{
+				Engine::Vec3 movementAmount = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat)))).ProjectOnto(d);
 
-			pEditor->MoveSelectedObjectTo(pEditor->m_pSelected->GetPos() + movementAmount);
-			pEditor->AttachArrowsTo(pEditor->m_pSelected->GetPos());
+				pEditor->MoveSelectedObjectTo(pEditor->m_pSelected->GetPos() + movementAmount);
+				pEditor->AttachArrowsTo(pEditor->m_pSelected->GetPos());
 
-			lastOrigin = newOrigin;
-			d = d + movementAmount;
-			v = v + movementAmount;
+				v = v + lastOrigin - newOrigin + movementAmount;
+				lastOrigin = newOrigin;
+			}
 		}	
+
 
 		if (Engine::MouseManager::IsLeftMouseReleased())
 		{
 			arrowClicked = false;
+			Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
+			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
 		}
 	}
 }
@@ -214,7 +222,7 @@ bool WorldEditor::Initialize(Engine::MyWindow * pWindow)
 		return false;
 	}
 
-	Engine::CollisionTester::SetGridScale(7.0f);
+	Engine::CollisionTester::SetGridScale(10.0f);
 
 	// place the default objects into the empty world
 	if (!UglyDemoCode())
@@ -593,7 +601,6 @@ void WorldEditor::MoveSelectedObjectTo(Engine::Vec3 newPos)
 	m_pSelected->SetTransMat(Engine::Mat4::Translation(newPos));
 	m_pSelected->CalcFullTransform();
 
-	Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
 }
 
 void WorldEditor::AttachArrowsTo(Engine::Vec3 pos)
@@ -608,8 +615,6 @@ void WorldEditor::AttachArrowsTo(Engine::Vec3 pos)
 
 	m_zArrow.SetTransMat(Engine::Mat4::Translation(Z_ARROW_OFFSET + pos));
 	m_zArrow.CalcFullTransform();
-
-	Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
 }
 
 void WorldEditor::SelectedObjectChanged()
