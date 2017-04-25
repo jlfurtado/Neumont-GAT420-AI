@@ -537,7 +537,7 @@ bool WorldEditor::UglyDemoCode()
 	m_yArrow.AddUniformData(Engine::UniformData(GL_FLOAT, &m_yArrow.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
 
 	m_yArrow.GetMatPtr()->m_specularIntensity = 0.7f;
-	m_yArrow.GetMatPtr()->m_materialColor = BLUE;
+	m_yArrow.GetMatPtr()->m_materialColor = GREEN;
 
 	m_yArrow.SetTransMat(Engine::Mat4::Translation(Y_ARROW_OFFSET));
 	m_yArrow.SetRotMat(Engine::Mat4::RotationToFace(BASE_ARROW_DIR, PLUS_Y));
@@ -548,7 +548,7 @@ bool WorldEditor::UglyDemoCode()
 	Engine::CollisionTester::AddGraphicalObjectToLayer(&m_yArrow, EDITOR_ITEMS);
 
 
-	Engine::ShapeGenerator::MakeDebugArrow(&m_zArrow, YELLOW, GREEN);
+	Engine::ShapeGenerator::MakeDebugArrow(&m_zArrow, YELLOW, BLUE);
 
 	m_zArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_zArrow.GetFullTransformPtr(), modelToWorldMatLoc));
 	m_zArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
@@ -557,7 +557,7 @@ bool WorldEditor::UglyDemoCode()
 	m_zArrow.AddUniformData(Engine::UniformData(GL_FLOAT, &m_zArrow.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
 
 	m_zArrow.GetMatPtr()->m_specularIntensity = 0.7f;
-	m_zArrow.GetMatPtr()->m_materialColor = GREEN;
+	m_zArrow.GetMatPtr()->m_materialColor = BLUE;
 
 	m_zArrow.SetTransMat(Engine::Mat4::Translation(Z_ARROW_OFFSET));
 	m_zArrow.SetRotMat(Engine::Mat4::RotationToFace(BASE_ARROW_DIR, PLUS_Z));
