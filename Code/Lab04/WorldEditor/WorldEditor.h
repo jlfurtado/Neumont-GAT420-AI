@@ -68,7 +68,9 @@ private:
 	bool ProcessInput(float dt);
 	void ShowFrameRate(float dt);
 	bool UglyDemoCode();
-	
+	void SetHighlightColor(Engine::Vec3 color);
+	void SetupModeText(char *str);
+
 	static const int NUM_SHADER_PROGRAMS = 5;
 	Engine::ShaderProgram m_shaderPrograms[NUM_SHADER_PROGRAMS];
 	Engine::MyWindow *m_pWindow;
@@ -94,6 +96,9 @@ private:
 	Engine::GraphicalObject *m_pLastHit;
 	Engine::GraphicalObject *m_pSelected;
 	ActionCallback m_currentMode{ WorldEditor::PlaceObject };
+
+	Engine::Vec3 red{ 1.0f, 0.0f, 0.0f };
+	Engine::Vec3 yellow{ 1.0f, 1.0f, 0.0f };
 };
 
 #endif // ifndef WORLDEDITOR_H

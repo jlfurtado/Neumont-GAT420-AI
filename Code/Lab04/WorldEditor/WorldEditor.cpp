@@ -454,9 +454,19 @@ bool WorldEditor::UglyDemoCode()
 	return true;
 }
 
+void WorldEditor::SetHighlightColor(Engine::Vec3 color)
+{
+	highlightedColor = color;
+}
+
+void WorldEditor::SetupModeText(char * str)
+{
+	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, str);
+}
+
 void WorldEditor::SwapToPlace()
 {
-	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Place\n");
+	SetupModeText("Mode: Place\n");
 	m_currentMode = WorldEditor::PlaceObject;
 
 	DeSelect();
@@ -465,37 +475,41 @@ void WorldEditor::SwapToPlace()
 
 void WorldEditor::SwapToRemove()
 {
-	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Remove\n");
+	SetupModeText("Mode: Remove\n");
+
 	m_currentMode = WorldEditor::RemoveObject;
 
-	highlightedColor = Engine::Vec3(1.0f, 0.0f, 0.0f);
+	SetHighlightColor(red);
 	DeSelect();
 }
 
 void WorldEditor::SwapToTranslate()
 {
-	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Translate\n");
+	SetupModeText("Mode: Translate\n");
+
 	m_currentMode = WorldEditor::TranslateObject;
 
-	highlightedColor = Engine::Vec3(1.0f, 1.0f, 0.0f);
+	SetHighlightColor(yellow);
 	DeMouseOver();
 }
 
 void WorldEditor::SwapToRotate()
 {
-	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Rotate\n");
+	SetupModeText("Mode: Rotate\n");
+
 	m_currentMode = WorldEditor::RotateObject;
 
-	highlightedColor = Engine::Vec3(1.0f, 1.0f, 0.0f);
+	SetHighlightColor(yellow);
 	DeMouseOver();
 }
 
 void WorldEditor::SwapToScale()
 {
-	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Scale\n");
+	SetupModeText("Mode: Scale\n");
+
 	m_currentMode = WorldEditor::ScaleObject;
 	
-	highlightedColor = Engine::Vec3(1.0f, 1.0f, 0.0f);
+	SetHighlightColor(yellow);
 	DeMouseOver();
 }
 
