@@ -421,7 +421,8 @@ namespace Engine
 			else { s_spatialGrids[i].DisableObjects(); };
 		}
 	}
-
+	
+	const Engine::Vec3 BASE_RAY_DIR = Vec3(1.0f, 0.0f, 0.0f);
 	bool CollisionTester::DrawRay(const Vec3 & rayPosition, const Vec3 & rayDirection, float rayLength, UniformData data[3])
 	{
 		GraphicalObject rayObj;
@@ -430,9 +431,9 @@ namespace Engine
 		rayObj.AddUniformData(data[1]);
 		rayObj.AddUniformData(data[2]);
 		//Vec3 otherVec
-		rayObj.SetRotMat(Mat4::RotationAroundAxis(Vec3(1.0f, 0.0f, 0.0f).Cross(rayDirection), MathUtility::GetVectorAngleRadians(Vec3(1.0f, 0.0f, 0.0f), rayDirection)));
+		rayObj.SetRotMat(Mat4::RotationAroundAxis(BASE_RAY_DIR.Cross(rayDirection), MathUtility::GetVectorAngleRadians(BASE_RAY_DIR, rayDirection)));
 		Vec3 halfRay = rayLength / 2.0f * rayDirection;
-		rayObj.SetScaleMat(Mat4::Scale(rayLength / 2.0f, rayDirection));
+		rayObj.SetScaleMat(Mat4::Scale(rayLength / 2.0f, BASE_RAY_DIR));
 		rayObj.SetTransMat(Mat4::Translation(rayPosition + (halfRay)));
 		rayObj.CalcFullTransform();
 		RenderEngine::AddGraphicalObject(&rayObj);
