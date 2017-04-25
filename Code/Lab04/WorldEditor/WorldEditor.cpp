@@ -90,22 +90,14 @@ void WorldEditor::PlaceObject(WorldEditor *pEditor)
 {
 	if (Engine::MouseManager::IsLeftMouseClicked() && (pEditor->m_rco.m_didIntersect || pEditor->m_objs.GetCount() == 0))
 	{
-		Engine::Vec3 color = Engine::Vec3(0.0f, 1.0f, 0.0f);
-		Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
-		Engine::ShapeGenerator::MakeCube(pNewObj);
+		// make an obj with the callback
+		Engine::GraphicalObject *pNewObj = pEditor->m_currentPlacement(pEditor);
 
 		// if scene is empty, place at 0 0 0, else, place at where clicked
 		pNewObj->SetTransMat(Engine::Mat4::Translation(pEditor->m_objs.GetCount() == 0 ? Engine::Vec3(0.0f) : pEditor->m_rco.m_intersectionPoint));
 		pNewObj->CalcFullTransform();
 
-		pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pNewObj->GetFullTransformPtr(), pEditor->modelToWorldMatLoc));
-		pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &pEditor->wtv, pEditor->worldToViewMatLoc));
-		pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pEditor->m_perspective.GetPerspectivePtr(), pEditor->perspectiveMatLoc));
-		pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pNewObj->GetMatPtr()->m_materialColor, pEditor->tintLoc));
-		pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pNewObj->GetMatPtr()->m_specularIntensity, pEditor->tintIntensityLoc));
-		pNewObj->GetMatPtr()->m_materialColor = color;
-		pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
-
+		// add it to the necessary things, it'll get deleted on shutdown or remove
 		Engine::RenderEngine::AddGraphicalObject(pNewObj);
 		Engine::CollisionTester::AddGraphicalObjectToLayer(pNewObj, EDITOR_LIST_OBJS);
 		Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
@@ -320,7 +312,7 @@ bool WorldEditor::Initialize(Engine::MyWindow * pWindow)
 		return false;
 	}
 
-	Engine::CollisionTester::SetGridScale(10.0f);
+	Engine::CollisionTester::SetGridScale(25.0f);
 
 	// place the default objects into the empty world
 	if (!UglyDemoCode())
@@ -431,6 +423,7 @@ void WorldEditor::Draw()
 
 	m_fpsTextObject.RenderText(&m_shaderPrograms[0], debugColorLoc);
 	m_modeText.RenderText(&m_shaderPrograms[0], debugColorLoc);
+	m_placingText.RenderText(&m_shaderPrograms[0], debugColorLoc);
 }
 
 void WorldEditor::OnResizeWindow()
@@ -532,11 +525,11 @@ bool WorldEditor::InitializeGL()
 	perspectiveMatLoc = m_shaderPrograms[0].GetUniformLocation("projection");
 	matLoc = modelToWorldMatLoc;
 
-	//if (Engine::MyGL::TestForError(Engine::MessageType::cFatal_Error, "InitializeGL errors!"))
-	//{
-	//	Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to InitializeGL()! TestForErrors found gl errors!\n");
-	//	return false;
-	//}
+	if (Engine::MyGL::TestForError(Engine::MessageType::cFatal_Error, "InitializeGL errors!"))
+	{
+		Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to InitializeGL()! TestForErrors found gl errors!\n");
+		return false;
+	}
 
 	Engine::GameLogger::Log(Engine::MessageType::Process, "WorldEditor::InitializeGL() succeeded!\n");
 	return true;
@@ -555,6 +548,8 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('3')) { SwapToTranslate(); }
 	if (keyboardManager.KeyWasPressed('4')) { SwapToRotate(); }
 	if (keyboardManager.KeyWasPressed('5')) { SwapToScale(); }
+	if (keyboardManager.KeyWasPressed('6')) { SwapToMakeCube(); }
+	if (keyboardManager.KeyWasPressed('7')) { SwapToMakeHideout(); }
 
 	if (keyboardManager.KeyWasPressed('M')) { m_adjustmentSpeedMultiplier *= 1.1f; }
 	if (keyboardManager.KeyWasPressed('N')) { m_adjustmentSpeedMultiplier *= 0.9f; }
@@ -587,21 +582,9 @@ bool WorldEditor::UglyDemoCode()
 	if (!Engine::TextObject::Initialize(matLoc, tintLoc)) { return false; }
 	if (!m_fpsTextObject.MakeBuffers()) { return false; }
 	if (!m_modeText.MakeBuffers()) { return false; }
+	if (!m_placingText.MakeBuffers()) { return false; }
 
-	Engine::GraphicalObject *pHideout = new Engine::GraphicalObject();
-	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\AIWorld.PC.scene", pHideout, m_shaderPrograms[1].GetProgramId());
-	
-	pHideout->SetScaleMat(Engine::Mat4::Scale(1.0f));
-	pHideout->CalcFullTransform();
-	
-	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pHideout->GetFullTransformPtr(), modelToWorldMatLoc));
-	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
-	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
-	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pHideout->GetMatPtr()->m_materialColor, tintLoc));
-	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT, &pHideout->GetMatPtr()->m_specularIntensity, tintIntensityLoc));
-
-	pHideout->GetMatPtr()->m_specularIntensity = 0.75f;
-	pHideout->GetMatPtr()->m_materialColor = Engine::Vec3(1.0f, 0.0f, 0.5f);
+	Engine::GraphicalObject *pHideout = MakeHideout(this);
 
 	Engine::RenderEngine::AddGraphicalObject(pHideout);
 	Engine::CollisionTester::AddGraphicalObjectToLayer(pHideout, EDITOR_LIST_OBJS);
@@ -675,7 +658,8 @@ bool WorldEditor::UglyDemoCode()
 	Engine::CollisionTester::InitializeGridDebugShapes(EDITOR_ITEMS, Engine::Vec3(0.0f, 0.0f, 1.0f), wtv.GetAddress(), m_perspective.GetPerspectivePtr()->GetAddress(), tintIntensityLoc, tintLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
 
 	m_fpsTextObject.SetupText(-0.9f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "FPS: 0\n");
-	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Place\n");
+	SetupModeText("Mode: Place\n");
+	SetupPlacingText("Placing: Cube\n");
 
 	return true;
 }
@@ -738,6 +722,11 @@ void WorldEditor::SelectedObjectChanged()
 	}
 }
 
+void WorldEditor::SetupPlacingText(char * str)
+{
+	m_placingText.SetupText(0.3f, 0.7f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, str);
+}
+
 Engine::Vec3 WorldEditor::GetArrowDir(Engine::GraphicalObject * pArrow)
 {
 	if (pArrow == &m_xArrow) { return PLUS_X; }
@@ -746,6 +735,52 @@ Engine::Vec3 WorldEditor::GetArrowDir(Engine::GraphicalObject * pArrow)
 
 	Engine::GameLogger::Log(Engine::MessageType::cWarning, "Not a valid arrow!\n");
 	return Engine::Vec3();
+}
+
+Engine::GraphicalObject * WorldEditor::MakeCube(WorldEditor * pEditor)
+{
+	Engine::Vec3 color = Engine::Vec3(0.0f, 1.0f, 0.0f);
+	Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::MakeCube(pNewObj);
+
+	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pNewObj->GetFullTransformPtr(), pEditor->modelToWorldMatLoc));
+	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &pEditor->wtv, pEditor->worldToViewMatLoc));
+	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pEditor->m_perspective.GetPerspectivePtr(), pEditor->perspectiveMatLoc));
+	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pNewObj->GetMatPtr()->m_materialColor, pEditor->tintLoc));
+	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pNewObj->GetMatPtr()->m_specularIntensity, pEditor->tintIntensityLoc));
+	pNewObj->GetMatPtr()->m_materialColor = color;
+	pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
+
+	return pNewObj;
+}
+
+Engine::GraphicalObject * WorldEditor::MakeHideout(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pHideout = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\AIWorld.PC.scene", pHideout, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pHideout->GetFullTransformPtr(), pEditor->modelToWorldMatLoc));
+	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &pEditor->wtv, pEditor->worldToViewMatLoc));
+	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pEditor->m_perspective.GetPerspectivePtr(), pEditor->perspectiveMatLoc));
+	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pHideout->GetMatPtr()->m_materialColor, pEditor->tintLoc));
+	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT, &pHideout->GetMatPtr()->m_specularIntensity, pEditor->tintIntensityLoc));
+
+	pHideout->GetMatPtr()->m_specularIntensity = 0.75f;
+	pHideout->GetMatPtr()->m_materialColor = Engine::Vec3(1.0f, 0.0f, 0.5f);
+
+	return pHideout;
+}
+
+void WorldEditor::SwapToMakeHideout()
+{
+	SetupPlacingText("Placing: Hideout\n");
+	m_currentPlacement = WorldEditor::MakeHideout;
+}
+
+void WorldEditor::SwapToMakeCube()
+{
+	SetupPlacingText("Placing: Cube\n");
+	m_currentPlacement = WorldEditor::MakeCube;
 }
 
 void WorldEditor::SwapToPlace()

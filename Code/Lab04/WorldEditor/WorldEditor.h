@@ -30,6 +30,7 @@ public:
 	
 private:
 	typedef void(*ActionCallback)(WorldEditor *);
+	typedef Engine::GraphicalObject *(*MakeObjectCallback)(WorldEditor *);
 
 	static void PlaceObject(WorldEditor *pEditor);
 	static void RemoveObject(WorldEditor *pEditor);
@@ -37,6 +38,12 @@ private:
 	static void RotateObject(WorldEditor *pEditor);
 	static void ScaleObject(WorldEditor *pEditor);
 
+
+	static Engine::GraphicalObject *MakeCube(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeHideout(WorldEditor *pEditor);
+
+	void SwapToMakeHideout();
+	void SwapToMakeCube();
 	void SwapToPlace();
 	void SwapToRemove();
 	void SwapToTranslate();
@@ -74,6 +81,7 @@ private:
 	void MoveSelectedObjectTo(Engine::Vec3 newPos);
 	void AttachArrowsTo(Engine::GraphicalObject *pObj);
 	void SelectedObjectChanged();
+	void SetupPlacingText(char *str);
 
 	static const int NUM_SHADER_PROGRAMS = 5;
 	Engine::ShaderProgram m_shaderPrograms[NUM_SHADER_PROGRAMS];
@@ -82,6 +90,7 @@ private:
 	float m_fpsInterval{ 1.0f };
 	Engine::TextObject m_fpsTextObject;
 	Engine::TextObject m_modeText;
+	Engine::TextObject m_placingText;
 	Engine::Perspective m_perspective;
 	int debugColorLoc;
 	int matLoc;
@@ -104,6 +113,7 @@ private:
 	Engine::GraphicalObject m_zArrow;
 	Engine::Vec3 GetArrowDir(Engine::GraphicalObject *pArrow);
 	ActionCallback m_currentMode{ WorldEditor::PlaceObject };
+	MakeObjectCallback m_currentPlacement{ WorldEditor::MakeCube };
 	float m_adjustmentSpeedMultiplier{ 1.0f };
 	static const Engine::Vec3 RED;
 	static const Engine::Vec3 YELLOW;
