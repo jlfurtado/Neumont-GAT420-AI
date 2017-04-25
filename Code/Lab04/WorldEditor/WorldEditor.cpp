@@ -166,7 +166,7 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 				Engine::Vec3 movementAmount = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat)))).ProjectOnto(d);
 
 				pEditor->MoveSelectedObjectTo(pEditor->m_pSelected->GetPos() + pEditor->m_adjustmentSpeedMultiplier*movementAmount);
-				pEditor->AttachArrowsTo(pEditor->m_pSelected->GetPos());
+				pEditor->AttachArrowsTo(pEditor->m_pSelected);
 
 				v = v + lastOrigin - newOrigin + movementAmount;
 				lastOrigin = newOrigin;
@@ -185,9 +185,57 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 
 void WorldEditor::RotateObject(WorldEditor *pEditor)
 {
+	static Engine::Vec3 lastOrigin;
+	static Engine::Vec3 v;
+	static Engine::Vec3 d;
+	static bool arrowClicked = false;
+
+	// enable selection and de-selection of objects
 	pEditor->DoSelection();
 
-	// ...
+	if (pEditor->m_pSelected)
+	{
+		Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
+
+		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
+		{
+			arrowClicked = true;
+			d = (arrowCheck.m_belongsTo->GetPos() - pEditor->m_pSelected->GetPos()).Normalize();
+			lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
+			v = arrowCheck.m_intersectionPoint - lastOrigin;
+		}
+		else if (Engine::MouseManager::IsLeftMouseDown() && arrowClicked)
+		{
+			Engine::Vec3 newOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
+			Engine::Vec3 r = Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY()) + (newOrigin - lastOrigin);
+
+			// HOLY MATH BATMAN!!!
+			Engine::Vec3 vhat = v.Normalize();
+			Engine::Vec3 rhat = r.Normalize();
+			Engine::Vec3 innerCross = rhat.Cross(vhat);
+			if (innerCross.LengthSquared() > tolerance)
+			{
+				Engine::Vec3 s1 = v + lastOrigin - pEditor->m_pSelected->GetPos();
+				Engine::Vec3 rminusv = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat))));
+				Engine::Vec3 d2 = s1 + rminusv;
+
+				pEditor->m_pSelected->SetRotMat( Engine::Mat4::RotationToFace(d, d2));
+				pEditor->m_pSelected->CalcFullTransform();
+				pEditor->AttachArrowsTo(pEditor->m_pSelected);
+
+				lastOrigin = newOrigin;
+
+			}
+		}
+
+
+		if (Engine::MouseManager::IsLeftMouseReleased())
+		{
+			arrowClicked = false;
+			Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
+			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
+		}
+	}
 }
 
 void WorldEditor::ScaleObject(WorldEditor *pEditor)
@@ -227,6 +275,7 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 				float scaleAmount = d.Dot(movementAmount) > 0.0f ? 1 + pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length() : 1 - pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length();
 				pEditor->m_pSelected->SetScaleMat((pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(1.0f, movementAmount.Normalize())) * Engine::Mat4::Scale(scaleAmount, movementAmount.Normalize()));
 				pEditor->m_pSelected->CalcFullTransform();
+				pEditor->AttachArrowsTo(pEditor->m_pSelected);
 
 				v = v + lastOrigin - newOrigin + movementAmount;
 				lastOrigin = newOrigin;
@@ -653,27 +702,27 @@ void WorldEditor::MoveSelectedObjectTo(Engine::Vec3 newPos)
 
 }
 
-void WorldEditor::AttachArrowsTo(Engine::Vec3 pos)
+void WorldEditor::AttachArrowsTo(Engine::GraphicalObject *pObj)
 {
 	SetArrowEnabled(true);
 
-	m_xArrow.SetTransMat(Engine::Mat4::Translation(X_ARROW_OFFSET + pos));
+	m_xArrow.SetTransMat(Engine::Mat4::Translation(X_ARROW_OFFSET + pObj->GetPos()));
 	m_xArrow.CalcFullTransform();
 
-	m_yArrow.SetTransMat(Engine::Mat4::Translation(Y_ARROW_OFFSET + pos));
+	m_yArrow.SetTransMat(Engine::Mat4::Translation(Y_ARROW_OFFSET + pObj->GetPos()));
 	m_yArrow.CalcFullTransform();
 
-	m_zArrow.SetTransMat(Engine::Mat4::Translation(Z_ARROW_OFFSET + pos));
+	m_zArrow.SetTransMat(Engine::Mat4::Translation(Z_ARROW_OFFSET + pObj->GetPos()));
 	m_zArrow.CalcFullTransform();
 }
 
 void WorldEditor::SelectedObjectChanged()
 {
-	if (m_currentMode == WorldEditor::TranslateObject || m_currentMode == WorldEditor::ScaleObject)
+	if (m_currentMode == WorldEditor::TranslateObject || m_currentMode == WorldEditor::RotateObject || m_currentMode == WorldEditor::ScaleObject)
 	{
 		if (m_pSelected)
 		{
-			AttachArrowsTo(m_pSelected->GetPos());
+			AttachArrowsTo(m_pSelected);
 		}
 		else
 		{
@@ -724,7 +773,7 @@ void WorldEditor::SwapToRotate()
 
 	SetHighlightColor(YELLOW);
 	DeMouseOver();
-	m_adjustmentSpeedMultiplier = 1.0f; // to be adjusted
+	m_adjustmentSpeedMultiplier = 0.001f; // to be adjusted
 }
 
 void WorldEditor::SwapToScale()

@@ -72,7 +72,7 @@ private:
 	void SetupModeText(char *str);
 	void SetArrowEnabled(bool enabled);
 	void MoveSelectedObjectTo(Engine::Vec3 newPos);
-	void AttachArrowsTo(Engine::Vec3 pos);
+	void AttachArrowsTo(Engine::GraphicalObject *pObj);
 	void SelectedObjectChanged();
 
 	static const int NUM_SHADER_PROGRAMS = 5;
