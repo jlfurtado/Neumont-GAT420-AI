@@ -31,7 +31,8 @@ namespace Engine
 	public:
 		static bool Initialize(unsigned int pcShaderID, unsigned int pShaderID, unsigned int pnShaderID);
 		static bool Shutdown();
-
+		static void SetPShaderID(unsigned pShaderID);
+		static unsigned GetPShaderID();
 		// methods
 		static bool MakeFrustum(GraphicalObject *pObject, float near, float far, float aspect, float fovy);
 		static bool MakeNormalCube(GraphicalObject *pObject);

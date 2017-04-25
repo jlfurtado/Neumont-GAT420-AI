@@ -20,7 +20,7 @@ namespace Engine
 		SpatialGrid();
 		~SpatialGrid();
 
-		bool InitializeDisplayGrid(Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc);
+		bool InitializeDisplayGrid(Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc, unsigned pShaderId);
 		void DrawDebugShapes(const Vec3& centerPos);
 		SpatialTriangleData *GetTriangleDataByGrid(int gridX, int gridY, int gridZ);
 		SpatialTriangleData *GetTriangleDataByGridAtPosition(float worldX, float worldY, float worldZ);

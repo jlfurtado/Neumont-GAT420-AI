@@ -46,7 +46,7 @@ namespace Engine
 	{
 	public:
 		static const char *LayerString(CollisionLayer layer);
-		static bool InitializeGridDebugShapes(CollisionLayer gridLayer, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc);
+		static bool InitializeGridDebugShapes(CollisionLayer gridLayer, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc, unsigned pShaderId);
 		static void DrawGrid(CollisionLayer gridLayer, const Vec3& centerPos);
 		static void ConsoleLogOutput();
 		static RayCastingOutput FindWall(const Vec3& rayPosition, const Vec3& rayDirection, float checkDist, CollisionLayer layer = CollisionLayer::NUM_LAYERS);

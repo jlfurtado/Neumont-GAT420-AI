@@ -256,7 +256,7 @@ bool ObjConverter::CloseFile()
 bool ObjConverter::AddVertex(const char *const line, int lineNumber)
 {
 	// add vertex based on which part of the vertex it is and the vertex format
-	if (Engine::ConfigReader::pReader->WhiteSpace(line[1]) && (m_meshVertexFormat & Engine::VertexFormat::HasPosition)) { return AddVertexPosition(line, lineNumber); }
+	if (Engine::StringFuncs::IsWhiteSpace(line[1]) && (m_meshVertexFormat & Engine::VertexFormat::HasPosition)) { return AddVertexPosition(line, lineNumber); }
 	else if (line[1] == 't' && (m_meshVertexFormat & Engine::VertexFormat::HasTexture)) { return AddVertexTexture(line, lineNumber); }
 	else if (line[1] == 'n' && (m_meshVertexFormat & Engine::VertexFormat::HasNormal)) { return AddVertexNormal(line, lineNumber); }
 	else { return true; }
@@ -424,7 +424,7 @@ bool ObjConverter::AddFaceIndices(const char *const line, int /*lineNumber*/)
 		}
 
 		// if it is whitespace eat it and move to the next index
-		if (Engine::ConfigReader::pReader->WhiteSpace(static_cast<char>(parse.peek())))
+		if (Engine::StringFuncs::IsWhiteSpace(static_cast<char>(parse.peek())))
 		{
 			// eat the whitespace
 			parse.get();

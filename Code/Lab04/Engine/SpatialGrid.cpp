@@ -29,8 +29,15 @@ namespace Engine
 	}
 
 	const int SECTIONS_PER_DIRECTION = 10;
-	bool SpatialGrid::InitializeDisplayGrid(Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc)
+	bool SpatialGrid::InitializeDisplayGrid(Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc, unsigned pShaderId)
 	{
+		// get prev state
+		int prev = Engine::ShapeGenerator::GetPShaderID();
+
+		// change state
+		Engine::ShapeGenerator::SetPShaderID(pShaderId);
+
+		// do things in changed state
 		Engine::ShapeGenerator::MakeDebugCube(&m_gridDisplayObject, color);
 
 		m_gridDisplayObject.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_gridDisplayObject.GetFullTransformPtr(), modelToWorldMatLoc));
@@ -59,6 +66,10 @@ namespace Engine
 
 		Engine::RenderEngine::AddGraphicalObject(&m_gridDisplayObject);
 		m_gridDisplayObject.SetEnabled(false);
+
+		// restore state
+		Engine::ShapeGenerator::SetPShaderID(prev);
+
 		return true;
 	}
 

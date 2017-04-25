@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "InstanceBuffer.h"
+#include "StringFuncs.h"
 #include "MouseManager.h"
 #include "GameLogger.h"
 #include "MyGL.h"
@@ -39,6 +40,10 @@
 // 6/21/2016
 // EngineDemo.cpp
 // The game
+
+const int PLENTY = 1024 * 8;
+char saveBuffer[PLENTY]{ '\0' };
+int nextBufferSlot{ 0 };
 
 const int NUM_DRAWS = 9;
 const float objectSpacing = 400.0f;
@@ -123,7 +128,7 @@ bool EngineDemo::Initialize(Engine::MyWindow *window)
 		return false;
 	}
 
-	if (!Engine::ShapeGenerator::Initialize(m_shaderPrograms[1].GetProgramId(), m_shaderPrograms[5].GetProgramId(), m_shaderPrograms[3].GetProgramId()))
+	if (!Engine::ShapeGenerator::Initialize(m_shaderPrograms[1].GetProgramId(), m_shaderPrograms[0].GetProgramId(), m_shaderPrograms[3].GetProgramId()))
 	{
 		Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to initialize game because shape generator failed to initialize!\n");
 		return false;
@@ -186,6 +191,10 @@ bool EngineDemo::Shutdown()
 	{
 		if (!m_shaderPrograms[i].Shutdown()) { return false; }
 	}
+
+	// have to clear objs before shape gen, cuz shape gen deletes mesh before render engine can remove it
+	m_fromWorldEditorOBJs.WalkList(DestroyObjsCallback, this);
+	if (m_objCount != 0) { Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to DestroyObjs! Check for memory leak or counter inaccuracy [%d] objs left!\n", m_objCount); return false; }
 
 	if (!Engine::TextObject::Shutdown()) { return false; }
 	if (!Engine::RenderEngine::Shutdown()) { return false; }
@@ -786,7 +795,7 @@ bool EngineDemo::UglyDemoCode()
 
 
 	Engine::CollisionTester::InitializeGridDebugShapes(Engine::CollisionLayer::STATIC_GEOMETRY, Engine::Vec3(1.0f, 0.0f, 0.0f), playerCamera.GetWorldToViewMatrixPtr()->GetAddress(),
-		m_perspective.GetPerspectivePtr()->GetAddress(), tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
+		m_perspective.GetPerspectivePtr()->GetAddress(), tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc, m_shaderPrograms[5].GetProgramId());
 
 	Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer);
 
@@ -890,8 +899,27 @@ bool EngineDemo::UglyDemoCode()
 		Engine::RenderEngine::AddGraphicalObject(&m_demoObjects[i]);
 	}
 
+	Engine::ShapeGenerator::MakeGrid(&m_grid, 85, 85, Engine::Vec3(0.5f));
+	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_grid.GetFullTransformPtr(), modelToWorldMatLoc));
+	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc));
+	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
+	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_grid.GetMatPtr()->m_materialColor, tintColorLoc));
+	m_grid.SetScaleMat(Engine::Mat4::Scale(25.0f));
+	m_grid.CalcFullTransform();
+	Engine::RenderEngine::AddGraphicalObject(&m_grid);
 
+	Engine::ShapeGenerator::MakeSphere(&m_originMarker, Engine::Vec3(1.0f));
+	m_originMarker.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_originMarker.GetFullTransformPtr(), modelToWorldMatLoc));
+	m_originMarker.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc));
+	m_originMarker.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
+	m_originMarker.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_originMarker.GetMatPtr()->m_materialColor, tintColorLoc));
+	m_originMarker.SetScaleMat(Engine::Mat4::Scale(25.0f));
+	m_originMarker.CalcFullTransform();
+	Engine::RenderEngine::AddGraphicalObject(&m_originMarker);
+	
 	SetObjPosDataPtrs();
+
+	LoadWorldFileAndApplyPCUniforms();
 
 	return true;
 }
@@ -972,4 +1000,65 @@ void EngineDemo::DrawFlagRays()
 	Engine::CollisionTester::DrawRay(nearPlaneCenter, toBottomLeft.Normalize(), Engine::MathUtility::Min(toBottomLeft.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toBottomLeft.Length()), rayData);
 	Engine::CollisionTester::DrawRay(nearPlaneCenter, toTopRight.Normalize(), Engine::MathUtility::Min(toTopRight.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toTopRight.Length()), rayData);
 	Engine::CollisionTester::DrawRay(nearPlaneCenter, toBottomRight.Normalize(), Engine::MathUtility::Min(toBottomRight.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toBottomRight.Length()), rayData);
+}
+
+void EngineDemo::LoadWorldFileAndApplyPCUniforms()
+{
+	char buffer[256]{ '\0' };
+	if (Engine::ConfigReader::pReader->GetStringForKey("EngineDemo.World.InputFileName", buffer))
+	{
+		int len = Engine::StringFuncs::StringLen(buffer);
+		for (char c1 = '0', c2 = '0'; (c1 <= '9' || c2 <= '9'); c2++)
+		{
+			buffer[len] = c1;
+			buffer[len + 1] = c2;
+			std::ifstream inputFileStream;
+			inputFileStream.open(buffer);
+
+			if (!inputFileStream.is_open())	{ break; }
+			
+			inputFileStream.close();
+
+			int pos = Engine::StringFuncs::StringConcatIntoBuffer(&saveBuffer[0], &buffer[0], "\0", &saveBuffer[0], PLENTY);
+
+			Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "[%s]\n", &saveBuffer[nextBufferSlot]);
+
+			// make an obj
+			Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
+			Engine::ShapeGenerator::ReadSceneFile(&saveBuffer[nextBufferSlot], pNewObj, m_shaderPrograms[1].GetProgramId());
+
+			pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pNewObj->GetFullTransformPtr(), modelToWorldMatLoc));
+			pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), worldToViewMatLoc));
+			pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
+			pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pNewObj->GetMatPtr()->m_materialColor, tintColorLoc));
+			pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pNewObj->GetMatPtr()->m_specularIntensity, tintIntensityLoc));
+			pNewObj->GetMatPtr()->m_materialColor = Engine::Vec3(0.5f, 0.25f, 1.0f);
+			pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
+
+			// add it to the necessary things, it'll get deleted on shutdown or remove
+			Engine::RenderEngine::AddGraphicalObject(pNewObj);
+			Engine::CollisionTester::AddGraphicalObjectToLayer(pNewObj, Engine::CollisionLayer::LAYER_2);
+			Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::LAYER_2);
+
+			m_fromWorldEditorOBJs.AddToList(pNewObj);
+			m_objCount++;
+			nextBufferSlot = pos;
+			
+			if (c2 > '9') { c2 = '0'; c1++; }
+		}
+	}
+}
+
+bool EngineDemo::DestroyObjsCallback(Engine::GraphicalObject * pObj, void * pClassInstance)
+{
+	EngineDemo* pDemo = reinterpret_cast<EngineDemo*>(pClassInstance);
+
+	Engine::RenderEngine::RemoveGraphicalObject(pObj);
+	Engine::CollisionTester::RemoveGraphicalObjectFromLayer(pObj, Engine::CollisionLayer::LAYER_2); 
+
+	delete pObj;
+
+	pDemo->m_objCount--;
+
+	return true;
 }

@@ -42,6 +42,16 @@ namespace Engine
 	unsigned int ShapeGenerator::s_PShaderID = 0;
 	unsigned int ShapeGenerator::s_PNShaderID = 0;
 
+	void ShapeGenerator::SetPShaderID(unsigned pShaderID)
+	{
+		s_PShaderID = pShaderID;
+	}
+
+	unsigned ShapeGenerator::GetPShaderID()
+	{
+		return s_PShaderID;
+	}
+
 	ColorVertex ShapeGenerator::cubeColorVerts[CUBE_VERTEX_COUNT] = {
 		/* First Face */
 		Vec3(-1.0f, -1.0f, +1.0f), Vec3(0.0f, 0.0f, 0.0f), // bottom left

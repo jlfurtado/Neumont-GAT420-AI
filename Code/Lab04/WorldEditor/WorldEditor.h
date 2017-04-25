@@ -122,6 +122,8 @@ private:
 	Engine::GraphicalObject m_xArrow;
 	Engine::GraphicalObject m_yArrow;
 	Engine::GraphicalObject m_zArrow;
+	Engine::GraphicalObject m_grid;
+	Engine::GraphicalObject m_originMarker;
 	Engine::Vec3 GetArrowDir(Engine::GraphicalObject *pArrow);
 	ActionCallback m_currentMode{ WorldEditor::PlaceObject };
 	MakeObjectCallback m_currentPlacement{ WorldEditor::MakeCube };

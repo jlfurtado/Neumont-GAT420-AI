@@ -320,7 +320,7 @@ bool WorldEditor::Initialize(Engine::MyWindow * pWindow)
 	}
 
 	// initialize the shape generator
-	if (!Engine::ShapeGenerator::Initialize(m_shaderPrograms[1].GetProgramId(), m_shaderPrograms[4].GetProgramId(), m_shaderPrograms[3].GetProgramId()))
+	if (!Engine::ShapeGenerator::Initialize(m_shaderPrograms[1].GetProgramId(), m_shaderPrograms[0].GetProgramId(), m_shaderPrograms[3].GetProgramId()))
 	{
 		Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to initialize WorldEditor! Failed to initialize ShapeGenerator!\n");
 		return false;
@@ -646,6 +646,24 @@ bool WorldEditor::UglyDemoCode()
 	m_objs.AddToList(pHideout);
 	m_objCount++; // should be one now
 
+	Engine::ShapeGenerator::MakeGrid(&m_grid, 85, 85, Engine::Vec3(0.5f));
+	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_grid.GetFullTransformPtr(), modelToWorldMatLoc));
+	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
+	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
+	m_grid.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_grid.GetMatPtr()->m_materialColor, debugColorLoc));
+	m_grid.SetScaleMat(Engine::Mat4::Scale(25.0f));
+	m_grid.CalcFullTransform();
+	Engine::RenderEngine::AddGraphicalObject(&m_grid);
+
+	Engine::ShapeGenerator::MakeSphere(&m_originMarker, Engine::Vec3(1.0f));
+	m_originMarker.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_originMarker.GetFullTransformPtr(), modelToWorldMatLoc));
+	m_originMarker.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
+	m_originMarker.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
+	m_originMarker.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_originMarker.GetMatPtr()->m_materialColor, debugColorLoc));
+	m_originMarker.SetScaleMat(Engine::Mat4::Scale(25.0f));
+	m_originMarker.CalcFullTransform();
+	Engine::RenderEngine::AddGraphicalObject(&m_originMarker);
+
 	Engine::ShapeGenerator::MakeDebugArrow(&m_xArrow, YELLOW, GREEN);
 
 	m_xArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_xArrow.GetFullTransformPtr(), modelToWorldMatLoc));
@@ -709,7 +727,7 @@ bool WorldEditor::UglyDemoCode()
 	m_perspective.SetScreenDimmensions(static_cast<float>(m_pWindow->width()), static_cast<float>(m_pWindow->height()));
 	Engine::MousePicker::SetPerspectiveInfo(m_perspective.GetFOVY(), m_perspective.GetNearDist(), m_perspective.GetWidth(), m_perspective.GetHeight());
 
-	Engine::CollisionTester::InitializeGridDebugShapes(EDITOR_ITEMS, Engine::Vec3(0.0f, 0.0f, 1.0f), wtv.GetAddress(), m_perspective.GetPerspectivePtr()->GetAddress(), tintIntensityLoc, tintLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
+	Engine::CollisionTester::InitializeGridDebugShapes(EDITOR_ITEMS, Engine::Vec3(0.0f, 0.0f, 1.0f), wtv.GetAddress(), m_perspective.GetPerspectivePtr()->GetAddress(), tintIntensityLoc, tintLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc, m_shaderPrograms[4].GetProgramId());
 
 	m_fpsTextObject.SetupText(-0.9f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "FPS: 0\n");
 	SetupModeText("Mode: Place\n");

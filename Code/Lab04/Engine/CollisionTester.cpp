@@ -38,9 +38,9 @@ namespace Engine
 		return collisionLayerStrings[(int)layer];
 	}
 
-	bool CollisionTester::InitializeGridDebugShapes(CollisionLayer layer, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc)
+	bool CollisionTester::InitializeGridDebugShapes(CollisionLayer layer, Vec3 color, void *pCamMat, void *pPerspMat, int tintIntensityLoc, int tintColorLoc, int modelToWorldMatLoc, int worldToViewMatLoc, int perspectiveMatLoc, unsigned pShaderID)
 	{
-		return s_spatialGrids[(unsigned)layer].InitializeDisplayGrid(color, pCamMat, pPerspMat, tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc);
+		return s_spatialGrids[(unsigned)layer].InitializeDisplayGrid(color, pCamMat, pPerspMat, tintIntensityLoc, tintColorLoc, modelToWorldMatLoc, worldToViewMatLoc, perspectiveMatLoc, pShaderID);
 	}
 
 	void CollisionTester::DrawGrid(CollisionLayer layer, const Vec3& centerPos)

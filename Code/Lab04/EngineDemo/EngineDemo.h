@@ -17,6 +17,7 @@
 #include "MyWindow.h"
 #include "GraphicalObject.h"
 #include "FrameBuffer.h"
+#include "LinkedList.h"
 
 class QMouseEvent;
 
@@ -58,7 +59,8 @@ private:
 	void SetObjPosDataPtrs();
 	void RaycastFlag();
 	void DrawFlagRays();
-
+	void LoadWorldFileAndApplyPCUniforms();
+	static bool DestroyObjsCallback(Engine::GraphicalObject *pObj, void *pClassInstance);
 
 	//data
 	static const int NUM_SHADER_PROGRAMS = 8;
@@ -113,6 +115,9 @@ private:
 	bool won = false;
 	float specularPower;
 	Engine::Keyboard keyboardManager;
+	Engine::GraphicalObject m_originMarker;
+	int m_objCount{ 0 };
+	Engine::LinkedList<Engine::GraphicalObject> m_fromWorldEditorOBJs;
 };
 
 #endif // ifndef EngineDemo_H
