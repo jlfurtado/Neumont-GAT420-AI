@@ -550,6 +550,7 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('5')) { SwapToScale(); }
 	if (keyboardManager.KeyWasPressed('6')) { SwapToMakeCube(); }
 	if (keyboardManager.KeyWasPressed('7')) { SwapToMakeHideout(); }
+	if (keyboardManager.KeyWasPressed('8')) { SwapToMakeHouse(); }
 
 	if (keyboardManager.KeyWasPressed('M')) { m_adjustmentSpeedMultiplier *= 1.1f; }
 	if (keyboardManager.KeyWasPressed('N')) { m_adjustmentSpeedMultiplier *= 0.9f; }
@@ -771,6 +772,23 @@ Engine::GraphicalObject * WorldEditor::MakeHideout(WorldEditor * pEditor)
 	return pHideout;
 }
 
+Engine::GraphicalObject * WorldEditor::MakeHouse(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pHouse = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::MakeHouse(pHouse);
+
+	pHouse->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pHouse->GetFullTransformPtr(), pEditor->modelToWorldMatLoc));
+	pHouse->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &pEditor->wtv, pEditor->worldToViewMatLoc));
+	pHouse->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pEditor->m_perspective.GetPerspectivePtr(), pEditor->perspectiveMatLoc));
+	pHouse->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pHouse->GetMatPtr()->m_materialColor, pEditor->tintLoc));
+	pHouse->AddUniformData(Engine::UniformData(GL_FLOAT, &pHouse->GetMatPtr()->m_specularIntensity, pEditor->tintIntensityLoc));
+
+	pHouse->GetMatPtr()->m_specularIntensity = 0.75f;
+	pHouse->GetMatPtr()->m_materialColor = Engine::Vec3(0.0f, 1.0f, 0.5f);
+
+	return pHouse;
+}
+
 void WorldEditor::SwapToMakeHideout()
 {
 	SetupPlacingText("Placing: Hideout\n");
@@ -781,6 +799,12 @@ void WorldEditor::SwapToMakeCube()
 {
 	SetupPlacingText("Placing: Cube\n");
 	m_currentPlacement = WorldEditor::MakeCube;
+}
+
+void WorldEditor::SwapToMakeHouse()
+{
+	SetupPlacingText("Placing: House\n");
+	m_currentPlacement = WorldEditor::MakeHouse;
 }
 
 void WorldEditor::SwapToPlace()

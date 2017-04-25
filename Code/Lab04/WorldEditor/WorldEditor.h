@@ -41,9 +41,11 @@ private:
 
 	static Engine::GraphicalObject *MakeCube(WorldEditor *pEditor);
 	static Engine::GraphicalObject *MakeHideout(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeHouse(WorldEditor *pEditor);
 
 	void SwapToMakeHideout();
 	void SwapToMakeCube();
+	void SwapToMakeHouse();
 	void SwapToPlace();
 	void SwapToRemove();
 	void SwapToTranslate();
