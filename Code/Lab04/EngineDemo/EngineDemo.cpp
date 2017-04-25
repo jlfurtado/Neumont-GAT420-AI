@@ -1032,7 +1032,7 @@ void EngineDemo::LoadWorldFileAndApplyPCUniforms()
 			pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
 			pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pNewObj->GetMatPtr()->m_materialColor, tintColorLoc));
 			pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pNewObj->GetMatPtr()->m_specularIntensity, tintIntensityLoc));
-			pNewObj->GetMatPtr()->m_materialColor = Engine::Vec3(0.5f, 0.25f, 1.0f);
+			pNewObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
 			pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
 
 			// add it to the necessary things, it'll get deleted on shutdown or remove
