@@ -148,7 +148,7 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
 		{			
 			arrowClicked = true;
-			d = (arrowCheck.m_belongsTo->GetPos() - pEditor->m_pSelected->GetPos()).Normalize();
+			d = arrowCheck.m_belongsTo->GetRotMat() * BASE_ARROW_DIR;
 			lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
 			v = arrowCheck.m_intersectionPoint - lastOrigin;
 		}
@@ -200,7 +200,7 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
 		{
 			arrowClicked = true;
-			d = (arrowCheck.m_belongsTo->GetPos() - pEditor->m_pSelected->GetPos()).Normalize();
+			d = arrowCheck.m_belongsTo->GetRotMat() * BASE_ARROW_DIR;
 			lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
 			v = arrowCheck.m_intersectionPoint - lastOrigin;
 		}
@@ -255,7 +255,7 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
 		{
 			arrowClicked = true;
-			d = (arrowCheck.m_belongsTo->GetPos() - pEditor->m_pSelected->GetPos()).Normalize();
+			d = pEditor->GetArrowDir(arrowCheck.m_belongsTo);
 			lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
 			v = arrowCheck.m_intersectionPoint - lastOrigin;
 		}
@@ -706,13 +706,18 @@ void WorldEditor::AttachArrowsTo(Engine::GraphicalObject *pObj)
 {
 	SetArrowEnabled(true);
 
-	m_xArrow.SetTransMat(Engine::Mat4::Translation(X_ARROW_OFFSET + pObj->GetPos()));
+	m_xArrow.SetRotMat(pObj->GetRotMat() * Engine::Mat4::RotationToFace(BASE_ARROW_DIR, PLUS_X));
+	m_xArrow.SetTransMat(Engine::Mat4::Translation(m_xArrow.GetRotMat() * X_ARROW_OFFSET + pObj->GetPos()));
 	m_xArrow.CalcFullTransform();
 
-	m_yArrow.SetTransMat(Engine::Mat4::Translation(Y_ARROW_OFFSET + pObj->GetPos()));
+
+	m_yArrow.SetRotMat(pObj->GetRotMat() * Engine::Mat4::RotationToFace(BASE_ARROW_DIR, PLUS_Y));
+	m_yArrow.SetTransMat(Engine::Mat4::Translation(m_yArrow.GetRotMat() * X_ARROW_OFFSET + pObj->GetPos()));
 	m_yArrow.CalcFullTransform();
 
-	m_zArrow.SetTransMat(Engine::Mat4::Translation(Z_ARROW_OFFSET + pObj->GetPos()));
+
+	m_zArrow.SetRotMat(pObj->GetRotMat() * Engine::Mat4::RotationToFace(BASE_ARROW_DIR, PLUS_Z));
+	m_zArrow.SetTransMat(Engine::Mat4::Translation(m_zArrow.GetRotMat() * X_ARROW_OFFSET + pObj->GetPos()));
 	m_zArrow.CalcFullTransform();
 }
 
@@ -729,6 +734,16 @@ void WorldEditor::SelectedObjectChanged()
 			SetArrowEnabled(false);
 		}
 	}
+}
+
+Engine::Vec3 WorldEditor::GetArrowDir(Engine::GraphicalObject * pArrow)
+{
+	if (pArrow == &m_xArrow) { return PLUS_X; }
+	if (pArrow == &m_yArrow) { return PLUS_Y; }
+	if (pArrow == &m_zArrow) { return PLUS_Z; }
+
+	Engine::GameLogger::Log(Engine::MessageType::cWarning, "Not a valid arrow!\n");
+	return Engine::Vec3();
 }
 
 void WorldEditor::SwapToPlace()

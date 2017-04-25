@@ -210,7 +210,7 @@ namespace Engine
 
 	void GraphicalObject::CalcFullTransform()
 	{
-		m_fullTransform = m_translationMatrix * m_rotationMatrix * m_scaleMatrix;
+		m_fullTransform = m_translationMatrix * (m_rotationMatrix * m_scaleMatrix);
 	}
 
 	Mat4 * GraphicalObject::GetFullTransformPtr()

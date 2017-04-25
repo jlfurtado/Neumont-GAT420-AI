@@ -102,6 +102,7 @@ private:
 	Engine::GraphicalObject m_xArrow;
 	Engine::GraphicalObject m_yArrow;
 	Engine::GraphicalObject m_zArrow;
+	Engine::Vec3 GetArrowDir(Engine::GraphicalObject *pArrow);
 	ActionCallback m_currentMode{ WorldEditor::PlaceObject };
 	float m_adjustmentSpeedMultiplier{ 1.0f };
 	static const Engine::Vec3 RED;
