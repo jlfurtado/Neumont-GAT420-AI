@@ -172,6 +172,7 @@ namespace Engine
 
 	void SpatialGrid::ConsoleLogStats()
 	{
+		GameLogger::Log(MessageType::cDebug, "Objects in this layer is [%d]\n", m_objectList.GetCount());
 		GameLogger::Log(MessageType::cDebug, "Total triangle count for grid is [%d]\n", m_totalTriangleCount);
 		GameLogger::Log(MessageType::cDebug, "Average triangle count for grid cells is [%.3f]\n", m_avgGridTriangleCount);
 		GameLogger::Log(MessageType::cDebug, "Min triangle count for grid is [%d]\n", m_minGridTriangleCount);

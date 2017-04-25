@@ -14,6 +14,8 @@
 #include "GraphicalObject.h"
 #include "Camera.h"
 #include "LinkedList.h"
+#include "CollisionTester.h"
+
 
 class WorldEditor
 {
@@ -25,8 +27,31 @@ public:
 	static void MouseScrollCallback(void *game, int degrees);
 	static void MouseMoveCallback(void *game, int dx, int dy);
 	static bool DestroyObjsCallback(Engine::GraphicalObject *pObj, void *pClassInstance);
-
+	
 private:
+	typedef void(*ActionCallback)(WorldEditor *);
+
+	static void PlaceObject(WorldEditor *pEditor);
+	static void RemoveObject(WorldEditor *pEditor);
+	static void TranslateObject(WorldEditor *pEditor);
+	static void RotateObject(WorldEditor *pEditor);
+	static void ScaleObject(WorldEditor *pEditor);
+
+	void SwapToPlace();
+	void SwapToRemove();
+	void SwapToTranslate();
+	void SwapToRotate();
+	void SwapToScale();
+
+	void DoMouseOverHighlight();
+	void DoSelection();
+
+	void Color(Engine::GraphicalObject *pObj, Engine::Vec3 *pColor);
+	void UnColor(Engine::GraphicalObject *pObj);
+
+	void DeSelect();
+	void DeMouseOver();
+
 	// methods
 	bool Initialize(Engine::MyWindow *window);
 	bool Shutdown();
@@ -50,6 +75,7 @@ private:
 	Engine::Keyboard keyboardManager;
 	float m_fpsInterval{ 1.0f };
 	Engine::TextObject m_fpsTextObject;
+	Engine::TextObject m_modeText;
 	Engine::Perspective m_perspective;
 	int debugColorLoc;
 	int matLoc;
@@ -58,12 +84,16 @@ private:
 	int worldToViewMatLoc;
 	int perspectiveMatLoc;
 	int tintIntensityLoc;
-	int m_sphereCount;
-	Engine::GraphicalObject m_hideout;
+	int m_objCount;
 	Engine::Camera m_camera;
 	Engine::Mat4 wtv;
-	Engine::LinkedList<Engine::GraphicalObject> m_spheres;
+	Engine::LinkedList<Engine::GraphicalObject> m_objs;
 	bool drawGrid{ false };
+	Engine::Vec3 highlightedColor{ 1.0f, 1.0f, 0.0f };
+	Engine::RayCastingOutput m_rco;
+	Engine::GraphicalObject *m_pLastHit;
+	Engine::GraphicalObject *m_pSelected;
+	ActionCallback m_currentMode{ WorldEditor::PlaceObject };
 };
 
 #endif // ifndef WORLDEDITOR_H

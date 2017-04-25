@@ -179,6 +179,7 @@
     <ClInclude Include="Vec4.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VertexFormat.h" />
+    <ClInclude Include="WorldFileIO.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BinaryWriter.cpp" />
@@ -221,6 +222,7 @@
     <ClCompile Include="TextObject.cpp" />
     <ClCompile Include="UniformData.cpp" />
     <ClCompile Include="VertexFormat.cpp" />
+    <ClCompile Include="WorldFileIO.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

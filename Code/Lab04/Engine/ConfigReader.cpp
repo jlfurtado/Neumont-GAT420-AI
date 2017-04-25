@@ -139,7 +139,7 @@ namespace Engine
 			if (*(line + pos) == '"' && *(line + pos + 1) == '"') { wordC++; }
 			if (*(line + pos) == '"') { quotes++; continue; }
 
-			if (!WhiteSpace(*(line + pos)) || quotes % 2 == 1)
+			if (!StringFuncs::IsWhiteSpace(*(line + pos)) || quotes % 2 == 1)
 			{
 				// last char was whitespace or beginning of line and not a comment, this is the beginning of a word
 				if (whiteSpace) { wordC++; }
@@ -195,11 +195,6 @@ namespace Engine
 				m_callbacks[i](m_pCallbackInstances[i]);
 			}
 		}
-	}
-
-	bool ConfigReader::WhiteSpace(char c) const
-	{
-		return c == ' ' || c == '\t';
 	}
 
 	bool ConfigReader::RegisterCallbackForConfigChanges(ConfigReaderCallback callbackToRegister, void *callbackClassInstance)
@@ -312,11 +307,9 @@ namespace Engine
 	bool ConfigReader::GetIntForKey(const char *const key, int& outValue) const
 	{
 		const char *const str = m_keyValuePairs.GetValueForKey(key);
-		if (!str) return false;
-		if (*(str) == '\0') { GameLogger::Log(MessageType::Warning, "Cannot convert the empty string to an integer!\n"); return false; }
 
 		int out = outValue;
-		if (!GetIntFromString(str, out))
+		if (!StringFuncs::GetSingleIntFromString(str, out))
 		{
 			GameLogger::Log(MessageType::Warning, "Could not get int for key [%s], the value [%s] could not be parsed to an integer!\n", key, str);
 			return false;
@@ -330,11 +323,9 @@ namespace Engine
 	bool ConfigReader::GetFloatForKey(const char *const key, float& outValue) const
 	{
 		const char *const str = m_keyValuePairs.GetValueForKey(key);
-		if (!str) return false;
-		if (*(str) == '\0') { GameLogger::Log(MessageType::Warning, "Cannot convert the empty string to a floating-point value!\n"); return false; }
 
 		float out = outValue;
-		if (!GetFloatFromString(str, out))
+		if (!StringFuncs::GetSingleFloatFromString(str, out))
 		{
 			GameLogger::Log(MessageType::Warning, "Could not get float for key [%s], the value, [%s] could not be parsed to a float!\n", key, str);
 			return false;
@@ -428,142 +419,12 @@ namespace Engine
 	bool ConfigReader::GetFloatsForKey(const char *const key, int numFloats, float *values) const
 	{
 		const char *const str = m_keyValuePairs.GetValueForKey(key);
-		if (!str) return false;
-		if (*str == '\0') { GameLogger::Log(MessageType::Warning, "Cannot extract floating point values from the empty string!\n"); return false; }
-		if (numFloats <= 0) { GameLogger::Log(MessageType::Warning, "Invalid value [%d] passed for numFloats in GetFloatsForKey()!\n", numFloats); return false; }
-
-		int outOffset = 0;
-		for (int offset = 0; *(str + offset); ++offset)
-		{
-			if ((!offset || WhiteSpace(*(str + offset - 1))) && !WhiteSpace(*(str + offset)))
-			{
-				float value = 0.0f;
-				if (!GetFloatFromString(str + offset, value))
-				{
-					GameLogger::Log(MessageType::Warning, "GetFloatsForKey [%s] failed, float #%d could not be parsed! Aborting!\n", key, outOffset);
-					return false;
-				}
-
-				if (outOffset >= numFloats) { GameLogger::Log(MessageType::Warning, "GetFloatsForKey expected to find [%d] floats but found extra! Aborting!\n", numFloats); return false; }
-
-				*(values + outOffset) = value;
-				outOffset++;
-			}
-		}
-
-		if (outOffset < numFloats) { GameLogger::Log(MessageType::Warning, "GetFloatsForKey expected to find [%d] floats but found [%d]! Aborting!\n", numFloats, outOffset); return false; }
-		else { GameLogger::Log(MessageType::Info, "Found the correct number of floats!\n"); }
-
-		return true;
+		return StringFuncs::GetFloatsFromString(str, numFloats, values);
 	}
 
 	bool ConfigReader::GetIntsForKey(const char *const key, int numInts, int *values) const
 	{
 		const char *const str = m_keyValuePairs.GetValueForKey(key);
-		if (!str) return false;
-		if (*str == '\0') { GameLogger::Log(MessageType::Warning, "Cannot extract int values from the empty string!\n"); return false; }
-		if (numInts <= 0) { GameLogger::Log(MessageType::Warning, "Invalid value [%d] passed for numInts in GetIntsForKey()!\n", numInts); return false; }
-
-		int outOffset = 0;
-		for (int offset = 0; *(str + offset); ++offset)
-		{
-			if ((!offset || WhiteSpace(*(str + offset - 1))) && !WhiteSpace(*(str + offset)))
-			{
-				int value = 0;
-				if (!GetIntFromString(str + offset, value))
-				{
-					GameLogger::Log(MessageType::Warning, "GetIntsForKey [%s] failed, int #%d could not be parsed! Aborting!\n", key, outOffset);
-					return false;
-				}
-
-				if (outOffset >= numInts) { GameLogger::Log(MessageType::Warning, "GetIntsForKey expected to find [%d] ints but found extra! Aborting!\n", numInts); return false; }
-
-				*(values + outOffset) = value;
-				outOffset++;
-			}
-		}
-
-		if (outOffset < numInts) { GameLogger::Log(MessageType::Warning, "GetIntsForKey expected to find [%d] ints but found [%d]! Aborting!\n", numInts, outOffset); return false; }
-		else { GameLogger::Log(MessageType::Info, "Found the correct number of ints!\n"); }
-		return true;
-	}
-
-	bool ConfigReader::GetIntFromString(const char *const string, int& outValue) const
-	{
-		int prev = outValue;
-		outValue = 0;
-		bool neg = false;
-
-		for (int pos = 0; *(string + pos) && !WhiteSpace(*(string + pos)); ++pos)
-		{
-			if (*(string + pos) == '-') { neg = !neg; continue; }
-			if (*(string + pos) >= '0' && *(string + pos) <= '9')
-			{
-				outValue *= 10;
-				outValue += (int)((*(string + pos)) - '0');
-			}
-			else { GameLogger::Log(MessageType::Error, "Cannot parse [%s] to integer! character [%c] is not a valid digit!\n", string, *(string + pos)); outValue = prev; return false; }
-		}
-
-		if (neg)
-		{
-			outValue *= -1;
-		}
-
-		return true;
-	}
-
-	bool ConfigReader::GetFloatFromString(const char *const string, float& outValue) const
-	{
-		float prev = outValue;
-		outValue = 0.0f;
-		float dec = 10.0f;
-		bool decimal = false;
-		bool e = false;
-		bool neg = false;
-		int eVal = 0;
-
-		for (int pos = 0; *(string + pos) && !WhiteSpace(*(string + pos)); ++pos)
-		{
-			if (*(string + pos) == '-') { neg = !neg; continue; }
-			if (!e && (*(string + pos) == 'e' || *(string + pos) == 'E')) { e = true; if (neg) { outValue *= -1; } neg = false; continue; }
-			if (*(string + pos) >= '0' && *(string + pos) <= '9')
-			{
-				if (e)
-				{
-					eVal *= 10;
-					eVal += (int)((*(string + pos) - '0'));
-					continue;
-				}
-
-				if (!decimal)
-				{
-					outValue *= 10;
-					outValue += (float)((*(string + pos) - '0'));
-				}
-				else
-				{
-					outValue += ((float)((*(string + pos) - '0') / dec));
-					dec *= 10.0f;
-				}
-			}
-			else if (*(string + pos) == '.' && !e)
-			{
-				if (!decimal) { decimal = true; }
-				else { GameLogger::Log(MessageType::Error, "Cannot parse [%s] to float! It contains more than one decimal point!\n", string); outValue = prev; return false; }
-			}
-			else { GameLogger::Log(MessageType::Error, "Cannot parse [%s] to float! character [%c] is not a valid digit!\n", string, *(string + pos)); outValue = prev; return false; }
-		}
-
-		if (e)
-		{
-			outValue *= (float)pow(10.0, neg ? -eVal : eVal);
-		}
-		else
-		{
-			outValue *= neg ? -1.0f : 1.0f;
-		}
-
-		return true;
+		return StringFuncs::GetIntsFromString(str, numInts, values);
 	}
 }

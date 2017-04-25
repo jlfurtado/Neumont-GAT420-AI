@@ -27,6 +27,14 @@ namespace Engine
 		static char *ToUpper(char *const str);
 		static int StringCopy(const char *const source, char *const target, int targetSize);
 		static int StringConcatIntoBuffer(const char *const str1, const char *const str2, const char *const sep, char *const target, int targetSize);
+
+		// methods that parse strings
+		static bool GetSingleFloatFromString(const char *const string, float& outValue);
+		static bool GetFloatsFromString(const char *const string, int numFloats, float *outValues);
+		static bool GetIntsFromString(const char *const string, int numInts, int *outValues);
+		static bool GetSingleIntFromString(const char *const string, int& outValue);
+		static bool IsWhiteSpace(char c);
+		static bool IsDigit(char c);
 	};
 }
 

@@ -4,7 +4,6 @@
 #include "Mat4.h"
 #include "RenderEngine.h"
 #include "ConfigReader.h"
-#include "CollisionTester.h"
 #include "MyGL.h"
 #include "ShapeGenerator.h"
 #include "MousePicker.h"
@@ -15,6 +14,7 @@
 // 4/20/2017
 // WorldEditor.h
 // Enables editing of the world!
+
 
 const float RENDER_DISTANCE = 2500.0f;
 bool WorldEditor::InitializeCallback(void * game, Engine::MyWindow * pWindow)
@@ -62,9 +62,72 @@ bool WorldEditor::DestroyObjsCallback(Engine::GraphicalObject * pObj, void *pCla
 
 	delete pObj;
 
-	pEditor->m_sphereCount--;
+	pEditor->m_objCount--;
 	
 	return true;
+}
+
+void WorldEditor::PlaceObject(WorldEditor *pEditor)
+{
+	if (Engine::MouseManager::IsLeftMouseClicked() && (pEditor->m_rco.m_didIntersect || pEditor->m_objs.GetCount() == 0))
+	{
+		Engine::Vec3 color = Engine::Vec3(0.0f, 1.0f, 0.0f);
+		Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
+		Engine::ShapeGenerator::MakeCube(pNewObj);
+
+		// if scene is empty, place at 0 0 0, else, place at where clicked
+		pNewObj->SetTransMat(Engine::Mat4::Translation(pEditor->m_objs.GetCount() == 0 ? Engine::Vec3(0.0f) : pEditor->m_rco.m_intersectionPoint));
+		pNewObj->CalcFullTransform();
+
+		pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pNewObj->GetFullTransformPtr(), pEditor->modelToWorldMatLoc));
+		pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &pEditor->wtv, pEditor->worldToViewMatLoc));
+		pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pEditor->m_perspective.GetPerspectivePtr(), pEditor->perspectiveMatLoc));
+		pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pNewObj->GetMatPtr()->m_materialColor, pEditor->tintLoc));
+		pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pNewObj->GetMatPtr()->m_specularIntensity, pEditor->tintIntensityLoc));
+		pNewObj->GetMatPtr()->m_materialColor = color;
+		pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
+
+		Engine::RenderEngine::AddGraphicalObject(pNewObj);
+		Engine::CollisionTester::AddGraphicalObjectToLayer(pNewObj, Engine::CollisionLayer::LAYER_1);
+		Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::LAYER_1);
+		
+		pEditor->m_objs.AddToList(pNewObj);
+		pEditor->m_objCount++;
+	}
+}
+
+void WorldEditor::RemoveObject(WorldEditor *pEditor)
+{
+	pEditor->DoMouseOverHighlight();
+
+	if (Engine::MouseManager::IsLeftMouseClicked() && pEditor->m_rco.m_didIntersect)
+	{
+		pEditor->m_pLastHit = nullptr; // prevent crash on obj remove
+		DestroyObjsCallback(pEditor->m_rco.m_belongsTo, pEditor);
+		pEditor->m_objs.RemoveFromList(pEditor->m_rco.m_belongsTo);
+		Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::LAYER_1); // need to recalc grid so not colliding with non-existant objects	
+	}
+}
+
+void WorldEditor::TranslateObject(WorldEditor *pEditor)
+{
+	pEditor->DoSelection();
+
+	// ...
+}
+
+void WorldEditor::RotateObject(WorldEditor *pEditor)
+{
+	pEditor->DoSelection();
+
+	// ...
+}
+
+void WorldEditor::ScaleObject(WorldEditor *pEditor)
+{
+	pEditor->DoSelection();
+
+	// ...
 }
 
 bool WorldEditor::Initialize(Engine::MyWindow * pWindow)
@@ -110,7 +173,7 @@ bool WorldEditor::Initialize(Engine::MyWindow * pWindow)
 	}
 
 	// setup keys for the world editor
-	if (!keyboardManager.AddKeys("XWASD") || !keyboardManager.AddKey(VK_SHIFT)
+	if (!keyboardManager.AddKeys("XWASD1234567890") || !keyboardManager.AddKey(VK_SHIFT)
 		|| !keyboardManager.AddToggle('G', &drawGrid))
 	{
 		Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to add keys for WorldEditor!\n");
@@ -144,8 +207,8 @@ bool WorldEditor::Shutdown()
 	if (!Engine::RenderEngine::Shutdown()) { return false; }
 	if (!Engine::ShapeGenerator::Shutdown()) { return false; }
 
-	m_spheres.WalkList(DestroyObjsCallback, this);
-	if (m_sphereCount != 0) { Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to DestroyObjs! Check for memory leak or counter inaccuracy [%d] objs left!\n", m_sphereCount); return false; }
+	m_objs.WalkList(DestroyObjsCallback, this);
+	if (m_objCount != 0) { Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to DestroyObjs! Check for memory leak or counter inaccuracy [%d] objs left!\n", m_objCount); return false; }
 
 	//player.Shutdown(); // TODO:???
 
@@ -186,52 +249,10 @@ void WorldEditor::Update(float dt)
 
 	Engine::MousePicker::SetCameraInfo(m_camera.GetPosition(), m_camera.GetViewDir(), m_camera.GetUp());
 
+	m_rco = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, Engine::CollisionLayer::NUM_LAYERS);
 
-	if (Engine::MouseManager::IsLeftMouseClicked())
-	{
-		if (keyboardManager.KeyIsDown(VK_SHIFT))
-		{
-			// mouse raycast against spheres in layer 1
-			Engine::RayCastingOutput rco = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, Engine::CollisionLayer::LAYER_1);
+	m_currentMode(this);
 
-			// check to make sure it hit and we hit one of the spheres
-			if (rco.m_didIntersect && m_spheres.Contains(rco.m_belongsTo))
-			{
-				DestroyObjsCallback(rco.m_belongsTo, this);
-				m_spheres.RemoveFromList(rco.m_belongsTo);
-				Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::LAYER_1); // need to recalc grid so not colliding with non-existant objects
-			}
-		}
-		else
-		{
-			// mouse raycast against hideout
-			Engine::RayCastingOutput rco = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, Engine::CollisionLayer::NUM_LAYERS);
-
-			// if hideout hit
-			if (rco.m_didIntersect)
-			{
-				Engine::Vec3 color = Engine::Vec3(0.0f, 1.0f, 0.0f);
-				Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
-				Engine::ShapeGenerator::MakeCube(pNewObj);
-				pNewObj->SetTransMat(Engine::Mat4::Translation(rco.m_intersectionPoint));
-				pNewObj->CalcFullTransform();
-
-				pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pNewObj->GetFullTransformPtr(), modelToWorldMatLoc));
-				pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
-				pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
-				pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pNewObj->GetMatPtr()->m_materialColor, tintLoc));
-				pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pNewObj->GetMatPtr()->m_specularIntensity, tintIntensityLoc));
-				Engine::RenderEngine::AddGraphicalObject(pNewObj);
-				Engine::CollisionTester::AddGraphicalObjectToLayer(pNewObj, Engine::CollisionLayer::LAYER_1);
-				Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::LAYER_1);
-				pNewObj->GetMatPtr()->m_materialColor = color;
-				pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
-				m_spheres.AddToList(pNewObj);
-				m_sphereCount++;
-
-			}
-		}
-	}
 
 
 }
@@ -245,6 +266,7 @@ void WorldEditor::Draw()
 	if (drawGrid) { Engine::CollisionTester::DrawGrid(Engine::CollisionLayer::STATIC_GEOMETRY, m_camera.GetPosition()); }
 
 	m_fpsTextObject.RenderText(&m_shaderPrograms[0], debugColorLoc);
+	m_modeText.RenderText(&m_shaderPrograms[0], debugColorLoc);
 }
 
 void WorldEditor::OnResizeWindow()
@@ -259,6 +281,7 @@ void WorldEditor::OnResizeWindow()
 
 void WorldEditor::OnMouseScroll(int /*degrees*/)
 {
+
 }
 
 void WorldEditor::OnMouseMove(int deltaX, int deltaY)
@@ -340,22 +363,9 @@ bool WorldEditor::InitializeGL()
 	debugColorLoc = m_shaderPrograms[0].GetUniformLocation("tint");
 	tintLoc = m_shaderPrograms[3].GetUniformLocation("tint");
 	tintIntensityLoc = m_shaderPrograms[1].GetUniformLocation("tintIntensity");
-	//ambientColorLoc = m_shaderPrograms[3].GetUniformLocation("ambientLightColor");
-	//ambientIntensityLoc = m_shaderPrograms[3].GetUniformLocation("ambientLightIntensity");
-	//diffuseColorLoc = m_shaderPrograms[3].GetUniformLocation("diffuseLightColor");
-	//diffuseIntensityLoc = m_shaderPrograms[3].GetUniformLocation("diffuseLightIntensity");
-	//specularColorLoc = m_shaderPrograms[3].GetUniformLocation("specularLightColor");
-	//specularIntensityLoc = m_shaderPrograms[3].GetUniformLocation("specularLightIntensity");
-	//specularPowerLoc = m_shaderPrograms[3].GetUniformLocation("specularPower");
 	modelToWorldMatLoc = m_shaderPrograms[0].GetUniformLocation("modelToWorld");
 	worldToViewMatLoc = m_shaderPrograms[0].GetUniformLocation("worldToView");
 	perspectiveMatLoc = m_shaderPrograms[0].GetUniformLocation("projection");
-	//lightLoc = m_shaderPrograms[3].GetUniformLocation("lightPos_WorldSpace");
-	//cameraPosLoc = m_shaderPrograms[3].GetUniformLocation("cameraPosition_WorldSpace");
-	//repeatScaleLoc = m_shaderPrograms[2].GetUniformLocation("repeatScale");
-	//numIterationsLoc = m_shaderPrograms[2].GetUniformLocation("numIterations");
-	//shaderOffsetLoc = m_shaderPrograms[2].GetUniformLocation("randomValue");
-	//texLoc = m_shaderPrograms[6].GetUniformLocation("textureSampler");
 	matLoc = modelToWorldMatLoc;
 
 	//if (Engine::MyGL::TestForError(Engine::MessageType::cFatal_Error, "InitializeGL errors!"))
@@ -376,7 +386,11 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyIsDown('S')) { m_camera.MoveBackward(dt); }
 	if (keyboardManager.KeyIsDown('A')) { m_camera.StrafeLeft(dt); }
 	if (keyboardManager.KeyIsDown('D')) { m_camera.StrafeRight(dt); }
-
+	if (keyboardManager.KeyWasPressed('1')) { SwapToPlace(); }
+	if (keyboardManager.KeyWasPressed('2')) { SwapToRemove(); }
+	if (keyboardManager.KeyWasPressed('3')) { SwapToTranslate(); }
+	if (keyboardManager.KeyWasPressed('4')) { SwapToRotate(); }
+	if (keyboardManager.KeyWasPressed('5')) { SwapToScale(); }
 
 	return true;
 }
@@ -405,23 +419,27 @@ bool WorldEditor::UglyDemoCode()
 {
 	if (!Engine::TextObject::Initialize(matLoc, tintLoc)) { return false; }
 	if (!m_fpsTextObject.MakeBuffers()) { return false; }
+	if (!m_modeText.MakeBuffers()) { return false; }
 
-	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\AIWorld.PC.scene", &m_hideout, m_shaderPrograms[1].GetProgramId());
+	Engine::GraphicalObject *pHideout = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\AIWorld.PC.scene", pHideout, m_shaderPrograms[1].GetProgramId());
 	
-	m_hideout.SetScaleMat(Engine::Mat4::Scale(1.0f));
-	m_hideout.CalcFullTransform();
+	pHideout->SetScaleMat(Engine::Mat4::Scale(1.0f));
+	pHideout->CalcFullTransform();
 	
-	m_hideout.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_hideout.GetFullTransformPtr(), modelToWorldMatLoc));
-	m_hideout.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
-	m_hideout.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
-	m_hideout.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_hideout.GetMatPtr()->m_materialColor, tintLoc));
-	m_hideout.AddUniformData(Engine::UniformData(GL_FLOAT, &m_hideout.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
-	
-	m_hideout.GetMatPtr()->m_specularIntensity = 0.75f;
-	m_hideout.GetMatPtr()->m_materialColor = Engine::Vec3(1.0f, 0.0f, 0.5f);
+	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pHideout->GetFullTransformPtr(), modelToWorldMatLoc));
+	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
+	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
+	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pHideout->GetMatPtr()->m_materialColor, tintLoc));
+	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT, &pHideout->GetMatPtr()->m_specularIntensity, tintIntensityLoc));
 
-	Engine::RenderEngine::AddGraphicalObject(&m_hideout);
-	Engine::CollisionTester::AddGraphicalObjectToLayer(&m_hideout, Engine::CollisionLayer::STATIC_GEOMETRY);
+	pHideout->GetMatPtr()->m_specularIntensity = 0.75f;
+	pHideout->GetMatPtr()->m_materialColor = Engine::Vec3(1.0f, 0.0f, 0.5f);
+
+	Engine::RenderEngine::AddGraphicalObject(pHideout);
+	Engine::CollisionTester::AddGraphicalObjectToLayer(pHideout, Engine::CollisionLayer::LAYER_1);
+	m_objs.AddToList(pHideout);
+	m_objCount++; // should be one now
 
 	m_perspective.SetPerspective(m_pWindow->width() / static_cast<float>(m_pWindow->height()), Engine::MathUtility::ToRadians(60.0f), 1.0f, RENDER_DISTANCE);
 	m_perspective.SetScreenDimmensions(static_cast<float>(m_pWindow->width()), static_cast<float>(m_pWindow->height()));
@@ -431,5 +449,134 @@ bool WorldEditor::UglyDemoCode()
 
 
 	m_fpsTextObject.SetupText(-0.9f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "FPS: 0\n");
+	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Place\n");
+
 	return true;
+}
+
+void WorldEditor::SwapToPlace()
+{
+	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Place\n");
+	m_currentMode = WorldEditor::PlaceObject;
+
+	DeSelect();
+	DeMouseOver();
+}
+
+void WorldEditor::SwapToRemove()
+{
+	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Remove\n");
+	m_currentMode = WorldEditor::RemoveObject;
+
+	highlightedColor = Engine::Vec3(1.0f, 0.0f, 0.0f);
+	DeSelect();
+}
+
+void WorldEditor::SwapToTranslate()
+{
+	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Translate\n");
+	m_currentMode = WorldEditor::TranslateObject;
+
+	highlightedColor = Engine::Vec3(1.0f, 1.0f, 0.0f);
+	DeMouseOver();
+}
+
+void WorldEditor::SwapToRotate()
+{
+	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Rotate\n");
+	m_currentMode = WorldEditor::RotateObject;
+
+	highlightedColor = Engine::Vec3(1.0f, 1.0f, 0.0f);
+	DeMouseOver();
+}
+
+void WorldEditor::SwapToScale()
+{
+	m_modeText.SetupText(0.3f, 0.9f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, "Mode: Scale\n");
+	m_currentMode = WorldEditor::ScaleObject;
+	
+	highlightedColor = Engine::Vec3(1.0f, 1.0f, 0.0f);
+	DeMouseOver();
+}
+
+void WorldEditor::DoMouseOverHighlight()
+{
+	if (m_rco.m_didIntersect)
+	{
+		// handle mouse move from obj to obj
+		if (m_pLastHit && m_pLastHit != m_rco.m_belongsTo)
+		{
+			UnColor(m_pLastHit);
+		}
+
+		// highlight whatever we have hit
+		Color(m_rco.m_belongsTo, &highlightedColor);
+
+		// update last hit
+		m_pLastHit = m_rco.m_belongsTo;
+	}
+	else
+	{
+		if (m_pLastHit)
+		{
+			// Handle mousing off
+			UnColor(m_pLastHit);
+		}
+	}
+}
+
+void WorldEditor::DoSelection()
+{
+	// if we hit something
+	if (Engine::MouseManager::IsLeftMouseClicked())
+	{
+		if (m_rco.m_didIntersect)
+		{
+			// handle mouse move from obj to obj
+			if (m_pSelected && m_pSelected != m_rco.m_belongsTo)
+			{
+				UnColor(m_pSelected);
+			}
+
+			// highlight whatever we have hit
+			Color(m_rco.m_belongsTo, &highlightedColor);
+
+			// clicking on something selects it
+			m_pSelected = m_rco.m_belongsTo;
+		}
+		else
+		{
+			// handle de-selection
+			UnColor(m_pSelected);
+
+			// clicking on nothingness de-selects all
+			m_pSelected = nullptr;
+		}
+	}
+}
+
+void WorldEditor::Color(Engine::GraphicalObject * pObj, Engine::Vec3 *pColor)
+{
+	if (!pObj || !pColor) { return; }
+	Engine::Vec3 **pData = reinterpret_cast<Engine::Vec3**>(pObj->GetUniformDataPtrPtrByLoc(tintLoc));
+	*pData = pColor;
+}
+
+void WorldEditor::UnColor(Engine::GraphicalObject * pObj)
+{
+	if (!pObj) { return; }
+	Engine::Vec3 **pData = reinterpret_cast<Engine::Vec3**>(pObj->GetUniformDataPtrPtrByLoc(tintLoc));
+	*pData = &pObj->GetMatPtr()->m_materialColor;
+}
+
+void WorldEditor::DeSelect()
+{
+	UnColor(m_pSelected);
+	m_pSelected = nullptr;
+}
+
+void WorldEditor::DeMouseOver()
+{
+	UnColor(m_pLastHit);
+	m_pLastHit = nullptr;
 }

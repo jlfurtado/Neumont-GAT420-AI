@@ -113,6 +113,11 @@ namespace Engine
 			if (m_nodeCount != 0) { GameLogger::Log(MessageType::cError, "Failed to clear Linked List with id [%d]\n!"); }
 		}
 
+		unsigned int GetCount() const
+		{
+			return m_nodeCount;
+		}
+
 	private:
 		void RemoveSingleNode(Node *pBefore, Node *pNodeToRemove)
 		{

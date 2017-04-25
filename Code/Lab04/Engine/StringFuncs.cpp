@@ -1,4 +1,5 @@
 #include "StringFuncs.h"
+#include "GameLogger.h"
 
 // Justin Furtado
 // 5/4/2016
@@ -192,5 +193,161 @@ namespace Engine
 		*(target + pos) = '\0';
 
 		return pos;
+	}
+
+	bool StringFuncs::GetSingleFloatFromString(const char * const string, float & outValue)
+	{
+		if (!string) return false;
+		if (*(string) == '\0') { GameLogger::Log(MessageType::Warning, "Cannot convert the empty string to a floating-point value!\n"); return false; }
+
+		float prev = outValue;
+		outValue = 0.0f;
+		float dec = 10.0f;
+		bool decimal = false;
+		bool e = false;
+		bool neg = false;
+		int eVal = 0;
+
+		for (int pos = 0; *(string + pos) && !IsWhiteSpace(*(string + pos)); ++pos)
+		{
+			if (*(string + pos) == '-') { neg = !neg; continue; }
+			if (!e && (*(string + pos) == 'e' || *(string + pos) == 'E')) { e = true; if (neg) { outValue *= -1; } neg = false; continue; }
+			if (*(string + pos) >= '0' && *(string + pos) <= '9')
+			{
+				if (e)
+				{
+					eVal *= 10;
+					eVal += (int)((*(string + pos) - '0'));
+					continue;
+				}
+
+				if (!decimal)
+				{
+					outValue *= 10;
+					outValue += (float)((*(string + pos) - '0'));
+				}
+				else
+				{
+					outValue += ((float)((*(string + pos) - '0') / dec));
+					dec *= 10.0f;
+				}
+			}
+			else if (*(string + pos) == '.' && !e)
+			{
+				if (!decimal) { decimal = true; }
+				else { GameLogger::Log(MessageType::Error, "Cannot parse [%s] to float! It contains more than one decimal point!\n", string); outValue = prev; return false; }
+			}
+			else { GameLogger::Log(MessageType::Error, "Cannot parse [%s] to float! character [%c] is not a valid digit!\n", string, *(string + pos)); outValue = prev; return false; }
+		}
+
+		if (e)
+		{
+			outValue *= (float)pow(10.0, neg ? -eVal : eVal);
+		}
+		else
+		{
+			outValue *= neg ? -1.0f : 1.0f;
+		}
+
+		return true;
+	}
+
+	bool StringFuncs::GetFloatsFromString(const char * const string, int numFloats, float * outValues)
+	{
+		if(!string) return false;
+		if (*string == '\0') { GameLogger::Log(MessageType::Warning, "Cannot extract floating point values from the empty string!\n"); return false; }
+		if (numFloats <= 0) { GameLogger::Log(MessageType::Warning, "Invalid value [%d] passed for numFloats in GetFloatsForString()!\n", numFloats); return false; }
+
+		int outOffset = 0;
+		for (int offset = 0; *(string + offset); ++offset)
+		{
+			if ((!offset || IsWhiteSpace(*(string + offset - 1))) && !IsWhiteSpace(*(string + offset)))
+			{
+				float value = 0.0f;
+				if (!GetSingleFloatFromString(string + offset, value))
+				{
+					GameLogger::Log(MessageType::Warning, "GetFloatsForString [%s] failed, float #%d could not be parsed! Aborting!\n", string, outOffset);
+					return false;
+				}
+
+				if (outOffset >= numFloats) { GameLogger::Log(MessageType::Warning, "GetFloatsForString expected to find [%d] floats but found extra! Aborting!\n", numFloats); return false; }
+
+				*(outValues + outOffset) = value;
+				outOffset++;
+			}
+		}
+
+		if (outOffset < numFloats) { GameLogger::Log(MessageType::Warning, "GetFloatsForString expected to find [%d] floats but found [%d]! Aborting!\n", numFloats, outOffset); return false; }
+		else { GameLogger::Log(MessageType::Info, "Found the correct number of floats!\n"); }
+
+		return true;
+	}
+
+	bool StringFuncs::GetIntsFromString(const char * const string, int numInts, int * outValues)
+	{
+		if (!string) return false;
+		if (*string == '\0') { GameLogger::Log(MessageType::Warning, "Cannot extract int values from the empty string!\n"); return false; }
+		if (numInts <= 0) { GameLogger::Log(MessageType::Warning, "Invalid value [%d] passed for numInts in GetIntsForString()!\n", numInts); return false; }
+
+		int outOffset = 0;
+		for (int offset = 0; *(string + offset); ++offset)
+		{
+			if ((!offset || IsWhiteSpace(*(string + offset - 1))) && !IsWhiteSpace(*(string + offset)))
+			{
+				int value = 0;
+				if (!GetSingleIntFromString(string + offset, value))
+				{
+					GameLogger::Log(MessageType::Warning, "GetIntsForString [%s] failed, int #%d could not be parsed! Aborting!\n", string, outOffset);
+					return false;
+				}
+
+				if (outOffset >= numInts) { GameLogger::Log(MessageType::Warning, "GetIntsForKey expected to find [%d] ints but found extra! Aborting!\n", numInts); return false; }
+
+				*(outValues + outOffset) = value;
+				outOffset++;
+			}
+		}
+
+		if (outOffset < numInts) { GameLogger::Log(MessageType::Warning, "GetIntsForKey expected to find [%d] ints but found [%d]! Aborting!\n", numInts, outOffset); return false; }
+		else { GameLogger::Log(MessageType::Info, "Found the correct number of ints!\n"); }
+		return true;
+	}
+
+	bool StringFuncs::GetSingleIntFromString(const char * const string, int & outValue)
+	{
+		if (!string) return false;
+		if (*(string) == '\0') { GameLogger::Log(MessageType::Warning, "Cannot convert the empty string to an integer!\n"); return false; }
+
+		int prev = outValue;
+		outValue = 0;
+		bool neg = false;
+
+		for (int pos = 0; *(string + pos) && !IsWhiteSpace(*(string + pos)); ++pos)
+		{
+			if (*(string + pos) == '-') { neg = !neg; continue; }
+			if (*(string + pos) >= '0' && *(string + pos) <= '9')
+			{
+				outValue *= 10;
+				outValue += (int)((*(string + pos)) - '0');
+			}
+			else { GameLogger::Log(MessageType::Error, "Cannot parse [%s] to integer! character [%c] is not a valid digit!\n", string, *(string + pos)); outValue = prev; return false; }
+		}
+
+		if (neg)
+		{
+			outValue *= -1;
+		}
+
+		return true;
+	}
+
+	bool StringFuncs::IsWhiteSpace(char c)
+	{
+		return c == ' ' || c == '\t' || c == ' ';
+	}
+
+	bool StringFuncs::IsDigit(char c)
+	{
+		return (c >= '0') && (c <= '9');
 	}
 }

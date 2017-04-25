@@ -40,7 +40,6 @@ namespace Engine
 		ENGINE_SHARED bool GetIntsForKey(const char *const key, int numInts, int *values) const;
 		ENGINE_SHARED bool GetClampedFloatsForKey(const char *const key, int numFloats, float *values, float minValue, float maxValue) const;
 		ENGINE_SHARED bool GetClampedIntsForKey(const char *const key, int numInts, int *values, int minValue, int maxValue) const;
-		ENGINE_SHARED bool WhiteSpace(char c) const;
 		ENGINE_SHARED bool RegisterCallbackForConfigChanges(ConfigReaderCallback callbackToRegister, void *callbackClassInstance);
 		ENGINE_SHARED bool UnregisterCallbackForConfigChanges(ConfigReaderCallback callbackToUnregister);
 	 
@@ -53,9 +52,6 @@ namespace Engine
 		bool ReadLine(const char *const line);
 		bool ReadWord(const char *const line, int wordNum, char *const buffer, int bufferSize);
 		void CallCallbacks();
-
-		bool GetIntFromString(const char *const string, int& outValue) const;
-		bool GetFloatFromString(const char *const string, float& outValue) const;
 
 		// private data
 		static const int MAX_CALLBACKS = 25;
