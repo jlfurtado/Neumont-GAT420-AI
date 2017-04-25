@@ -94,6 +94,7 @@ private:
 	void AddObj(const char * const fp);
 	void WriteFile(const char *const filePath, Engine::GraphicalObject *pObj);
 	void HandleOutsideGrid(Engine::GraphicalObject *pObjToCheck);
+	static bool WriteOBJ(Engine::GraphicalObject *pOBj, void *pEditor);
 
 	static const int NUM_SHADER_PROGRAMS = 5;
 	Engine::ShaderProgram m_shaderPrograms[NUM_SHADER_PROGRAMS];

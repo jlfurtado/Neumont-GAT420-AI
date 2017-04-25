@@ -550,10 +550,9 @@ bool WorldEditor::InitializeGL()
 	return true;
 }
 
+char c1 = '0', c2 = '0';
 bool WorldEditor::ProcessInput(float dt)
 {
-	static char c1 = '0', c2 = '0';
-
 	if (keyboardManager.KeyWasPressed('X')) { Shutdown(); return false; }
 
 	if (keyboardManager.KeyIsDown('W')) { m_camera.MoveForward(dt); }
@@ -568,25 +567,23 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('6')) { SwapToMakeCube(); }
 	if (keyboardManager.KeyWasPressed('7')) { SwapToMakeHideout(); }
 	if (keyboardManager.KeyWasPressed('8')) { SwapToMakeHouse(); }
-	if (keyboardManager.KeyWasPressed('9') && m_pSelected) 
+	if (keyboardManager.KeyWasPressed('9')) 
 	{
-		char buffer[256]{ '\0' };
-		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputFile", buffer))
+		if (keyboardManager.KeyIsDown(VK_SHIFT))
 		{
-			int len = Engine::StringFuncs::StringLen(buffer);
-			buffer[len] = c1;
-			buffer[len+1] = c2;
-
-			c2++; if (c2 > '9') { c2 = '0'; c1++; if (c1 > '9') { Engine::GameLogger::Log(Engine::MessageType::cError, "Your ugly hard coded string thing you probably forgot about ran out of space, ctrl+f for this log!\n"); return false; } }
-			Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "[%s]\n", &buffer[0]);
-			WriteFile(&buffer[0], m_pSelected);
+			m_objs.WalkList(WorldEditor::WriteOBJ, this);
 		}
+		else if (m_pSelected)
+		{
+			WriteOBJ(m_pSelected, this);
+		}
+
 	}
 
 	if (keyboardManager.KeyWasPressed('0'))
 	{
 		char buffer[256]{ '\0' };
-		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.InputFile", buffer))
+		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.InputFile", buffer) && (c1 >= '0' && c2 > '0'))
 		{
 			int len = Engine::StringFuncs::StringLen(buffer);
 			char lc1, lc2;
@@ -885,6 +882,25 @@ void WorldEditor::HandleOutsideGrid(Engine::GraphicalObject * pObjToCheck)
 
 	Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
 	
+}
+
+bool WorldEditor::WriteOBJ(Engine::GraphicalObject *pObj, void * pEditor)
+{
+	WorldEditor *pED = reinterpret_cast<WorldEditor*>(pEditor);
+
+	char buffer[256]{ '\0' };
+	if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputFile", buffer))
+	{
+		int len = Engine::StringFuncs::StringLen(buffer);
+		buffer[len] = c1;
+		buffer[len + 1] = c2;
+
+		c2++; if (c2 > '9') { c2 = '0'; c1++; if (c1 > '9') { Engine::GameLogger::Log(Engine::MessageType::cError, "Your ugly hard coded string thing you probably forgot about ran out of space, ctrl+f for this log!\n"); return false; } }
+		Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "[%s]\n", &buffer[0]);
+		pED->WriteFile(&buffer[0], pObj);
+	}
+
+	return true;
 }
 
 Engine::Vec3 WorldEditor::GetArrowDir(Engine::GraphicalObject * pArrow)

@@ -1008,7 +1008,7 @@ void EngineDemo::LoadWorldFileAndApplyPCUniforms()
 	if (Engine::ConfigReader::pReader->GetStringForKey("EngineDemo.World.InputFileName", buffer))
 	{
 		int len = Engine::StringFuncs::StringLen(buffer);
-		for (char c1 = '0', c2 = '0'; (c1 <= '9' || c2 <= '9'); c2++)
+		for (char c1 = '0', c2 = '0'; !(c1 > '9' || c2 > '9'); c2++)
 		{
 			buffer[len] = c1;
 			buffer[len + 1] = c2;
@@ -1044,7 +1044,7 @@ void EngineDemo::LoadWorldFileAndApplyPCUniforms()
 			m_objCount++;
 			nextBufferSlot = pos;
 			
-			if (c2 > '9') { c2 = '0'; c1++; }
+			if (c2 >= '9') { c2 = '0'; c1++; }
 		}
 	}
 }

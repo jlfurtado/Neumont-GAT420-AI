@@ -54,7 +54,7 @@ namespace Engine
 
 	private:
 		// methods
-		static const int MAX_SCENE_FILES = 30;
+		static const int MAX_SCENE_FILES = 100;
 		static const int MAX_POINT_MESHES = 25;
 		static const int MAX_TESSALATED_PLANES = 5;
 		static const int MAX_QUAD_MESHES = 5;
