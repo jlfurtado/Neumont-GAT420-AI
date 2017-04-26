@@ -35,7 +35,7 @@ namespace Engine
 		GLint GetShaderProgramID();
 
 	private:
-		static const int MAX_BUFFER_INFO_PER_GROUP = 20;
+		static const int MAX_BUFFER_INFO_PER_GROUP = 25;
 		bool m_cullForObjectsInBuffer;
 		GLuint m_defaultBuffersize;
 		GLuint m_nextBufferPair;

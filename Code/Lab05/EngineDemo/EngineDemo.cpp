@@ -1010,6 +1010,8 @@ void EngineDemo::LoadWorldFileAndApplyPCUniforms()
 		int len = Engine::StringFuncs::StringLen(buffer);
 		for (char c1 = '0', c2 = '0'; !(c1 > '9' || c2 > '9'); c2++)
 		{
+			if (c2 >= '9') { c2 = '0'; c1++; }
+
 			buffer[len] = c1;
 			buffer[len + 1] = c2;
 			std::ifstream inputFileStream;
@@ -1043,8 +1045,6 @@ void EngineDemo::LoadWorldFileAndApplyPCUniforms()
 			m_fromWorldEditorOBJs.AddToList(pNewObj);
 			m_objCount++;
 			nextBufferSlot = pos;
-			
-			if (c2 >= '9') { c2 = '0'; c1++; }
 		}
 	}
 }

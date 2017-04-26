@@ -124,6 +124,7 @@ void WorldEditor::PlaceObject(WorldEditor *pEditor)
 
 		// if scene is empty, place at 0 0 0, else, place at where clicked
 		pNewObj->SetTransMat(Engine::Mat4::Translation(pEditor->m_objs.GetCount() == 0 ? Engine::Vec3(0.0f) : pEditor->m_rco.m_intersectionPoint));
+		pNewObj->SetRotMat(Engine::Mat4::RotationToFace(PLUS_Y, pEditor->m_rco.m_triangleNormal));
 		pNewObj->CalcFullTransform();
 
 		// add it to the necessary things, it'll get deleted on shutdown or remove
