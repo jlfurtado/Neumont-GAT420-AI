@@ -19,10 +19,20 @@
 
 class WorldEditor
 {
+	typedef Engine::GraphicalObject *(*MakeObjectCallback)(WorldEditor *);
+	typedef void(*ActionCallback)(WorldEditor *);
+
 	struct PassThroughData
 	{
 		Engine::Mesh *pMesh;
 		Engine::Mat4 fullTransform;
+	};
+
+	struct PlacementData
+	{
+		PlacementData(char *str, MakeObjectCallback callback) : m_placementStr(str), m_callback(callback) {}
+		char *m_placementStr;
+		MakeObjectCallback m_callback;
 	};
 
 public:
@@ -35,8 +45,6 @@ public:
 	static bool DestroyObjsCallback(Engine::GraphicalObject *pObj, void *pClassInstance);
 	
 private:
-	typedef void(*ActionCallback)(WorldEditor *);
-	typedef Engine::GraphicalObject *(*MakeObjectCallback)(WorldEditor *);
 
 	static bool TransformVerts(int index, const void *pVertex, void *pClassInstance, void *pPassThroughData);
 	static void PlaceObject(WorldEditor *pEditor);
@@ -44,15 +52,14 @@ private:
 	static void TranslateObject(WorldEditor *pEditor);
 	static void RotateObject(WorldEditor *pEditor);
 	static void ScaleObject(WorldEditor *pEditor);
-
+	static void SetPCUniforms(WorldEditor *pEditor, Engine::GraphicalObject *pObj);
 
 	static Engine::GraphicalObject *MakeCube(WorldEditor *pEditor);
 	static Engine::GraphicalObject *MakeHideout(WorldEditor *pEditor);
 	static Engine::GraphicalObject *MakeHouse(WorldEditor *pEditor);
 
-	void SwapToMakeHideout();
-	void SwapToMakeCube();
-	void SwapToMakeHouse();
+	void SwapMakeForward();
+	void SwapMakeBackward();
 	void SwapToPlace();
 	void SwapToRemove();
 	void SwapToTranslate();
@@ -96,6 +103,8 @@ private:
 	void HandleOutsideGrid(Engine::GraphicalObject *pObjToCheck);
 	static bool WriteOBJ(Engine::GraphicalObject *pOBj, void *pEditor);
 
+	static const int NUM_PLACEMENT_DATA = 3;
+	static const PlacementData s_placementData[NUM_PLACEMENT_DATA];
 	static const int NUM_SHADER_PROGRAMS = 5;
 	Engine::ShaderProgram m_shaderPrograms[NUM_SHADER_PROGRAMS];
 	Engine::MyWindow *m_pWindow;
@@ -128,7 +137,7 @@ private:
 	Engine::GraphicalObject m_originMarker;
 	Engine::Vec3 GetArrowDir(Engine::GraphicalObject *pArrow);
 	ActionCallback m_currentMode{ WorldEditor::PlaceObject };
-	MakeObjectCallback m_currentPlacement{ WorldEditor::MakeCube };
+	int m_currentPlacement{ 0 };
 	float m_adjustmentSpeedMultiplier{ 1.0f };
 	static const Engine::Vec3 RED;
 	static const Engine::Vec3 YELLOW;

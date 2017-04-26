@@ -21,6 +21,11 @@ const int PLENTY = 1024 * 8;
 char saveBuffer[PLENTY]{ '\0' };
 int nextBufferSlot{ 0 };
 
+const WorldEditor::PlacementData WorldEditor::s_placementData[NUM_PLACEMENT_DATA]{ PlacementData("Placing: Cube\n", WorldEditor::MakeCube),
+																				   PlacementData("Placing: Hideout\n", WorldEditor::MakeHideout),
+																				   PlacementData("Placing: House\n", WorldEditor::MakeHouse)	};
+
+
 const float MOVE_MORE = 0.5f;
 const Engine::Vec3 BASE_ARROW_DIR = Engine::Vec3(1.0f, 0.0f, 0.0f);
 const Engine::Vec3 PLUS_X = Engine::Vec3(1.0f, 0.0f, 0.0f);
@@ -105,7 +110,7 @@ void WorldEditor::PlaceObject(WorldEditor *pEditor)
 	if (Engine::MouseManager::IsLeftMouseClicked() && (pEditor->m_rco.m_didIntersect || pEditor->m_objs.GetCount() == 0))
 	{
 		// make an obj with the callback
-		Engine::GraphicalObject *pNewObj = pEditor->m_currentPlacement(pEditor);
+		Engine::GraphicalObject *pNewObj = s_placementData[pEditor->m_currentPlacement].m_callback(pEditor);
 
 		// if scene is empty, place at 0 0 0, else, place at where clicked
 		pNewObj->SetTransMat(Engine::Mat4::Translation(pEditor->m_objs.GetCount() == 0 ? Engine::Vec3(0.0f) : pEditor->m_rco.m_intersectionPoint));
@@ -301,6 +306,15 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 	}
 }
 
+void WorldEditor::SetPCUniforms(WorldEditor * pEditor, Engine::GraphicalObject * pObj)
+{
+	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pObj->GetFullTransformPtr(), pEditor->modelToWorldMatLoc));
+	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &pEditor->wtv, pEditor->worldToViewMatLoc));
+	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pEditor->m_perspective.GetPerspectivePtr(), pEditor->perspectiveMatLoc));
+	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pObj->GetMatPtr()->m_materialColor, pEditor->tintLoc));
+	pObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pObj->GetMatPtr()->m_specularIntensity, pEditor->tintIntensityLoc));
+}
+
 bool WorldEditor::Initialize(Engine::MyWindow * pWindow)
 {
 	// set pointer to window so we can talk to it from the class
@@ -431,16 +445,21 @@ void WorldEditor::Update(float dt)
 void WorldEditor::Draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	bool arrowEnabled = m_xArrow.IsEnabled();
 
 	glEnable(GL_DEPTH_TEST);
 	SetArrowEnabled(false);
 	Engine::RenderEngine::Draw();
-	SetArrowEnabled(true);
+	SetArrowEnabled(arrowEnabled);
 	glDisable(GL_DEPTH_TEST);
 
-	Engine::RenderEngine::DrawSingleObjectRegularly(&m_xArrow);
-	Engine::RenderEngine::DrawSingleObjectRegularly(&m_yArrow);
-	Engine::RenderEngine::DrawSingleObjectRegularly(&m_zArrow);
+	if (arrowEnabled)
+	{
+		Engine::RenderEngine::DrawSingleObjectRegularly(&m_xArrow);
+		Engine::RenderEngine::DrawSingleObjectRegularly(&m_yArrow);
+		Engine::RenderEngine::DrawSingleObjectRegularly(&m_zArrow);
+	}
 
 	if (drawGrid) { Engine::CollisionTester::DrawGrid(EDITOR_ITEMS, m_camera.GetPosition()); }
 
@@ -572,9 +591,8 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('3')) { SwapToTranslate(); }
 	if (keyboardManager.KeyWasPressed('4')) { SwapToRotate(); }
 	if (keyboardManager.KeyWasPressed('5')) { SwapToScale(); }
-	if (keyboardManager.KeyWasPressed('6')) { SwapToMakeCube(); }
-	if (keyboardManager.KeyWasPressed('7')) { SwapToMakeHideout(); }
-	if (keyboardManager.KeyWasPressed('8')) { SwapToMakeHouse(); }
+	if (keyboardManager.KeyWasPressed('7')) { SwapMakeForward(); }
+	if (keyboardManager.KeyWasPressed('8')) { SwapMakeBackward(); }
 	if (keyboardManager.KeyWasPressed('9')) 
 	{
 		if (keyboardManager.KeyIsDown(VK_SHIFT))
@@ -672,11 +690,7 @@ bool WorldEditor::UglyDemoCode()
 
 	Engine::ShapeGenerator::MakeDebugArrow(&m_xArrow, YELLOW, GREEN);
 
-	m_xArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_xArrow.GetFullTransformPtr(), modelToWorldMatLoc));
-	m_xArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
-	m_xArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
-	m_xArrow.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_xArrow.GetMatPtr()->m_materialColor, tintLoc));
-	m_xArrow.AddUniformData(Engine::UniformData(GL_FLOAT, &m_xArrow.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
+	SetPCUniforms(this, &m_xArrow);
 
 	m_xArrow.GetMatPtr()->m_specularIntensity = 0.7f;
 	m_xArrow.GetMatPtr()->m_materialColor = RED;
@@ -692,11 +706,7 @@ bool WorldEditor::UglyDemoCode()
 
 	Engine::ShapeGenerator::MakeDebugArrow(&m_yArrow, YELLOW, GREEN);
 
-	m_yArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_yArrow.GetFullTransformPtr(), modelToWorldMatLoc));
-	m_yArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
-	m_yArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
-	m_yArrow.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_yArrow.GetMatPtr()->m_materialColor, tintLoc));
-	m_yArrow.AddUniformData(Engine::UniformData(GL_FLOAT, &m_yArrow.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
+	SetPCUniforms(this, &m_yArrow);
 
 	m_yArrow.GetMatPtr()->m_specularIntensity = 0.7f;
 	m_yArrow.GetMatPtr()->m_materialColor = GREEN;
@@ -712,11 +722,7 @@ bool WorldEditor::UglyDemoCode()
 
 	Engine::ShapeGenerator::MakeDebugArrow(&m_zArrow, YELLOW, BLUE);
 
-	m_zArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_zArrow.GetFullTransformPtr(), modelToWorldMatLoc));
-	m_zArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
-	m_zArrow.AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
-	m_zArrow.AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &m_zArrow.GetMatPtr()->m_materialColor, tintLoc));
-	m_zArrow.AddUniformData(Engine::UniformData(GL_FLOAT, &m_zArrow.GetMatPtr()->m_specularIntensity, tintIntensityLoc));
+	SetPCUniforms(this, &m_zArrow);
 
 	m_zArrow.GetMatPtr()->m_specularIntensity = 0.7f;
 	m_zArrow.GetMatPtr()->m_materialColor = BLUE;
@@ -811,11 +817,7 @@ void WorldEditor::AddObj(const char * const fp)
 	Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile(fp, pNewObj, m_shaderPrograms[1].GetProgramId());
 
-	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pNewObj->GetFullTransformPtr(), modelToWorldMatLoc));
-	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &wtv, worldToViewMatLoc));
-	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, m_perspective.GetPerspectivePtr(), perspectiveMatLoc));
-	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pNewObj->GetMatPtr()->m_materialColor, tintLoc));
-	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pNewObj->GetMatPtr()->m_specularIntensity, tintIntensityLoc));
+	SetPCUniforms(this, pNewObj);
 	pNewObj->GetMatPtr()->m_materialColor = Engine::Vec3(0.5f, 0.25f, 1.0f);
 	pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
 
@@ -927,11 +929,7 @@ Engine::GraphicalObject * WorldEditor::MakeCube(WorldEditor * pEditor)
 	Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::MakeCube(pNewObj);
 
-	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pNewObj->GetFullTransformPtr(), pEditor->modelToWorldMatLoc));
-	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &pEditor->wtv, pEditor->worldToViewMatLoc));
-	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pEditor->m_perspective.GetPerspectivePtr(), pEditor->perspectiveMatLoc));
-	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pNewObj->GetMatPtr()->m_materialColor, pEditor->tintLoc));
-	pNewObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pNewObj->GetMatPtr()->m_specularIntensity, pEditor->tintIntensityLoc));
+	SetPCUniforms(pEditor, pNewObj);
 	pNewObj->GetMatPtr()->m_materialColor = color;
 	pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
 
@@ -943,11 +941,7 @@ Engine::GraphicalObject * WorldEditor::MakeHideout(WorldEditor * pEditor)
 	Engine::GraphicalObject *pHideout = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\AIWorld.PC.scene", pHideout, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pHideout->GetFullTransformPtr(), pEditor->modelToWorldMatLoc));
-	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &pEditor->wtv, pEditor->worldToViewMatLoc));
-	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pEditor->m_perspective.GetPerspectivePtr(), pEditor->perspectiveMatLoc));
-	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pHideout->GetMatPtr()->m_materialColor, pEditor->tintLoc));
-	pHideout->AddUniformData(Engine::UniformData(GL_FLOAT, &pHideout->GetMatPtr()->m_specularIntensity, pEditor->tintIntensityLoc));
+	SetPCUniforms(pEditor, pHideout);
 
 	pHideout->GetMatPtr()->m_specularIntensity = 0.75f;
 	pHideout->GetMatPtr()->m_materialColor = Engine::Vec3(1.0f, 0.0f, 0.5f);
@@ -960,11 +954,7 @@ Engine::GraphicalObject * WorldEditor::MakeHouse(WorldEditor * pEditor)
 	Engine::GraphicalObject *pHouse = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::MakeHouse(pHouse);
 
-	pHouse->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pHouse->GetFullTransformPtr(), pEditor->modelToWorldMatLoc));
-	pHouse->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &pEditor->wtv, pEditor->worldToViewMatLoc));
-	pHouse->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pEditor->m_perspective.GetPerspectivePtr(), pEditor->perspectiveMatLoc));
-	pHouse->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pHouse->GetMatPtr()->m_materialColor, pEditor->tintLoc));
-	pHouse->AddUniformData(Engine::UniformData(GL_FLOAT, &pHouse->GetMatPtr()->m_specularIntensity, pEditor->tintIntensityLoc));
+	SetPCUniforms(pEditor, pHouse);
 
 	pHouse->GetMatPtr()->m_specularIntensity = 0.75f;
 	pHouse->GetMatPtr()->m_materialColor = Engine::Vec3(0.0f, 1.0f, 0.5f);
@@ -972,22 +962,16 @@ Engine::GraphicalObject * WorldEditor::MakeHouse(WorldEditor * pEditor)
 	return pHouse;
 }
 
-void WorldEditor::SwapToMakeHideout()
+void WorldEditor::SwapMakeForward()
 {
-	SetupPlacingText("Placing: Hideout\n");
-	m_currentPlacement = WorldEditor::MakeHideout;
+	++m_currentPlacement %= NUM_PLACEMENT_DATA;
+	SetupPlacingText(s_placementData[m_currentPlacement].m_placementStr);
 }
 
-void WorldEditor::SwapToMakeCube()
+void WorldEditor::SwapMakeBackward()
 {
-	SetupPlacingText("Placing: Cube\n");
-	m_currentPlacement = WorldEditor::MakeCube;
-}
-
-void WorldEditor::SwapToMakeHouse()
-{
-	SetupPlacingText("Placing: House\n");
-	m_currentPlacement = WorldEditor::MakeHouse;
+	m_currentPlacement = m_currentPlacement == 0 ? NUM_PLACEMENT_DATA - 1 : m_currentPlacement - 1;
+	SetupPlacingText(s_placementData[m_currentPlacement].m_placementStr);
 }
 
 void WorldEditor::SwapToPlace()
