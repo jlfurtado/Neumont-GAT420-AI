@@ -1121,7 +1121,7 @@ void WorldEditor::SwapToPlace()
 	DeSelect();
 	DeMouseOver();
 	SetArrowEnabled(false);
-
+	SetupPlacingText(s_placementData[m_currentPlacement].m_placementStr);
 }
 
 void WorldEditor::SwapToRemove()
@@ -1133,6 +1133,7 @@ void WorldEditor::SwapToRemove()
 	SetHighlightColor(RED);
 	DeSelect();
 	SetArrowEnabled(false);
+	SetupPlacingText("");
 
 }
 
@@ -1145,6 +1146,7 @@ void WorldEditor::SwapToTranslate()
 	SetHighlightColor(YELLOW);
 	DeMouseOver();
 	m_adjustmentSpeedMultiplier = 1.0f; // good for translate
+	SetupPlacingText("");
 }
 
 void WorldEditor::SwapToRotate()
@@ -1156,6 +1158,7 @@ void WorldEditor::SwapToRotate()
 	SetHighlightColor(YELLOW);
 	DeMouseOver();
 	m_adjustmentSpeedMultiplier = 0.001f; // to be adjusted
+	SetupPlacingText("");
 }
 
 void WorldEditor::SwapToScale()
@@ -1167,6 +1170,7 @@ void WorldEditor::SwapToScale()
 	SetHighlightColor(YELLOW);
 	DeMouseOver();
 	m_adjustmentSpeedMultiplier = 0.1f; // scale is too fast normally
+	SetupPlacingText("");
 }
 
 void WorldEditor::DoMouseOverHighlight()
