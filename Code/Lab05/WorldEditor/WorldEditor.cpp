@@ -23,7 +23,17 @@ int nextBufferSlot{ 0 };
 
 const WorldEditor::PlacementData WorldEditor::s_placementData[NUM_PLACEMENT_DATA]{ PlacementData("Placing: Cube\n", WorldEditor::MakeCube),
 																				   PlacementData("Placing: Hideout\n", WorldEditor::MakeHideout),
-																				   PlacementData("Placing: House\n", WorldEditor::MakeHouse)	};
+																				   PlacementData("Placing: BetterDargon\n", WorldEditor::MakeBetterDargon),
+																				   PlacementData("Placing: Chair\n", WorldEditor::MakeChair),
+																				   PlacementData("Placing: Cone\n", WorldEditor::MakeCone),
+																				   PlacementData("Placing: Coil\n", WorldEditor::MakeCoil),
+																				   PlacementData("Placing: Cup\n", WorldEditor::MakeCup),
+																				   PlacementData("Placing: Tree\n", WorldEditor::MakeTree),
+																				   PlacementData("Placing: Pipe\n", WorldEditor::MakePipe),
+																				   PlacementData("Placing: Soccer\n", WorldEditor::MakeSoccer),
+																				   PlacementData("Placing: Wedge\n", WorldEditor::MakeWedge),
+																				   PlacementData("Placing: Star\n", WorldEditor::MakeStar),
+																				   PlacementData("Placing: House\n", WorldEditor::MakeHouse) };
 
 
 const float MOVE_MORE = 0.5f;
@@ -925,12 +935,11 @@ Engine::Vec3 WorldEditor::GetArrowDir(Engine::GraphicalObject * pArrow)
 
 Engine::GraphicalObject * WorldEditor::MakeCube(WorldEditor * pEditor)
 {
-	Engine::Vec3 color = Engine::Vec3(0.0f, 1.0f, 0.0f);
 	Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::MakeCube(pNewObj);
 
 	SetPCUniforms(pEditor, pNewObj);
-	pNewObj->GetMatPtr()->m_materialColor = color;
+	pNewObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
 	pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
 
 	return pNewObj;
@@ -944,7 +953,7 @@ Engine::GraphicalObject * WorldEditor::MakeHideout(WorldEditor * pEditor)
 	SetPCUniforms(pEditor, pHideout);
 
 	pHideout->GetMatPtr()->m_specularIntensity = 0.75f;
-	pHideout->GetMatPtr()->m_materialColor = Engine::Vec3(1.0f, 0.0f, 0.5f);
+	pHideout->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
 
 	return pHideout;
 }
@@ -954,12 +963,142 @@ Engine::GraphicalObject * WorldEditor::MakeHouse(WorldEditor * pEditor)
 	Engine::GraphicalObject *pHouse = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::MakeHouse(pHouse);
 
-	SetPCUniforms(pEditor, pHouse);
+	SetPCUniforms(pEditor, pHouse);	
 
 	pHouse->GetMatPtr()->m_specularIntensity = 0.75f;
-	pHouse->GetMatPtr()->m_materialColor = Engine::Vec3(0.0f, 1.0f, 0.5f);
+	pHouse->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
 
 	return pHouse;
+}
+
+Engine::GraphicalObject * WorldEditor::MakeBetterDargon(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pBetterDargon = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\BetterDargon.PC.scene", pBetterDargon, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	SetPCUniforms(pEditor, pBetterDargon);
+
+	pBetterDargon->GetMatPtr()->m_specularIntensity = 0.8f;
+	pBetterDargon->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+
+	return pBetterDargon;
+}
+
+Engine::GraphicalObject * WorldEditor::MakeChair(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Chair.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	SetPCUniforms(pEditor, pObj);
+
+	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
+	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+
+	return pObj;
+}
+
+Engine::GraphicalObject * WorldEditor::MakeCoil(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Coil.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	SetPCUniforms(pEditor, pObj);
+
+	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
+	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+
+	return pObj;
+}
+
+Engine::GraphicalObject * WorldEditor::MakeCone(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Cone.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	SetPCUniforms(pEditor, pObj);
+
+	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
+	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+
+	return pObj;
+}
+
+Engine::GraphicalObject * WorldEditor::MakeCup(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Cup.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	SetPCUniforms(pEditor, pObj);
+
+	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
+	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+
+	return pObj;
+}
+
+Engine::GraphicalObject * WorldEditor::MakeStar(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Star.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	SetPCUniforms(pEditor, pObj);
+
+	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
+	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+
+	return pObj;
+}
+
+Engine::GraphicalObject * WorldEditor::MakePipe(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Pipe.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	SetPCUniforms(pEditor, pObj);
+
+	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
+	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+
+	return pObj;
+}
+
+Engine::GraphicalObject * WorldEditor::MakeSoccer(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Soccer.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	SetPCUniforms(pEditor, pObj);
+
+	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
+	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+
+	return pObj;
+}
+
+Engine::GraphicalObject * WorldEditor::MakeTree(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Tree.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	SetPCUniforms(pEditor, pObj);
+
+	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
+	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+
+	return pObj;
+}
+
+Engine::GraphicalObject * WorldEditor::MakeWedge(WorldEditor * pEditor)
+{
+	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Wedge.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
+
+	SetPCUniforms(pEditor, pObj);
+
+	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
+	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+
+	return pObj;
 }
 
 void WorldEditor::SwapMakeForward()

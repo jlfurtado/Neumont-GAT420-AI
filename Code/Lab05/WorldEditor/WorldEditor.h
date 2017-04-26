@@ -57,6 +57,16 @@ private:
 	static Engine::GraphicalObject *MakeCube(WorldEditor *pEditor);
 	static Engine::GraphicalObject *MakeHideout(WorldEditor *pEditor);
 	static Engine::GraphicalObject *MakeHouse(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeBetterDargon(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeChair(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeCoil(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeCone(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeCup(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeStar(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakePipe(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeSoccer(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeTree(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeWedge(WorldEditor *pEditor);
 
 	void SwapMakeForward();
 	void SwapMakeBackward();
@@ -103,7 +113,7 @@ private:
 	void HandleOutsideGrid(Engine::GraphicalObject *pObjToCheck);
 	static bool WriteOBJ(Engine::GraphicalObject *pOBj, void *pEditor);
 
-	static const int NUM_PLACEMENT_DATA = 3;
+	static const int NUM_PLACEMENT_DATA = 13;
 	static const PlacementData s_placementData[NUM_PLACEMENT_DATA];
 	static const int NUM_SHADER_PROGRAMS = 5;
 	Engine::ShaderProgram m_shaderPrograms[NUM_SHADER_PROGRAMS];
