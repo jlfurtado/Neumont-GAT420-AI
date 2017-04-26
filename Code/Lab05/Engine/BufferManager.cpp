@@ -130,13 +130,13 @@ namespace Engine
 	{
 		for (int i = 0; i < s_nextBufferGroup; ++i)
 		{
-			if (s_bufferGroups[i].BelongsInThisGroup(pGraphicalObjectToRemove))
+			if (s_bufferGroups[i].ContainedInThisGroup(pGraphicalObjectToRemove))
 			{
 				s_bufferGroups[i].RemoveGraphicalObject(pGraphicalObjectToRemove);
 			}
 		}
 
-		// TODO: Update statistics on remove
+		s_graphicalObjectCount--;
 	}
 
 	void BufferManager::ConsoleLogStats()

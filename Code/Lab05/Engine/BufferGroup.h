@@ -28,6 +28,7 @@ namespace Engine
 		bool BelongsInThisGroup(VertexFormat format, GLint shaderProgramID, bool cull);
 		bool BelongsInThisGroup(Mesh *pMeshToCheck);
 		bool BelongsInThisGroup(GraphicalObject *pGraphicalObjectToCheck);
+		bool ContainedInThisGroup(GraphicalObject *pGraphicalObjectToCheck);
 
 		bool BufferGroupDoesCull();
 		GLint GetNextBufferInfo();

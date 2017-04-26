@@ -130,6 +130,19 @@ namespace Engine
 		return BelongsInThisGroup(pGraphicalObjectToCheck->GetMeshPointer());
 	}
 
+	bool BufferGroup::ContainedInThisGroup(GraphicalObject * pGraphicalObjectToCheck)
+	{
+		for (int i = 0; i < m_nextBufferPair; ++i)
+		{
+			if (m_bufferPairs[i].ContainedInBuffer(pGraphicalObjectToCheck))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	bool BufferGroup::BufferGroupDoesCull()
 	{
 		return m_cullForObjectsInBuffer;
