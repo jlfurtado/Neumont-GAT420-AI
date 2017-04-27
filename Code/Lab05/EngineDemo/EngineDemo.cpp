@@ -41,7 +41,7 @@
 // EngineDemo.cpp
 // The game
 
-const int PLENTY = 1024 * 8;
+const int PLENTY = 1024 * 32;
 char saveBuffer[PLENTY]{ '\0' };
 int nextBufferSlot{ 0 };
 
@@ -1002,18 +1002,17 @@ void EngineDemo::DrawFlagRays()
 	Engine::CollisionTester::DrawRay(nearPlaneCenter, toBottomRight.Normalize(), Engine::MathUtility::Min(toBottomRight.Length(), flagRCO[0].m_didIntersect ? flagRCO[0].m_distance : toBottomRight.Length()), rayData);
 }
 
+const int NUM_BUFFER_SIZE = 5;
 void EngineDemo::LoadWorldFileAndApplyPCUniforms()
 {
+	char numBuffer[NUM_BUFFER_SIZE + 1]{ '0', '0', '0', '0', '0', '\0' };
 	char buffer[256]{ '\0' };
 	if (Engine::ConfigReader::pReader->GetStringForKey("EngineDemo.World.InputFileName", buffer))
 	{
 		int len = Engine::StringFuncs::StringLen(buffer);
-		for (char c1 = '0', c2 = '0'; !(c1 > '9' || c2 > '9'); c2++)
+		while (Engine::StringFuncs::CountUp(&numBuffer[0], NUM_BUFFER_SIZE))
 		{
-			if (c2 >= '9') { c2 = '0'; c1++; }
-
-			buffer[len] = c1;
-			buffer[len + 1] = c2;
+			Engine::StringFuncs::StringConcatIntoBuffer("", &numBuffer[0], "", &buffer[len], 256 - len);
 			std::ifstream inputFileStream;
 			inputFileStream.open(buffer);
 

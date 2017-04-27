@@ -35,6 +35,10 @@ namespace Engine
 		static bool GetSingleIntFromString(const char *const string, int& outValue);
 		static bool IsWhiteSpace(char c);
 		static bool IsDigit(char c);
+
+		// methods that I wrote to make something work
+		static bool CountUp(char *numBuffer, unsigned bufferSize);
+		static bool CountDown(char *numBuffer, unsigned bufferSize);
 	};
 }
 

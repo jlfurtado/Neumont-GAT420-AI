@@ -350,4 +350,35 @@ namespace Engine
 	{
 		return (c >= '0') && (c <= '9');
 	}
+
+	bool StringFuncs::CountUp(char * numBuffer, unsigned bufferSize)
+	{
+		numBuffer[bufferSize - 1]++;
+		for (int i = bufferSize - 1; i >= 0; --i)
+		{
+			if (numBuffer[i] > '9')
+			{
+				numBuffer[i] = '0';
+				if (i == 0) { GameLogger::Log(MessageType::cWarning, "Tried to CountUp but ran out of space!\n"); return false; }
+				numBuffer[i - 1]++;
+			}
+		}
+
+		return true;
+	}
+
+	bool StringFuncs::CountDown(char * numBuffer, unsigned bufferSize)
+	{
+		numBuffer[bufferSize - 1]--;
+		for (int i = bufferSize - 1; i >= 0; --i)
+		{
+			if (numBuffer[i] < '0')
+			{
+				numBuffer[i] = '9';
+				if (i == 0) { GameLogger::Log(MessageType::cWarning, "Tried to CountDown but ran out of space!\n"); return false; }
+				numBuffer[i - 1]--;
+			}
+		}
+		return true;
+	}
 }

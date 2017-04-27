@@ -132,7 +132,7 @@ namespace Engine
 
 	bool BufferGroup::ContainedInThisGroup(GraphicalObject * pGraphicalObjectToCheck)
 	{
-		for (int i = 0; i < m_nextBufferPair; ++i)
+		for (unsigned i = 0; i < m_nextBufferPair; ++i)
 		{
 			if (m_bufferPairs[i].ContainedInBuffer(pGraphicalObjectToCheck))
 			{

@@ -460,9 +460,13 @@ void WorldEditor::Draw()
 	bool arrowEnabled = m_xArrow.IsEnabled();
 
 	glEnable(GL_DEPTH_TEST);
+
 	SetArrowEnabled(false);
 	Engine::RenderEngine::Draw();
 	SetArrowEnabled(arrowEnabled);
+
+	if (drawGrid) { Engine::CollisionTester::DrawGrid(EDITOR_ITEMS, m_camera.GetPosition()); }
+
 	glDisable(GL_DEPTH_TEST);
 
 	if (arrowEnabled)
@@ -472,7 +476,6 @@ void WorldEditor::Draw()
 		Engine::RenderEngine::DrawSingleObjectRegularly(&m_zArrow);
 	}
 
-	if (drawGrid) { Engine::CollisionTester::DrawGrid(EDITOR_ITEMS, m_camera.GetPosition()); }
 
 	m_fpsTextObject.RenderText(&m_shaderPrograms[0], debugColorLoc);
 	m_modeText.RenderText(&m_shaderPrograms[0], debugColorLoc);
@@ -588,7 +591,8 @@ bool WorldEditor::InitializeGL()
 	return true;
 }
 
-char c1 = '0', c2 = '0';
+const int MAX_CHARS = 5;
+char numBuffer[MAX_CHARS + 1]{ '0', '0', '0', '0', '0', '\0' }; // != '\0' on purpose except the last one, also on purpose
 bool WorldEditor::ProcessInput(float dt)
 {
 	if (keyboardManager.KeyWasPressed('X')) { Shutdown(); return false; }
@@ -620,21 +624,16 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('0'))
 	{
 		char buffer[256]{ '\0' };
-		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.InputFile", buffer) && (c1 >= '0' && c2 > '0'))
+		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.InputFile", buffer) && Engine::StringFuncs::CountDown(&numBuffer[0], MAX_CHARS))
 		{
 			int len = Engine::StringFuncs::StringLen(buffer);
-			char lc1, lc2;
-			lc1 = c1;
-			lc2 = c2 - 1;
-			if (lc2 < '0') { lc2 = '9'; lc1--; if (lc1 < '0') { Engine::GameLogger::Log(Engine::MessageType::cError, "Your ugly hard coded string thing you probably forgot about went negative, ctrl+f for this log!\n"); return false; } }
 
-			buffer[len] = lc1;
-			buffer[len + 1] = lc2;
-
+			Engine::StringFuncs::StringConcatIntoBuffer("", &numBuffer[0], "", &buffer[len], 256 - len);
 			int pos = Engine::StringFuncs::StringConcatIntoBuffer(&saveBuffer[0], &buffer[0], "\0", &saveBuffer[0], PLENTY);
 
 			Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "[%s]\n", &saveBuffer[nextBufferSlot]);
 			AddObj(&saveBuffer[nextBufferSlot]);
+			Engine::StringFuncs::CountUp(&numBuffer[0], MAX_CHARS); // count back up after we counted down
 			nextBufferSlot = pos;
 
 		}
@@ -910,13 +909,10 @@ bool WorldEditor::WriteOBJ(Engine::GraphicalObject *pObj, void * pEditor)
 	WorldEditor *pED = reinterpret_cast<WorldEditor*>(pEditor);
 
 	char buffer[256]{ '\0' };
-	if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputFile", buffer))
+	if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputFile", buffer) && Engine::StringFuncs::CountUp(&numBuffer[0], MAX_CHARS))
 	{
 		int len = Engine::StringFuncs::StringLen(buffer);
-		buffer[len] = c1;
-		buffer[len + 1] = c2;
-
-		c2++; if (c2 > '9') { c2 = '0'; c1++; if (c1 > '9') { Engine::GameLogger::Log(Engine::MessageType::cError, "Your ugly hard coded string thing you probably forgot about ran out of space, ctrl+f for this log!\n"); return false; } }
+		Engine::StringFuncs::StringConcatIntoBuffer("", &numBuffer[0], "", &buffer[len], 256 - len);
 		Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "[%s]\n", &buffer[0]);
 		pED->WriteFile(&buffer[0], pObj);
 	}

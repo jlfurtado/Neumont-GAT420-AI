@@ -66,8 +66,8 @@ namespace Engine
 		const char *GetTypeString(GLenum type);
 
 	private:
-		GLuint m_id;
-		GLboolean m_deleted;
+		GLuint m_id{ 0 };
+		GLboolean m_deleted{ false };
 		bool m_isLinked{ false };
 		GLboolean m_shaderDeleted[maxShaders];
 		ShaderInfo m_shaders[maxShaders];

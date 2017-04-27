@@ -11,6 +11,6 @@ layout(location = 11) uniform float tintIntensity;
 void main()
 {
 	fColor = texture(textureSampler, UV);
-	fColor = (1.0f - tintIntensity) * fColor + tintIntensity * tintColor;
+	fColor = vec4((1.0f - tintIntensity) * vec3(fColor) + tintIntensity * tintColor, 1.0f);
 
 }
