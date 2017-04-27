@@ -40,6 +40,21 @@ namespace Engine
 		return m_rotationMatrix;
 	}
 
+	Mat4 * GraphicalObject::GetScaleMatPtr()
+	{
+		return &m_scaleMatrix;
+	}
+
+	Mat4 * GraphicalObject::GetTransMatPtr()
+	{
+		return &m_translationMatrix;
+	}
+
+	Mat4 * GraphicalObject::GetRotMatPtr()
+	{
+		return &m_rotationMatrix;
+	}
+
 	Vec3 GraphicalObject::GetRotationAxis()
 	{
 		return m_rotationAxis;

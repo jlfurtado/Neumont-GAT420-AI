@@ -28,8 +28,11 @@ namespace Engine
 		// methods
 		Mat4 GetScaleMat();
 		Mat4 GetTransMat();
-		Vec3 GetPos();
 		Mat4 GetRotMat();
+		Mat4 *GetScaleMatPtr();
+		Mat4 *GetTransMatPtr();
+		Mat4 *GetRotMatPtr();
+		Vec3 GetPos();
 		Vec3 GetRotationAxis();
 		Vec3 GetVelocity();
 		float *GetLocPtr();

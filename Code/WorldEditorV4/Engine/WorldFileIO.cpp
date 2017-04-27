@@ -54,7 +54,10 @@ namespace Engine
 			GraphicalObject *pGob = new GraphicalObject();
 
 			// read in the transform
-			inFile.read(reinterpret_cast<char*>(pGob->GetFullTransformPtr()), sizeof(*pGob->GetFullTransformPtr()));
+			inFile.read(reinterpret_cast<char*>(pGob->GetScaleMatPtr()), sizeof(Engine::Mat4));
+			inFile.read(reinterpret_cast<char*>(pGob->GetRotMatPtr()), sizeof(Engine::Mat4));
+			inFile.read(reinterpret_cast<char*>(pGob->GetTransMatPtr()), sizeof(Engine::Mat4));
+			pGob->CalcFullTransform();
 
 			// read in the mesh path length
 			int len = 0;
@@ -83,8 +86,10 @@ namespace Engine
 	{
 		const char *meshPath = Engine::ShapeGenerator::GetPathForMesh(pObj->GetMeshPointer());
 
-		// write out the transform, in binary
-		outFile.write(reinterpret_cast<char*>(pObj->GetFullTransformPtr()), sizeof(*pObj->GetFullTransformPtr()));
+		// write out the transforms, in binary
+		outFile.write(reinterpret_cast<char*>(pObj->GetScaleMatPtr()), sizeof(Engine::Mat4));
+		outFile.write(reinterpret_cast<char*>(pObj->GetRotMatPtr()), sizeof(Engine::Mat4));
+		outFile.write(reinterpret_cast<char*>(pObj->GetTransMatPtr()), sizeof(Engine::Mat4));
 
 		// find length of path
 		int len = StringFuncs::StringLen(meshPath);
