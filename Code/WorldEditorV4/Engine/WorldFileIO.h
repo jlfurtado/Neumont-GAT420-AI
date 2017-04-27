@@ -24,6 +24,7 @@ namespace Engine
 		static std::ofstream outFile;
 		static std::ifstream inFile;
 
+		static const int FORMAT_VERSION = 4;
 		static bool WriteSingleObject(Engine::GraphicalObject *pObj, void *);
 	};
 }

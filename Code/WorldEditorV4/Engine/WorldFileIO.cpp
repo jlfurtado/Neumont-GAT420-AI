@@ -22,6 +22,9 @@ namespace Engine
 		outFile.open(filePath, std::ios::binary | std::ios::out);
 		if (!outFile) { GameLogger::Log(MessageType::cError, "Failed to write file [%s]! Could not open file!\n", filePath); return false; }
 		outFile.seekp(0);
+		
+		// write the format version
+		outFile.write(reinterpret_cast<const char*>(&FORMAT_VERSION), sizeof(FORMAT_VERSION));
 
 		// write the obj count
 		int objCount = pObjsToWrite->GetCount();
@@ -40,6 +43,18 @@ namespace Engine
 		// open the file, start at the beginning, error check
 		inFile.open(filePath, std::ios::binary | std::ios::in);
 		if (!inFile) { GameLogger::Log(MessageType::cError, "Failed to read file [%s]! Could not open file!\n", filePath); return false; }
+
+		// read the format version
+		int version = -1;
+		inFile.read(reinterpret_cast<char*>(&version), sizeof(FORMAT_VERSION));
+
+		// check that the version matches
+		if (version != FORMAT_VERSION)
+		{
+			// if it is not the latest version, log an error and refuse to load the file
+			GameLogger::Log(MessageType::cError, "FAILED TO READ IN WORLD FILE [%s]!!! WORLD FILE VERSION FOUND IN HEADER [%d] DOES NOT MATCH THE LATEST FILE VERSION [%d]!! PLEASE ENSURE YOU ARE USING THE LATEST VERSION OF WORLD FILE!\n", filePath, version, FORMAT_VERSION); 
+			return false;
+		}
 
 		// read the obj count
 		int objCount = 0; 
