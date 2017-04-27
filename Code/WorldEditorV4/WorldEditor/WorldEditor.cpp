@@ -393,7 +393,6 @@ bool WorldEditor::Shutdown()
 	m_objs.WalkList(DestroyObjsCallback, this);
 	if (m_objCount != 0) { Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to DestroyObjs! Check for memory leak or counter inaccuracy [%d] objs left!\n", m_objCount); return false; }
 
-
 	if (!Engine::TextObject::Shutdown()) { return false; }
 	if (!Engine::RenderEngine::Shutdown()) { return false; }
 	if (!Engine::ShapeGenerator::Shutdown()) { return false; }
@@ -582,6 +581,8 @@ const int MAX_CHARS = 5;
 char numBuffer[MAX_CHARS + 1]{ '0', '0', '0', '0', '0', '\0' }; // != '\0' on purpose except the last one, also on purpose
 bool WorldEditor::ProcessInput(float dt)
 {
+	char buffer[256]{ '\0' };
+
 	if (keyboardManager.KeyWasPressed('X')) { Shutdown(); return false; }
 
 	if (keyboardManager.KeyIsDown('W')) { m_camera.MoveForward(dt); }
@@ -595,33 +596,14 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('5')) { SwapToScale(); }
 	if (keyboardManager.KeyWasPressed('7')) { SwapMakeForward(); }
 	if (keyboardManager.KeyWasPressed('8')) { SwapMakeBackward(); }
-	if (keyboardManager.KeyWasPressed('9')) 
+	if (keyboardManager.KeyWasPressed('9') && keyboardManager.KeyIsDown(VK_SHIFT) && Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputFile", buffer))
 	{
-		if (keyboardManager.KeyIsDown(VK_SHIFT))
-		{
-			m_objs.WalkList(WorldEditor::WriteOBJ, this);
-		}
-		else if (m_pSelected)
-		{
-			WriteOBJ(m_pSelected, this);
-		}
-
+		WriteFile(&buffer[0]);
 	}
 
-	if (keyboardManager.KeyWasPressed('0'))
+	if (keyboardManager.KeyWasPressed('0') && keyboardManager.KeyIsDown(VK_SHIFT) && Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.InputFile", buffer))
 	{
-		char buffer[256]{ '\0' };
-		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.InputFile", buffer) && Engine::StringFuncs::CountDown(&numBuffer[0], MAX_CHARS))
-		{
-			int len = Engine::StringFuncs::StringLen(buffer);
-
-			Engine::StringFuncs::StringConcatIntoBuffer("", &numBuffer[0], "", &buffer[len], 256 - len);
-			const char *str = Engine::StringFuncs::AddToCharArray(&buffer[0]);
-
-			Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "[%s]\n", str);
-			AddObj(str);
-			Engine::StringFuncs::CountUp(&numBuffer[0], MAX_CHARS); // count back up after we counted down
-		}
+		ReadFile(&buffer[0]);
 	}
 
 	if (keyboardManager.KeyWasPressed('M')) { m_adjustmentSpeedMultiplier *= 1.1f; }
@@ -806,29 +788,39 @@ void WorldEditor::SetupPlacingText(char * str)
 	m_placingText.SetupText(0.3f, 0.7f, 0.1f, 1.0f, 0.0f, 1.0f, 0.5f, 1.0f, str);
 }
 
-void WorldEditor::AddObj(const char * const fp)
+void WorldEditor::InitObj(Engine::GraphicalObject * pObj, void *pClass)
 {
-	// make an obj
-	Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
-	if (!Engine::WorldFileIO::ReadFile(fp, pNewObj, m_shaderPrograms[1].GetProgramId())) { delete pNewObj; return; }
+	WorldEditor *pEditor = reinterpret_cast<WorldEditor*>(pClass);
 
-	SetPCUniforms(this, pNewObj);
-	pNewObj->GetMatPtr()->m_materialColor = Engine::Vec3(0.5f, 0.25f, 1.0f);
-	pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
+	SetPCUniforms(pEditor, pObj);
+	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
+	pObj->GetMatPtr()->m_specularIntensity = 0.5f;
 
 	// add it to the necessary things, it'll get deleted on shutdown or remove
-	Engine::RenderEngine::AddGraphicalObject(pNewObj);
-	Engine::CollisionTester::AddGraphicalObjectToLayer(pNewObj, EDITOR_LIST_OBJS);
-	Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
-
-	m_objs.AddToList(pNewObj);
-	m_objCount++;
+	Engine::RenderEngine::AddGraphicalObject(pObj);
+	Engine::CollisionTester::AddGraphicalObjectToLayer(pObj, EDITOR_LIST_OBJS);
+	pEditor->m_objCount++;
 }
 
-void WorldEditor::WriteFile(const char * const filePath, Engine::GraphicalObject * pObj)
+void WorldEditor::WriteFile(const char * const filePath)
 {
-	const char *meshPath = Engine::ShapeGenerator::GetPathForMesh(pObj->GetMeshPointer());
-	Engine::WorldFileIO::WriteFile(pObj, filePath, meshPath);
+	Engine::WorldFileIO::WriteFile(&m_objs, filePath);
+}
+
+void WorldEditor::ReadFile(const char * const filePath)
+{
+	// clear the whole scene
+	m_objs.WalkList(DestroyObjsCallback, this);
+	if (m_objCount != 0) { Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to DestroyObjs! Check for memory leak or counter inaccuracy [%d] objs left!\n", m_objCount); return; }
+	m_objs.ClearList();
+
+	// load from file
+	Engine::WorldFileIO::ReadFile(filePath, &m_objs, m_shaderPrograms[1].GetProgramId(), WorldEditor::InitObj, this);
+
+	// re-calc grid after entire load
+	Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
+
+	m_objCount = m_objs.GetCount();
 }
 
 void WorldEditor::HandleOutsideGrid(Engine::GraphicalObject * pObjToCheck)
@@ -844,22 +836,6 @@ void WorldEditor::HandleOutsideGrid(Engine::GraphicalObject * pObjToCheck)
 
 	Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);
 	
-}
-
-bool WorldEditor::WriteOBJ(Engine::GraphicalObject *pObj, void * pEditor)
-{
-	WorldEditor *pED = reinterpret_cast<WorldEditor*>(pEditor);
-
-	char buffer[256]{ '\0' };
-	if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputFile", buffer) && Engine::StringFuncs::CountUp(&numBuffer[0], MAX_CHARS))
-	{
-		int len = Engine::StringFuncs::StringLen(buffer);
-		Engine::StringFuncs::StringConcatIntoBuffer("", &numBuffer[0], "", &buffer[len], 256 - len);
-		Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "[%s]\n", &buffer[0]);
-		pED->WriteFile(&buffer[0], pObj);
-	}
-
-	return true;
 }
 
 Engine::Vec3 WorldEditor::GetArrowDir(Engine::GraphicalObject * pArrow)

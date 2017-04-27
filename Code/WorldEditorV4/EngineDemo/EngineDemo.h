@@ -61,6 +61,7 @@ private:
 	void DrawFlagRays();
 	void LoadWorldFileAndApplyPCUniforms();
 	static bool DestroyObjsCallback(Engine::GraphicalObject *pObj, void *pClassInstance);
+	static void InitEditorObj(Engine::GraphicalObject *pObj, void *pClass);
 
 	//data
 	static const int NUM_SHADER_PROGRAMS = 8;

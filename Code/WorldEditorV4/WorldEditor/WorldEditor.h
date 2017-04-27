@@ -100,10 +100,10 @@ private:
 	void AttachArrowsTo(Engine::GraphicalObject *pObj);
 	void SelectedObjectChanged();
 	void SetupPlacingText(char *str);
-	void AddObj(const char * const fp);
-	void WriteFile(const char *const filePath, Engine::GraphicalObject *pObj);
+	static void InitObj(Engine::GraphicalObject *pObj, void *pClass);
+	void WriteFile(const char *const filePath);
+	void ReadFile(const char *const filePath);
 	void HandleOutsideGrid(Engine::GraphicalObject *pObjToCheck);
-	static bool WriteOBJ(Engine::GraphicalObject *pOBj, void *pEditor);
 
 	static const int NUM_PLACEMENT_DATA = 13;
 	static const PlacementData s_placementData[NUM_PLACEMENT_DATA];

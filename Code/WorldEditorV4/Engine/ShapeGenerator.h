@@ -52,6 +52,7 @@ namespace Engine
 		static bool MakeNearPlanePlane(GraphicalObject * pObject, GLuint shaderProgramId);
 		static bool MakeDemoQuad(GraphicalObject *pObject, GLuint shaderProgramID);
 		static const char *GetPathForMesh(Mesh *pMesh);
+		static bool HandleStaticMesh(GraphicalObject *pObj, const char *const meshFilePath);
 
 	private:
 		// methods
@@ -162,6 +163,8 @@ namespace Engine
 		static Mesh normalCubeMesh;
 		static Mesh frustumMesh;
 		static Mesh nearPlaneMeshNDC;
+		static const char *CUBE;
+		static const char *HOUSE;
 	};
 }
 

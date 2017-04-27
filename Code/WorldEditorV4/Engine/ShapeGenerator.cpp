@@ -28,6 +28,8 @@ namespace Engine
 	Mesh ShapeGenerator::debugArrowMesh;
 	Mesh ShapeGenerator::horizontalPlaneMesh;
 	Mesh ShapeGenerator::nearPlaneMeshNDC;
+	const char *ShapeGenerator::CUBE = "SG_CUBE";
+	const char *ShapeGenerator::HOUSE = "SG_HOUSE";
 	const char *ShapeGenerator::s_sceneFileNames[MAX_SCENE_FILES]{ nullptr };
 	Mesh *ShapeGenerator::s_sceneMeshes[MAX_SCENE_FILES]{ nullptr };
 	Mesh *ShapeGenerator::s_pPointMeshes[MAX_POINT_MESHES]{ nullptr };
@@ -513,6 +515,8 @@ namespace Engine
 
 	bool ShapeGenerator::ReadSceneFile(const char * fileName, GraphicalObject * pObject, GLuint shaderProgramID, const char *texturePath, bool cullObject)
 	{
+		if (HandleStaticMesh(pObject, fileName)) { return true; }
+
 		Mesh *pSceneMesh = FindMeshBySceneString(fileName, cullObject, shaderProgramID);
 
 		// if the mesh doesn't exist set it up
@@ -648,6 +652,22 @@ namespace Engine
 		return nullptr;
 	}
 
+	bool ShapeGenerator::HandleStaticMesh(GraphicalObject * pObj, const char *const meshPath)
+	{
+		if (StringFuncs::StringsAreEqual(meshPath, CUBE))
+		{
+			return MakeCube(pObj);
+		}
+		else if (StringFuncs::StringsAreEqual(meshPath, HOUSE))
+		{
+			return MakeHouse(pObj);
+		}
+		else
+		{
+			return false;
+		}
+	}
+
 	bool ShapeGenerator::Initialize(unsigned int pcShaderID, unsigned int pShaderID, unsigned int pnShaderID)
 	{
 		// set shaders to use
@@ -671,7 +691,10 @@ namespace Engine
 		// clean up after scene verts and indices
 		for (int i = 0; i < s_nextSceneFile; ++i)
 		{
-			delete s_sceneMeshes[i];
+			if (!((*(s_sceneFileNames[i] + 0) == 'S') && (*(s_sceneFileNames[i] + 1) == 'G')))
+			{
+				delete s_sceneMeshes[i];
+			}
 		}
 
 		// clean up after point meshes
@@ -757,6 +780,8 @@ namespace Engine
 			return false;
 		}
 
+		AddMesh(CUBE, &cubeMesh); // TODO: NEEDED FOR OTHER SHAPES TOO!!!
+
 		GameLogger::Log(MessageType::Process, "ShapeGenerator Successfully setup cube mesh!\n");
 		return true;
 	}
@@ -814,6 +839,8 @@ namespace Engine
 			GameLogger::Log(MessageType::cFatal_Error, "Failed to initialize ShapeGenerator! Could not add house mesh to render engine!\n");
 			return false;
 		}
+
+		AddMesh(HOUSE, &houseMesh);
 
 		GameLogger::Log(MessageType::Process, "ShapeGenerator successfully setup house mesh!\n");
 		return true;

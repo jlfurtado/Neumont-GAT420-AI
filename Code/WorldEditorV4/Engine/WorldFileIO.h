@@ -7,15 +7,24 @@
 // Manages file io for world files
 
 #include "ExportHeader.h"
+#include "LinkedList.h"
+#include "GraphicalObject.h"
+#include <fstream>
 
 namespace Engine
 {
-	class GraphicalObject; // only need ptr so pre-declare
-	class ENGINE_SHARED WorldFileIO
+	class WorldFileIO
 	{
 	public:
-		static bool WriteFile(GraphicalObject *pObjToLoad, const char *filePath, const char *meshPath);
-		static bool ReadFile(const char *filePath, GraphicalObject *outGob, unsigned shaderProgramID);
+		typedef void(*ObjectInitializerCallback)(Engine::GraphicalObject *pGob, void *pClass);
+		static ENGINE_SHARED bool WriteFile(LinkedList<GraphicalObject> *pObjsToWrite, const char *filePath);
+		static ENGINE_SHARED bool ReadFile(const char *filePath, LinkedList<GraphicalObject> *outGobs, unsigned shaderProgramID, ObjectInitializerCallback objInit, void *pClass);
+
+	private:
+		static std::ofstream outFile;
+		static std::ifstream inFile;
+
+		static bool WriteSingleObject(Engine::GraphicalObject *pObj, void *);
 	};
 }
 

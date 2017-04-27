@@ -13,61 +13,88 @@
 
 namespace Engine
 {
+	std::ofstream WorldFileIO::outFile;
+	std::ifstream WorldFileIO::inFile;
 
-	// TO START: Get basic working
-	// Write out the full transform and the mesh path and thats it
-	bool WorldFileIO::WriteFile(GraphicalObject * pObjToLoad, const char * filePath, const char *meshPath)
+	bool WorldFileIO::WriteFile(LinkedList<GraphicalObject>* pObjsToWrite, const char * filePath)
 	{
-		std::ofstream file;
-
 		// open the file, start at the beginning, error check
-		file.open(filePath, std::ios::binary | std::ios::out);
-		if (!file) { GameLogger::Log(MessageType::cError, "Failed to write file [%s]! Could not open file!\n", filePath); return false; }
-		file.seekp(0);
+		outFile.open(filePath, std::ios::binary | std::ios::out);
+		if (!outFile) { GameLogger::Log(MessageType::cError, "Failed to write file [%s]! Could not open file!\n", filePath); return false; }
+		outFile.seekp(0);
+
+		// write the obj count
+		int objCount = pObjsToWrite->GetCount();
+		outFile.write(reinterpret_cast<char*>(&objCount), sizeof(int));
+
+		// write each object
+		pObjsToWrite->WalkList(WorldFileIO::WriteSingleObject, nullptr);
+
+		// close file, indicate success
+		outFile.close();
+		return true;
+	}
+
+	bool WorldFileIO::ReadFile(const char * filePath, LinkedList<GraphicalObject>* outGobs, unsigned shaderProgramID, ObjectInitializerCallback objInit, void *pClass)
+	{
+		// open the file, start at the beginning, error check
+		inFile.open(filePath, std::ios::binary | std::ios::in);
+		if (!inFile) { GameLogger::Log(MessageType::cError, "Failed to read file [%s]! Could not open file!\n", filePath); return false; }
+
+		// read the obj count
+		int objCount = 0; 
+		inFile.read(reinterpret_cast<char*>(&objCount), sizeof(int));
+
+		// read each obj in
+		for (int i = 0; i < objCount; ++i)
+		{
+			char buffer[256]{ '\0' };
+
+			// TODO CHECK LEAK!?!?! MAYBE FINE!?!?
+			GraphicalObject *pGob = new GraphicalObject();
+
+			// read in the transform
+			inFile.read(reinterpret_cast<char*>(pGob->GetFullTransformPtr()), sizeof(*pGob->GetFullTransformPtr()));
+
+			// read in the mesh path length
+			int len = 0;
+			inFile.read(reinterpret_cast<char*>(&len), sizeof(int));
+
+			// read in the mesh path
+			inFile.read(&buffer[0], len);
+
+			// make a gob out of it
+			const char *str = StringFuncs::AddToCharArray(&buffer[0]);
+			ShapeGenerator::ReadSceneFile(str, pGob, shaderProgramID);
+
+			// call the callback to initialize the graphical object
+			objInit(pGob, pClass);
+
+			// add it to the list
+			outGobs->AddToList(pGob);
+		}
+		
+		// close file and indicate success
+		inFile.close();
+		return true;
+	}
+
+	bool WorldFileIO::WriteSingleObject(Engine::GraphicalObject * pObj, void *)
+	{
+		const char *meshPath = Engine::ShapeGenerator::GetPathForMesh(pObj->GetMeshPointer());
 
 		// write out the transform, in binary
-		file.write(reinterpret_cast<char*>(pObjToLoad->GetFullTransformPtr()), sizeof(*pObjToLoad->GetFullTransformPtr()));
+		outFile.write(reinterpret_cast<char*>(pObj->GetFullTransformPtr()), sizeof(*pObj->GetFullTransformPtr()));
 
 		// find length of path
 		int len = StringFuncs::StringLen(meshPath);
 
 		// write out mesh path length in binary
-		file.write(reinterpret_cast<char*>(&len), sizeof(int));
+		outFile.write(reinterpret_cast<char*>(&len), sizeof(int));
 
 		// write out the mesh path in binary
-		file.write(meshPath, len);
+		outFile.write(meshPath, len);
 
-		// close file, indicate success
-		file.close();
-		return true;
-	}
-
-	bool WorldFileIO::ReadFile(const char * filePath, Engine::GraphicalObject * outGob, unsigned shaderProgramID)
-	{
-		char buffer[256]{ '\0' };
-
-		std::ifstream file;
-
-		// open the file, start at the beginning, error check
-		file.open(filePath, std::ios::binary | std::ios::in);
-		if (!file) { GameLogger::Log(MessageType::cError, "Failed to read file [%s]! Could not open file!\n", filePath); return false; }
-
-		// read in the transform
-		file.read(reinterpret_cast<char*>(outGob->GetFullTransformPtr()), sizeof(*outGob->GetFullTransformPtr()));
-
-		// read in the mesh path length
-		int len = 0;
-		file.read(reinterpret_cast<char*>(&len), sizeof(int));
-
-		// read in the mesh path
-		file.read(&buffer[0], len);
-		
-		// make a gob out of it
-		const char *str = StringFuncs::AddToCharArray(&buffer[0]);
-		ShapeGenerator::ReadSceneFile(str, outGob, shaderProgramID);
-		
-		// close file and indicate success
-		file.close();
 		return true;
 	}
 
