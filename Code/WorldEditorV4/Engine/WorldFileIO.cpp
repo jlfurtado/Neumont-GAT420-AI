@@ -16,7 +16,7 @@ namespace Engine
 	std::ofstream WorldFileIO::outFile;
 	std::ifstream WorldFileIO::inFile;
 
-	bool WorldFileIO::WriteFile(LinkedList<GraphicalObject>* pObjsToWrite, const char * filePath)
+	bool WorldFileIO::WriteGobFile(LinkedList<GraphicalObject>* pObjsToWrite, const char * filePath)
 	{
 		// open the file, start at the beginning, error check
 		outFile.open(filePath, std::ios::binary | std::ios::out);
@@ -38,7 +38,7 @@ namespace Engine
 		return true;
 	}
 
-	bool WorldFileIO::ReadFile(const char * filePath, LinkedList<GraphicalObject>* outGobs, unsigned shaderProgramID, ObjectInitializerCallback objInit, void *pClass)
+	bool WorldFileIO::ReadGobFile(const char * filePath, LinkedList<GraphicalObject>* outGobs, unsigned shaderProgramID, ObjectInitializerCallback objInit, void *pClass)
 	{
 		// open the file, start at the beginning, error check
 		inFile.open(filePath, std::ios::binary | std::ios::in);
@@ -65,7 +65,7 @@ namespace Engine
 		{
 			char buffer[256]{ '\0' };
 
-			// TODO CHECK LEAK!?!?! MAYBE FINE!?!?
+			// EXPECTS TO BE DELETED BY OUTSIDE CODE
 			GraphicalObject *pGob = new GraphicalObject();
 
 			// read in the transform

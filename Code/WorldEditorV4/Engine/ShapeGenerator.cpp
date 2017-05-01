@@ -28,8 +28,8 @@ namespace Engine
 	Mesh ShapeGenerator::debugArrowMesh;
 	Mesh ShapeGenerator::horizontalPlaneMesh;
 	Mesh ShapeGenerator::nearPlaneMeshNDC;
-	const char *ShapeGenerator::CUBE = "SG_CUBE";
-	const char *ShapeGenerator::HOUSE = "SG_HOUSE";
+	const char *ShapeGenerator::CUBE = "SG*CUBE";
+	const char *ShapeGenerator::HOUSE = "SG*HOUSE";
 	const char *ShapeGenerator::s_sceneFileNames[MAX_SCENE_FILES]{ nullptr };
 	Mesh *ShapeGenerator::s_sceneMeshes[MAX_SCENE_FILES]{ nullptr };
 	Mesh *ShapeGenerator::s_pPointMeshes[MAX_POINT_MESHES]{ nullptr };
@@ -662,7 +662,7 @@ namespace Engine
 		{
 			return MakeHouse(pObj);
 		}
-		else
+		else // TODO: THE REST HERE
 		{
 			return false;
 		}

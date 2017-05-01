@@ -148,9 +148,6 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 	static Engine::Vec3 d;
 	static bool arrowClicked = false;
 
-	// enable selection and de-selection of objects
-	pEditor->DoSelection();
-
 	if (pEditor->m_pSelected)
 	{
 		Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
@@ -191,6 +188,13 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
 		}
 	}
+	
+	if (!arrowClicked)
+	{
+		// enable selection and de-selection of objects
+		pEditor->DoSelection();
+	}
+
 }
 
 void WorldEditor::RotateObject(WorldEditor *pEditor)
@@ -200,9 +204,6 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 	static Engine::Vec3 v;
 	static Engine::Vec3 d;
 	static bool arrowClicked = false;
-
-	// enable selection and de-selection of objects
-	pEditor->DoSelection();
 
 	if (pEditor->m_pSelected)
 	{
@@ -248,6 +249,12 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
 		}
 	}
+
+	if (!arrowClicked)
+	{
+		// enable selection and de-selection of objects
+		pEditor->DoSelection();
+	}
 }
 
 void WorldEditor::ScaleObject(WorldEditor *pEditor)
@@ -256,9 +263,6 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 	static Engine::Vec3 v;
 	static Engine::Vec3 d;
 	static bool arrowClicked = false;
-
-	// enable selection and de-selection of objects
-	pEditor->DoSelection();
 
 	if (pEditor->m_pSelected)
 	{
@@ -302,6 +306,13 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
 		}
 	}
+
+	if (!arrowClicked)
+	{
+		// enable selection and de-selection of objects
+		pEditor->DoSelection();
+	}
+
 }
 
 void WorldEditor::SetPCUniforms(WorldEditor * pEditor, Engine::GraphicalObject * pObj)
@@ -356,7 +367,7 @@ bool WorldEditor::Initialize(Engine::MyWindow * pWindow)
 	}
 
 	// setup keys for the world editor
-	if (!keyboardManager.AddKeys("XWASD1234567890MN") || !keyboardManager.AddKey(VK_SHIFT)
+	if (!keyboardManager.AddKeys("XWASD1234567890MN ") || !keyboardManager.AddKey(VK_SHIFT)
 		|| !keyboardManager.AddToggle('G', &drawGrid))
 	{
 		Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to add keys for WorldEditor!\n");
@@ -401,11 +412,28 @@ bool WorldEditor::Shutdown()
 	return true;
 }
 
+const float CHECK_DIST = 250.0f;
+const float DOWN_CHECK = 1.0f;
+const float DOWN_OFFSET = 0.75f;
+const float FORWARD_CHECK = 0.10f;
+const float FORWARD_OFFSET = 0.01f;
 void WorldEditor::Update(float dt)
 {
 	keyboardManager.Update(dt);
 	if (!ProcessInput(dt)) { return; }
 	ShowFrameRate(dt);
+	
+	if (m_walkEnabled)
+	{
+		Engine::RayCastingOutput groundRCO = Engine::CollisionTester::FindWall(m_camera.GetPosition() + (DOWN_CHECK - DOWN_OFFSET) * PLUS_Y, -PLUS_Y, CHECK_DIST, EDITOR_LIST_OBJS);
+
+		if (groundRCO.m_didIntersect)
+		{
+			m_camera.SetPosition(m_camera.GetPosition() +  (PLUS_Y * (DOWN_CHECK - groundRCO.m_distance)));
+		}
+
+	}
+	
 	wtv = m_camera.GetWorldToViewMatrix();
 
 	/*static int lastX = 0;
@@ -577,18 +605,41 @@ bool WorldEditor::InitializeGL()
 	return true;
 }
 
-const int MAX_CHARS = 5;
-char numBuffer[MAX_CHARS + 1]{ '0', '0', '0', '0', '0', '\0' }; // != '\0' on purpose except the last one, also on purpose
+const float moveCheckOffset = 2.0f;
+const float moveCheckDist = 2.0f;
 bool WorldEditor::ProcessInput(float dt)
 {
 	char buffer[256]{ '\0' };
 
 	if (keyboardManager.KeyWasPressed('X')) { Shutdown(); return false; }
 
-	if (keyboardManager.KeyIsDown('W')) { m_camera.MoveForward(dt); }
-	if (keyboardManager.KeyIsDown('S')) { m_camera.MoveBackward(dt); }
-	if (keyboardManager.KeyIsDown('A')) { m_camera.StrafeLeft(dt); }
-	if (keyboardManager.KeyIsDown('D')) { m_camera.StrafeRight(dt); }
+	Engine::Vec3 movementVector(0.0f);
+
+	if (keyboardManager.KeyIsDown('W')) { movementVector = movementVector + m_camera.GetViewDir().Normalize() * m_camera.GetSpeed() * dt; }
+	if (keyboardManager.KeyIsDown('S')) { movementVector = movementVector - m_camera.GetViewDir().Normalize() * m_camera.GetSpeed() * dt; }
+	if (keyboardManager.KeyIsDown('A')) { movementVector = movementVector - m_camera.GetViewDir().Cross(m_camera.GetUp()).Normalize() * m_camera.GetSpeed() * dt; }
+	if (keyboardManager.KeyIsDown('D')) { movementVector = movementVector + m_camera.GetViewDir().Cross(m_camera.GetUp()).Normalize() * m_camera.GetSpeed() * dt; }
+
+	if (m_walkEnabled)
+	{
+		Engine::RayCastingOutput moveRCO = Engine::CollisionTester::FindWall(m_camera.GetPosition() - (moveCheckOffset * movementVector.Normalize()), movementVector.Normalize(), moveCheckOffset + moveCheckDist + 1.0f,  EDITOR_LIST_OBJS);
+		while (moveRCO.m_didIntersect && moveRCO.m_distance < (moveCheckOffset + moveCheckDist))
+		{
+			movementVector = movementVector - movementVector.ProjectOnto(moveRCO.m_triangleNormal);
+
+			moveRCO = Engine::CollisionTester::FindWall(m_camera.GetPosition() - (moveCheckOffset * movementVector.Normalize()), movementVector.Normalize(), moveCheckOffset + moveCheckDist + 1.0f, EDITOR_LIST_OBJS);
+		}
+		
+
+	}
+
+	if (movementVector.LengthSquared() > 0.0f)
+	{
+		m_camera.SetPosition(m_camera.GetPosition() + movementVector);
+	}
+	
+
+
 	if (keyboardManager.KeyWasPressed('1')) { SwapToPlace(); }
 	if (keyboardManager.KeyWasPressed('2')) { SwapToRemove(); }
 	if (keyboardManager.KeyWasPressed('3')) { SwapToTranslate(); }
@@ -608,7 +659,10 @@ bool WorldEditor::ProcessInput(float dt)
 
 	if (keyboardManager.KeyWasPressed('M')) { m_adjustmentSpeedMultiplier *= 1.1f; }
 	if (keyboardManager.KeyWasPressed('N')) { m_adjustmentSpeedMultiplier *= 0.9f; }
-
+	if (keyboardManager.KeyWasPressed(' ')) {
+		m_walkEnabled = !m_walkEnabled;
+		m_camera.SetSpeed(m_camera.GetSpeed() * (m_walkEnabled ? 0.25f : 4.0f));
+	}
 	return true;
 }
 
@@ -712,7 +766,7 @@ bool WorldEditor::UglyDemoCode()
 	Engine::RenderEngine::AddGraphicalObject(&m_zArrow);
 	Engine::CollisionTester::AddGraphicalObjectToLayer(&m_zArrow, EDITOR_ITEMS);
 
-	m_perspective.SetPerspective(m_pWindow->width() / static_cast<float>(m_pWindow->height()), Engine::MathUtility::ToRadians(60.0f), 1.0f, RENDER_DISTANCE);
+	m_perspective.SetPerspective(m_pWindow->width() / static_cast<float>(m_pWindow->height()), Engine::MathUtility::ToRadians(60.0f), 0.1f, RENDER_DISTANCE);
 	m_perspective.SetScreenDimmensions(static_cast<float>(m_pWindow->width()), static_cast<float>(m_pWindow->height()));
 	Engine::MousePicker::SetPerspectiveInfo(m_perspective.GetFOVY(), m_perspective.GetNearDist(), m_perspective.GetWidth(), m_perspective.GetHeight());
 
@@ -804,7 +858,7 @@ void WorldEditor::InitObj(Engine::GraphicalObject * pObj, void *pClass)
 
 void WorldEditor::WriteFile(const char * const filePath)
 {
-	Engine::WorldFileIO::WriteFile(&m_objs, filePath);
+	Engine::WorldFileIO::WriteGobFile(&m_objs, filePath);
 }
 
 void WorldEditor::ReadFile(const char * const filePath)
@@ -815,7 +869,7 @@ void WorldEditor::ReadFile(const char * const filePath)
 	m_objs.ClearList();
 
 	// load from file
-	Engine::WorldFileIO::ReadFile(filePath, &m_objs, m_shaderPrograms[1].GetProgramId(), WorldEditor::InitObj, this);
+	Engine::WorldFileIO::ReadGobFile(filePath, &m_objs, m_shaderPrograms[1].GetProgramId(), WorldEditor::InitObj, this);
 
 	// re-calc grid after entire load
 	Engine::CollisionTester::CalculateGrid(EDITOR_LIST_OBJS);

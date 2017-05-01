@@ -17,8 +17,10 @@ namespace Engine
 	{
 	public:
 		typedef void(*ObjectInitializerCallback)(Engine::GraphicalObject *pGob, void *pClass);
-		static ENGINE_SHARED bool WriteFile(LinkedList<GraphicalObject> *pObjsToWrite, const char *filePath);
-		static ENGINE_SHARED bool ReadFile(const char *filePath, LinkedList<GraphicalObject> *outGobs, unsigned shaderProgramID, ObjectInitializerCallback objInit, void *pClass);
+		static ENGINE_SHARED bool WriteGobFile(LinkedList<GraphicalObject> *pObjsToWrite, const char *filePath);
+		static ENGINE_SHARED bool ReadGobFile(const char *filePath, LinkedList<GraphicalObject> *outGobs, unsigned shaderProgramID, ObjectInitializerCallback objInit, void *pClass);
+		//static ENGINE_SHARED bool WriteNodeFile(LinkedList<AStarNode> *pNodes, const char *filePath);
+		//static ENGINE_SHARED bool ReadNodeFile(const char *filePath, LinkedList<AStarNode> *outNodes);
 
 	private:
 		static std::ofstream outFile;

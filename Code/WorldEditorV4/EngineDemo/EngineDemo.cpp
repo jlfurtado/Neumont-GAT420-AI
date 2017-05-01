@@ -1006,7 +1006,7 @@ void EngineDemo::LoadWorldFileAndApplyPCUniforms()
 	{
 
 		// read file
-		Engine::WorldFileIO::ReadFile(&buffer[0], &m_fromWorldEditorOBJs, m_shaderPrograms[1].GetProgramId(), InitEditorObj, this);
+		Engine::WorldFileIO::ReadGobFile(&buffer[0], &m_fromWorldEditorOBJs, m_shaderPrograms[1].GetProgramId(), InitEditorObj, this);
 
 		Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::LAYER_2);
 	}

@@ -137,6 +137,7 @@ private:
 	Engine::GraphicalObject m_zArrow;
 	Engine::GraphicalObject m_grid;
 	Engine::GraphicalObject m_originMarker;
+	bool m_walkEnabled{ false };
 	Engine::Vec3 GetArrowDir(Engine::GraphicalObject *pArrow);
 	ActionCallback m_currentMode{ WorldEditor::PlaceObject };
 	int m_currentPlacement{ 0 };
