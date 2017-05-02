@@ -10,13 +10,19 @@
 
 namespace Engine
 {
+	// init static data
+	AStarNode::ObjInitCallback AStarNode::s_connectionInitCallback = AStarNode::LogNotSetError;
+	AStarNode::ObjInitCallback AStarNode::s_sphereInitCallback = AStarNode::LogNotSetError;
+	void *AStarNode::s_pConnectionClassInstance = nullptr;
+	void *AStarNode::s_pSphereInitClassInstance = nullptr;
+
+	// some useful constants to avoid magic things
 	const Vec3 BASE_ARROW_DIR = Engine::Vec3(1.0f, 0.0f, 0.0f);
 	const CollisionLayer CONNECTION_LAYER = CollisionLayer::LAYER_3;
 	const CollisionLayer SPHERE_LAYER = CollisionLayer::LAYER_4;
 
 	AStarNode::AStarNode()
 	{
-		InitGob();
 	}
 
 	AStarNode::~AStarNode()
@@ -24,11 +30,32 @@ namespace Engine
 		ClearConnectedNodes();
 	}
 
+	// setter for obj init methods
+	void AStarNode::SetSphereInitCallback(ObjInitCallback callback, void * pClass)
+	{
+		s_sphereInitCallback = callback;
+		s_pSphereInitClassInstance = pClass;
+	}
+
+	// setter for obj init methods
+	void AStarNode::SetArrowInitCallback(ObjInitCallback callback, void * pClass)
+	{
+		s_connectionInitCallback = callback;
+		s_pConnectionClassInstance = pClass;
+	}
+
+	// initializez a graphical object for a connection
+	void AStarNode::MakeConnectionGob(GraphicalObject * pGob)
+	{
+		// let the calling code (game/editor) tell how to set up shaders and stuff for the object through a callback
+		s_connectionInitCallback(s_pConnectionClassInstance, pGob);
+	}
+
 	// initializes the graphical object for this node
 	void AStarNode::InitGob()
 	{
-		//blah-
-		// TODO: MAKE FRACTAL SPHERE
+		// let the calling code (game/editor) tell how to set up shaders and stuff for the object through a callback
+		s_sphereInitCallback(s_pSphereInitClassInstance, &m_gob);
 	}
 
 	bool AStarNode::CanGoToNode(AStarNode * pOtherNode)
@@ -48,7 +75,10 @@ namespace Engine
 		// point to the AStarNode we are trying to add
 		pNewConnection->m_pConnectedTo = pNodeToConnectTo;
 		
-		// Set the graphical object up
+		// Initialize gob
+		MakeConnectionGob(&pNewConnection->m_connectionArrow);
+
+		// Set the graphical object's transforms up
 		UpdateConnection(pNewConnection, this);
 
 		// add the connections GOB to the rendering and collision systems
@@ -178,6 +208,12 @@ namespace Engine
 			// our connection objects need to be walked
 			m_connections.WalkList(UpdateConnection, this);
 		}
+	}
+
+	// lets the users of the Engine know they didn't set an object initializer for AStarNodes
+	void AStarNode::LogNotSetError(void * /*pClass*/, GraphicalObject * /*pObj*/)
+	{
+		GameLogger::Log(MessageType::cError, "Tried to call ObjInitCallback but callback was not yet set!\n");
 	}
 
 	// enables the connection obj

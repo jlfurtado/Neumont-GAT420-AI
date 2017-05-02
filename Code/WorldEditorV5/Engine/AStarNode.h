@@ -28,9 +28,14 @@ namespace Engine
 		};
 
 	public:
+		typedef void(*ObjInitCallback)(void *pClass, GraphicalObject *pObj);
+
 		AStarNode();
 		~AStarNode();
 
+		static void SetSphereInitCallback(ObjInitCallback callback, void *pClass);
+		static void SetArrowInitCallback(ObjInitCallback callback, void *pClass);
+		void MakeConnectionGob(GraphicalObject *pGob);
 		void InitGob();
 		bool CanGoToNode(AStarNode *pOtherNode);
 		void ConnectToNode(AStarNode *pNodeToConnectTo);
@@ -46,6 +51,7 @@ namespace Engine
 		void SetNodeEnabled(bool enabled);
 
 	private:
+		static void LogNotSetError(void *pClass, GraphicalObject *pObj);
 		static bool EnableObjForConnection(Connection *pConnectedTo, void *pClassInstance);
 		static bool DisableObjForConnection(Connection *pConnectedTo, void *pClassInstance);
 		static bool UpdateConnection(Connection *pConnectedTo, void *pClassInstance);
@@ -60,6 +66,11 @@ namespace Engine
 		GraphicalObject m_gob;
 		LinkedList<Connection> m_connections;
 		int m_connectionCount{ 0 };
+
+		static ObjInitCallback s_sphereInitCallback;
+		static void *s_pSphereInitClassInstance;
+		static ObjInitCallback s_connectionInitCallback;
+		static void *s_pConnectionClassInstance;
 	};
 	
 	template class ENGINE_SHARED LinkedList<AStarNode>;
