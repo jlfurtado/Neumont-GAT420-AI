@@ -59,6 +59,44 @@ namespace Engine
 			m_nodeCount++;
 		}
 
+		T* GetWhere(LinkedListIterationCallback callback, void *pClassInstance)
+		{
+			// grab the first node in the list
+			Node *pCurrentNode = m_pHeadNode;
+
+			// while there are nodes, call the callback, stopping if indicated by return value, otherwise moving to the next node
+			while (pCurrentNode)
+			{
+				if (callback(pCurrentNode->m_pData, pClassInstance)) { return pCurrentNode->m_pData; } // found a match, return it
+				pCurrentNode = pCurrentNode->m_pNextNode;
+			}
+
+			// return value indicating not present in list
+			return nullptr;
+		}
+
+		void RemoveWhere(LinkedListIterationCallback callback, void *pClassInstance)
+		{
+			// grab the first node in the list
+			Node *pLastNode = m_pHeadNode;
+			Node *pCurrentNode = pLastNode->m_pNextNode;
+
+			// if we need to remove the head node, handle that case
+			if (callback(m_pHeadNode->m_pData, pClassInstance)) { RemoveHeadNode(); return; }
+
+			// while there are nodes, call the callback, acting if indicated by return value, otherwise moving to the next node
+			while (pCurrentNode)
+			{
+				// see if we should remove the current node
+				if (callback(pCurrentNode->m_pData, pClassInstance)) { RemoveSingleNode(pLastNode, pCurrentNode); } // found a match, remove it
+
+				// keep track of current and last node for removing purposes
+				pLastNode = pLastNode->m_pNextNode;
+				pCurrentNode = pLastNode->m_pNextNode;
+			} 
+
+		}
+
 		void RemoveFromList(T *pData)
 		{
 			// can't remove from empty list
@@ -72,7 +110,7 @@ namespace Engine
 			Node *pLastNode = m_pHeadNode;
 			Node *pCurrentNode = pLastNode->m_pNextNode;
 
-			do
+			while (pCurrentNode) // keep checking while there's nodes
 			{
 				// check if the second node is the node we want to remove
 				if (pCurrentNode->m_pData == pData)
@@ -85,8 +123,7 @@ namespace Engine
 				// move over to the next node
 				pLastNode = pLastNode->m_pNextNode;
 				pCurrentNode = pLastNode->m_pNextNode;
-
-			} while (pCurrentNode); // keep checking while there's nodes
+			}  
 		}
 
 		bool WalkList(LinkedListIterationCallback callback, void *pClassInstance)

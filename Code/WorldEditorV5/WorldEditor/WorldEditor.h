@@ -13,9 +13,9 @@
 #include "MyWindow.h"
 #include "GraphicalObject.h"
 #include "Camera.h"
+#include "AStarNode.h"
 #include "LinkedList.h"
 #include "CollisionTester.h"
-
 
 class WorldEditor
 {
@@ -36,9 +36,11 @@ public:
 	static void DrawCallback(void *game);
 	static void MouseScrollCallback(void *game, int degrees);
 	static void MouseMoveCallback(void *game, int dx, int dy);
-	static bool DestroyObjsCallback(Engine::GraphicalObject *pObj, void *pClassInstance);
 	
 private:
+	static bool DestroyObjsCallback(Engine::GraphicalObject *pObj, void *pClassInstance);
+	static bool DestroyAStarNodeCallback(Engine::AStarNode *pNode, void *pClassInstance);
+
 	static void PlaceObject(WorldEditor *pEditor);
 	static void RemoveObject(WorldEditor *pEditor);
 	static void TranslateObject(WorldEditor *pEditor);
@@ -124,9 +126,11 @@ private:
 	int perspectiveMatLoc;
 	int tintIntensityLoc;
 	int m_objCount;
+	int m_nodeCount;
 	Engine::Camera m_camera;
 	Engine::Mat4 wtv;
 	Engine::LinkedList<Engine::GraphicalObject> m_objs;
+	Engine::LinkedList<Engine::AStarNode> m_nodes;
 	bool drawGrid{ false };
 	Engine::Vec3 highlightedColor{ 1.0f, 1.0f, 0.0f };
 	Engine::RayCastingOutput m_rco;

@@ -126,6 +126,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AStarNode.h" />
     <ClInclude Include="BinaryWriter.h" />
     <ClInclude Include="BitmapLoader.h" />
     <ClInclude Include="BufferGroup.h" />
@@ -182,6 +183,7 @@
     <ClInclude Include="WorldFileIO.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AStarNode.cpp" />
     <ClCompile Include="BinaryWriter.cpp" />
     <ClCompile Include="BitmapLoader.cpp" />
     <ClCompile Include="BufferGroup.cpp" />

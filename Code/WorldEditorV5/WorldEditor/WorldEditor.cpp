@@ -12,6 +12,7 @@
 #include "MousePicker.h"
 #include "MathUtility.h"
 #include "MouseManager.h"
+#include "AStarNode.h"
 
 // Justin Furtado
 // 4/20/2017
@@ -99,6 +100,17 @@ bool WorldEditor::DestroyObjsCallback(Engine::GraphicalObject * pObj, void *pCla
 
 	pEditor->m_objCount--;
 	
+	return true;
+}
+
+bool WorldEditor::DestroyAStarNodeCallback(Engine::AStarNode * pNode, void * pClassInstance)
+{
+	WorldEditor* pEditor = reinterpret_cast<WorldEditor*>(pClassInstance);
+
+	delete pNode;
+
+	pEditor->m_nodeCount--;
+
 	return true;
 }
 
