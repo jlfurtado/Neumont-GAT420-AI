@@ -129,6 +129,22 @@ namespace Engine
 			}  
 		}
 
+		bool WalkListWhere(LinkedListIterationCallback considerNodeCallback, void *pConsiderData, LinkedListIterationCallback callback, void *pClassInstance)
+		{
+			// grab the first node in the list
+			Node *pCurrentNode = m_pHeadNode;
+
+			// while there are nodes, call the callback, stopping if indicated by return value, otherwise moving to the next node
+			while (pCurrentNode)
+			{
+				Node *pNext = pCurrentNode->m_pNextNode; // support for removing while iterating???
+				if (considerNodeCallback(pCurrentNode->m_data, pConsiderData) && !callback(pCurrentNode->m_data, pClassInstance)) { return false; } // Callback can return false to stop iterating list - like if we only wanted to walk part of it
+				pCurrentNode = pNext;
+			}
+
+			return true;
+		}
+
 		bool WalkList(LinkedListIterationCallback callback, void *pClassInstance)
 		{
 			// grab the first node in the list

@@ -53,4 +53,14 @@ namespace Engine
 	{
 		return m_enabled;
 	}
+
+	void AStarNode::SetParent(AStarNode * pParent)
+	{
+		m_pParent = pParent;
+	}
+
+	AStarNode *AStarNode::GetParentPointer()
+	{
+		return m_pParent;
+	}
 }

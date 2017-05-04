@@ -16,12 +16,14 @@ namespace Engine
 	{
 		struct NodeWithConnections
 		{
+			NodeWithConnections() : m_pNode(nullptr) {}
 			NodeWithConnections(AStarNode *pNode) : m_pNode(pNode) {}
 			~NodeWithConnections() { DeleteNode(); }
 
 			void SetConnectionInfo(int index, int count) { m_connectionCount = count; m_connectionIndex = index; }
 			void DeleteNode() { if (m_pNode) { delete m_pNode; m_pNode = nullptr; } }
 
+			const GraphicalObject *m_pNodeOrigin;
 			AStarNode *m_pNode{ nullptr };
 			int m_connectionIndex{ 0 };
 			int m_connectionCount{ 0 };
@@ -35,7 +37,7 @@ namespace Engine
 
 		void ClearMap();
 		void RemoveConnection(LinkedList<GraphicalObject*> *pObjs, GraphicalObject *pConnectionToRemove, DestroyObjectCallback destroyCallback, void *pDestructionInstance);
-		void CalculateMap(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer);
+		bool CalculateMap(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance);
 		void ClearGobs(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void *pDestructionInstance);
 		void ClearGobsForLayer(LinkedList<GraphicalObject*> *pObjs, CollisionLayer layer, DestroyObjectCallback destroyCallback, void *pDestructionInstance);
 
@@ -44,14 +46,20 @@ namespace Engine
 		bool ToFile(const char *const filePath);
 
 	private:
+		bool ResetPreCalculation(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance);
+		bool MakeNodesWithNoConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer);
+		bool MakeAutomagicNodeConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer);
+
 		void RemoveConnectionAndCondense(int fromIndex, int toIndex);
 		static bool IsObjInLayer(GraphicalObject *pObj, void *pClass);
+		static bool DoMakeNodesFromGobs(GraphicalObject *pObj, void *pClass);
 
 		static const int NODE_MAP_FILE_VERSION = 1;
 		int *m_pConnectionsTo{ nullptr };
-		int m_numConnections{ 0 };
+		unsigned int m_numConnections{ 0 };
 		NodeWithConnections *m_pNodesWithConnections{ nullptr };
-		int m_numNodes{ 0 };
+		unsigned int m_numNodes{ 0 };
+		unsigned int m_nextWalkIndex{ 0 };
 	};
 }
 

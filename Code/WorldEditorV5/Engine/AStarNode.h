@@ -26,8 +26,11 @@ namespace Engine
 		void SetRadius(float newRadius);
 		void SetNodeEnabled(bool enabled);
 		bool IsEnabled();
+		void SetParent(AStarNode *pParent);
+		AStarNode *GetParentPointer();
 
 	private:
+		AStarNode* m_pParent{ nullptr };
 		bool m_enabled{ true };
 		Vec3 m_position;
 		float m_radius{ 1.0f };
