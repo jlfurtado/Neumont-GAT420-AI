@@ -203,17 +203,33 @@ namespace Engine
 		return true;
 	}
 
-	// TODO: OPTIMIZE!?!?! if one raycast one direction fails, no need to check the other two!
+	const Vec3 UP(0.0f, 1.0f, 0.0f);
+	const int INDEX_NOT_SET = -1;
 	bool AStarNodeMap::MakeAutomagicNodeConnections(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer)
 	{
+		// absolute max num connections is n*n-n 
+		// 2 nodes = 4-2 connections = 2 (check)
+		// 3 nodes = 9-3 connections = 6 (check)
+		// 4 nodes = 16-4 connections = 12 (check)
+		// 5 nodes = 25-5 connections = 20 (check) ... and so on...
+
+		// cannot have more than that many connections, but can have less, should never have to worry about overriding array
+		int maxSize = m_numNodes * (m_numNodes - 1);
+
+		// allocate and initialize indices
+		m_pConnectionsTo = new int[maxSize];
+		for (int i = 0; i < maxSize; ++i) { m_pConnectionsTo[i] = INDEX_NOT_SET; }
+
 		// for each node
 		for (int i = 0; i < m_numNodes; ++i)
 		{
+			int numICanSee = 0;
+
 			// compare to each other node
 			for (int j = 0; j < m_numNodes; ++j)
 			{
-				// check both in case of future one-way-walls
-				Vec3 up(0.0f, 1.0f, 0.0f);
+				// don't ever raycast to self
+				if (j == i) { continue; }
 
 				// centers of objects
 				Vec3 iCenter = m_pNodesWithConnections[i].m_pNode->GetPosition();
@@ -223,8 +239,8 @@ namespace Engine
 				Vec3 iToJCenter = jCenter - iCenter;
 
 				// vector going from center to right edge for sphere based on its radius
-				Vec3 iRightOffset = iToJCenter.Normalize().Cross(up).Normalize() * m_pNodesWithConnections[i].m_pNode->GetRadius();
-				Vec3 jRightOffset = (-iToJCenter).Normalize().Cross(up).Normalize() * m_pNodesWithConnections[j].m_pNode->GetRadius();
+				Vec3 iRightOffset = iToJCenter.Normalize().Cross(UP).Normalize() * m_pNodesWithConnections[i].m_pNode->GetRadius();
+				Vec3 jRightOffset = (-iToJCenter).Normalize().Cross(UP).Normalize() * m_pNodesWithConnections[j].m_pNode->GetRadius();
 
 				// edge points to raycast from
 				Vec3 iLeft = iCenter - iRightOffset;
@@ -236,17 +252,14 @@ namespace Engine
 				Vec3 iToJRight = jRight - iRight;
 				Vec3 iToJLeft = jLeft - iLeft;
 
-				// raycasts from i TO j
-				RayCastingOutput iToJCenter = CollisionTester::FindWall(iCenter, iToJCenter.Normalize(), iToJCenter.Length(), CollisionLayer::NUM_LAYERS);
-				RayCastingOutput iToJLeft = CollisionTester::FindWall(iLeft, iToJLeft.Normalize(), iToJLeft.Length(), CollisionLayer::NUM_LAYERS);
-				RayCastingOutput iToJRight = CollisionTester::FindWall(iRight, iToJRight.Normalize(), iToJRight.Length(), CollisionLayer::NUM_LAYERS);
+				// only check other points if the first path is clear, because raycasting is very expensive (will only do subsequent raycasts if the previous are a clear path
+				if (PathClear(CollisionTester::FindWall(iCenter, iToJCenter.Normalize(), iToJCenter.Length(), CollisionLayer::NUM_LAYERS), m_pNodesWithConnections[j].m_pNodeOrigin)
+					&& PathClear(CollisionTester::FindWall(iRight, iToJRight.Normalize(), iToJRight.Length(), CollisionLayer::NUM_LAYERS), m_pNodesWithConnections[j].m_pNodeOrigin)
+					&& PathClear(CollisionTester::FindWall(iLeft, iToJLeft.Normalize(), iToJLeft.Length(), CollisionLayer::NUM_LAYERS), m_pNodesWithConnections[j].m_pNodeOrigin))
+				{
+					// TODO: add gob and connection from i to j
 
-				// raycasts from j to I
-				RayCastingOutput jToICenter = CollisionTester::FindWall(jCenter, -(iToJCenter.Normalize()), iToJCenter.Length(), CollisionLayer::NUM_LAYERS);
-				RayCastingOutput jToILeft = CollisionTester::FindWall(jLeft,  -(iToJLeft.Normalize()), iToJLeft.Length(), CollisionLayer::NUM_LAYERS);
-				RayCastingOutput jToIRight = CollisionTester::FindWall(jRight, -(iToJRight.Normalize()), iToJRight.Length(), CollisionLayer::NUM_LAYERS);
-
-				// TODO: REACT TO RAYCAST OUTPUT
+				}
 			}
 		}
 		/*
@@ -261,6 +274,13 @@ namespace Engine
 		*/
 
 		return false;
+	}
+
+	// returns false if a ray cast from one object to another hit anything in between
+	bool AStarNodeMap::PathClear(const RayCastingOutput & rco, const GraphicalObject *pDestObj)
+	{
+		// the path is clear if we hit the destination object or it hit nothing
+		return (rco.m_didIntersect && rco.m_belongsTo == pDestObj) || !(rco.m_didIntersect);
 	}
 
 	// iterates through array, condensing and updating nodes with connections
