@@ -1,4 +1,6 @@
 #include "AStarNodeMap.h"
+#include "ShapeGenerator.h"
+#include "RenderEngine.h"
 
 // Justin Furtado
 // 5/2/2017
@@ -41,7 +43,7 @@ namespace Engine
 		}
 	}
 
-	void AStarNodeMap::RemoveConnection(LinkedList<GraphicalObject*>* pObjs, GraphicalObject * pConnectionToRemove, DestroyObjectCallback destroyCallback, void * pDestructionInstance)
+	void AStarNodeMap::RemoveConnection(LinkedList<GraphicalObject*>* pObjs, GraphicalObject * pConnectionToRemove, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate)
 	{
 		// p extra data points to the to index in the array, so we can get its index in the full array and the index of the node 
 		int *toIndexPtr = reinterpret_cast<int*>(pConnectionToRemove->m_pExtraData);
@@ -60,15 +62,16 @@ namespace Engine
 		// destory the gob
 		destroyCallback(pConnectionToRemove, pDestructionInstance);
 		pObjs->RemoveFirstFromList(pConnectionToRemove);
+		*outCountToUpdate--;
 
 		// remove the connection from our connections
 		RemoveConnectionAndCondense(fromIndex, toIndex);
 	}
 
-	bool AStarNodeMap::CalculateMap(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance)
+	bool AStarNodeMap::CalculateMap(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate)
 	{
 		// lets clean up before we start...
-		if (!ResetPreCalculation(pObjs, connectionLayer, destroyCallback, pDestructionInstance)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not ResetPreCalculation!\n"); return false; }
+		if (!ResetPreCalculation(pObjs, connectionLayer, destroyCallback, pDestructionInstance, outCountToUpdate)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not ResetPreCalculation!\n"); return false; }
 
 		// at this point we should be reset to the appropriate state to calculate the map...
 			// we should have gobs indicating where to make nodes, but no nodes
@@ -81,21 +84,21 @@ namespace Engine
 			// we have the correct number of them, and they should all be placed at decent positions
 
 		// lets make some connections!
-		if (!MakeAutomagicNodeConnections(pObjs, connectionLayer)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not MakeAutomagicNodeConnections!\n"); return false; }
+		if (!MakeAutomagicNodeConnections(pObjs, connectionLayer, outCountToUpdate)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not MakeAutomagicNodeConnections!\n"); return false; }
 
 		// HOOORRRAY ITS FINALLY OVER!!!!!!!!!!!
 		return true;
 	}
 
-	void AStarNodeMap::ClearGobs(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void *pDestructionInstance)
+	void AStarNodeMap::ClearGobs(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate)
 	{
 		// removes objs from both layer, calling the destruction callback for each
-		ClearGobsForLayer(pObjs, nodeLayer, destroyCallback, pDestructionInstance);
-		ClearGobsForLayer(pObjs, connectionLayer, destroyCallback, pDestructionInstance);
+		ClearGobsForLayer(pObjs, nodeLayer, destroyCallback, pDestructionInstance, outCountToUpdate);
+		ClearGobsForLayer(pObjs, connectionLayer, destroyCallback, pDestructionInstance, outCountToUpdate);
 	}
 
 	// removes all 
-	void AStarNodeMap::ClearGobsForLayer(LinkedList<GraphicalObject*>* pObjs, CollisionLayer layer, DestroyObjectCallback destroyCallback, void *pDestructionInstance)
+	void AStarNodeMap::ClearGobsForLayer(LinkedList<GraphicalObject*>* pObjs, CollisionLayer layer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate)
 	{
 		// data for iteration
 		CollisionLayer layerCpy = layer;
@@ -111,6 +114,7 @@ namespace Engine
 				// if we found one, call the destruction callback for it and remove it from the list
 				destroyCallback(pToRemove, pDestructionInstance);
 				pObjs->RemoveFirstFromList(pToRemove);
+				*outCountToUpdate--;
 			}
 
 			// keep going until we don't find one
@@ -137,12 +141,12 @@ namespace Engine
 		return ToFile(this, filePath);
 	}
 
-	bool AStarNodeMap::ResetPreCalculation(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance)
+	bool AStarNodeMap::ResetPreCalculation(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate)
 	{
 		CollisionLayer checkLayer = connectionLayer;
 
 		// remove all existing connection gobs!
-		ClearGobsForLayer(pObjs, connectionLayer, destroyCallback, pDestructionInstance);
+		ClearGobsForLayer(pObjs, connectionLayer, destroyCallback, pDestructionInstance, outCountToUpdate);
 
 		// remove all nodes (not gobs) and all connections (not gobs)!
 		ClearMap();
@@ -204,8 +208,9 @@ namespace Engine
 	}
 
 	const Vec3 UP(0.0f, 1.0f, 0.0f);
+	const Vec3 BASE_ARROW_DIR(1.0f, 0.0f, 0.0f);
 	const int INDEX_NOT_SET = -1;
-	bool AStarNodeMap::MakeAutomagicNodeConnections(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer)
+	bool AStarNodeMap::MakeAutomagicNodeConnections(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int *outCountToUpdate)
 	{
 		// absolute max num connections is n*n-n 
 		// 2 nodes = 4-2 connections = 2 (check)
@@ -220,9 +225,13 @@ namespace Engine
 		m_pConnectionsTo = new int[maxSize];
 		for (int i = 0; i < maxSize; ++i) { m_pConnectionsTo[i] = INDEX_NOT_SET; }
 
+		// variable to track the start indices for each node
+		int nextStartIndex = 0;
+
 		// for each node
 		for (int i = 0; i < m_numNodes; ++i)
 		{
+			// how many nodes this node can see
 			int numICanSee = 0;
 
 			// compare to each other node
@@ -257,23 +266,40 @@ namespace Engine
 					&& PathClear(CollisionTester::FindWall(iRight, iToJRight.Normalize(), iToJRight.Length(), CollisionLayer::NUM_LAYERS), m_pNodesWithConnections[j].m_pNodeOrigin)
 					&& PathClear(CollisionTester::FindWall(iLeft, iToJLeft.Normalize(), iToJLeft.Length(), CollisionLayer::NUM_LAYERS), m_pNodesWithConnections[j].m_pNodeOrigin))
 				{
-					// TODO: add gob and connection from i to j
+					// the index in the array is the start plus the num seen so far
+					int arrayIndex = nextStartIndex + numICanSee;
 
+					// put in that index the index of the node to which it is connected
+					m_pConnectionsTo[arrayIndex] = j;
+
+					// TODO: ADD GOB
+					// 4. when make connection, set m_pExtra data to point to the toIndex in the array
+					GraphicalObject *pArrow = new GraphicalObject();
+					ShapeGenerator::MakeDebugArrow(pArrow, Vec3(0.25f, .75f, 0.0f), Vec3(0.0f, .75f, 0.0f));
+					
+					// make go from i right to j right
+					pArrow->SetRotMat(Mat4::RotationToFace(BASE_ARROW_DIR, iToJRight.Normalize()));
+					pArrow->SetScaleMat(Mat4::Scale(iToJRight.Length() / 2.0f, BASE_ARROW_DIR));
+					pArrow->SetTransMat(Mat4::Translation(iRight));
+					pArrow->CalcFullTransform();
+
+					// add it where it goes
+					RenderEngine::AddGraphicalObject(pArrow);
+					CollisionTester::AddGraphicalObjectToLayer(pArrow, connectionLayer);
+					pObjs->AddToList(pArrow);
+					*outCountToUpdate++;
+
+					// update counts
+					numICanSee++;
 				}
 			}
+
+			// set start indices and counts, update variable, based on what seen within inner loop
+			m_pNodesWithConnections[i].SetConnectionInfo(nextStartIndex, numICanSee);
+			nextStartIndex += numICanSee;
 		}
-		/*
 
-
-			2. Do the raycasting thing that checks for visibility between nodes, creating connections as is applicable
-			and adding the gobs for those connections to the list(in the proper layer)
-
-			3. Do all the data structure updating / condensing / setting data for nodesWithConnections, etc.
-
-			4. when make connection, set m_pExtra data to point to the toIndex in the array
-		*/
-
-		return false;
+		return true;
 	}
 
 	// returns false if a ray cast from one object to another hit anything in between
