@@ -43,6 +43,7 @@ namespace Engine
 		static bool DisableObject(GraphicalObject *pGob, void *pInstance);
 		bool DoesFitInGrid(GraphicalObject *pGraphicalObjectToTest);
 		void SetGridScale(float newScale);
+		bool ContainsObj(GraphicalObject *pObjToCheck);
 
 		// TODO: Move!??!?!?!
 
@@ -75,7 +76,7 @@ namespace Engine
 		bool m_firstCalculation{ true };
 		float m_gridScale;
 		SpatialTriangleData *m_pData{ nullptr };
-		LinkedList<GraphicalObject> m_objectList;
+		LinkedList<GraphicalObject*> m_objectList;
 		int *m_pGridStartIndices{ nullptr };
 		int *m_pGridTriangleCounts{ nullptr };
 		int m_gridSectionsWidth{ 85 };

@@ -163,7 +163,7 @@ namespace Engine
 
 	void SpatialGrid::RemoveGraphicalObject(GraphicalObject * pGobToRemove)
 	{
-		m_objectList.RemoveFromList(pGobToRemove);
+		m_objectList.RemoveFirstFromList(pGobToRemove);
 	}
 
 	int SpatialGrid::GetGridWidth()
@@ -435,5 +435,10 @@ namespace Engine
 	{
 		if (newScale <= 0.0f) { return; }
 		m_gridScale = newScale;
+	}
+
+	bool SpatialGrid::ContainsObj(GraphicalObject * pObjToCheck)
+	{
+		return m_objectList.Contains(pObjToCheck);
 	}
 }

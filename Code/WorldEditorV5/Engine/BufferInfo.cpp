@@ -108,7 +108,7 @@ namespace Engine
 		return BelongsInBuffer(pGraphicalObjectToCheck->GetMeshPointer());
 	}
 
-	LinkedList<GraphicalObject>* BufferInfo::GetGraphicalObjectList()
+	LinkedList<GraphicalObject*>* BufferInfo::GetGraphicalObjectList()
 	{
 		return &m_graphicalObjectList;
 	}
@@ -200,7 +200,7 @@ namespace Engine
 
 	void BufferInfo::RemoveGraphicalObject(GraphicalObject * pGraphicalObjectToRemove)
 	{
-		m_graphicalObjectList.RemoveFromList(pGraphicalObjectToRemove);
+		m_graphicalObjectList.RemoveFirstFromList(pGraphicalObjectToRemove);
 	}
 
 	bool BufferInfo::ContainedInBuffer(GraphicalObject * pObjToCheck) const

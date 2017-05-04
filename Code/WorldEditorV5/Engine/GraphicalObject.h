@@ -66,6 +66,9 @@ namespace Engine
 		void SetMaterial(Material mat);
 		void CalcFullTransform();
 		Mat4 *GetFullTransformPtr();
+		
+		// its ugly but force something to work for now
+		void *m_pExtraData{ nullptr };
 
 	private:
 		// data

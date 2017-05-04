@@ -66,6 +66,8 @@ namespace Engine
 		static void OnlyShowLayer(CollisionLayer layer = CollisionLayer::NUM_LAYERS);
 		static bool DrawRay(const Vec3& rayPosition, const Vec3& rayDirection, float rayLength, UniformData uniformData[3]);
 		static void SetGridScale(float newScale);
+		static bool IsInLayer(GraphicalObject *pOBJToCheck, CollisionLayer layerToCheck);
+
 	private:
 		static SpatialGrid s_spatialGrids[(unsigned)CollisionLayer::NUM_LAYERS];
 

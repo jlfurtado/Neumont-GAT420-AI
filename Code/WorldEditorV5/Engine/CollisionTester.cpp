@@ -360,7 +360,13 @@ namespace Engine
 	void CollisionTester::RemoveGraphicalObjectFromLayer(GraphicalObject * pGobToRemove, CollisionLayer layer)
 	{
 		if (!pGobToRemove) { GameLogger::Log(MessageType::cError, "Failed to RemoveGraphicalObjectFromLayer for CollisionTester! GraphicalObject to-be-added was nullptr!\n"); return; }
-		if (layer == CollisionLayer::NUM_LAYERS) { GameLogger::Log(MessageType::cWarning, "Tried to RemoveGraphicalObjectFromLayer for NUM_LAYERS!\n"); return; }
+		
+		if (layer == CollisionLayer::NUM_LAYERS)
+		{
+			// remove from all layers (slower) if layer not properly specified
+			for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i) { RemoveGraphicalObjectFromLayer(pGobToRemove, (CollisionLayer)i); }
+		}
+
 		s_spatialGrids[(unsigned)layer].RemoveGraphicalObject(pGobToRemove);
 	}
 
@@ -447,6 +453,11 @@ namespace Engine
 		{
 			s_spatialGrids[(unsigned)c].SetGridScale(newScale);
 		}
+	}
+
+	bool CollisionTester::IsInLayer(GraphicalObject *pOBJToCheck, CollisionLayer layerToCheck)
+	{
+		return s_spatialGrids[(unsigned)layerToCheck].ContainsObj(pOBJToCheck);
 	}
 
 }

@@ -19,7 +19,7 @@
 
 class WorldEditor
 {
-	typedef Engine::GraphicalObject *(*MakeObjectCallback)(WorldEditor *);
+	typedef Engine::GraphicalObject *(*MakeObjectCallback)(WorldEditor *, Engine::CollisionLayer *outLayer);
 	typedef void(*ActionCallback)(WorldEditor *);
 
 	struct PlacementData
@@ -39,7 +39,6 @@ public:
 	
 private:
 	static bool DestroyObjsCallback(Engine::GraphicalObject *pObj, void *pClassInstance);
-	static bool DestroyAStarNodeCallback(Engine::AStarNode *pNode, void *pClassInstance);
 
 	static void PlaceObject(WorldEditor *pEditor);
 	static void RemoveObject(WorldEditor *pEditor);
@@ -48,19 +47,19 @@ private:
 	static void ScaleObject(WorldEditor *pEditor);
 	static void SetPCUniforms(WorldEditor *pEditor, Engine::GraphicalObject *pObj);
 
-	static Engine::GraphicalObject *MakeCube(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeHideout(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeHouse(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeBetterDargon(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeChair(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeCoil(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeCone(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeCup(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeStar(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakePipe(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeSoccer(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeTree(WorldEditor *pEditor);
-	static Engine::GraphicalObject *MakeWedge(WorldEditor *pEditor);
+	static Engine::GraphicalObject *MakeCube(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeHideout(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeHouse(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeBetterDargon(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeChair(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeCoil(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeCone(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeCup(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeStar(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakePipe(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeTree(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeWedge(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
+	static Engine::GraphicalObject *MakeNodeObj(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
 
 	void SwapMakeForward();
 	void SwapMakeBackward();
@@ -126,11 +125,9 @@ private:
 	int perspectiveMatLoc;
 	int tintIntensityLoc;
 	int m_objCount;
-	int m_nodeCount;
 	Engine::Camera m_camera;
 	Engine::Mat4 wtv;
-	Engine::LinkedList<Engine::GraphicalObject> m_objs;
-	Engine::LinkedList<Engine::AStarNode> m_nodes;
+	Engine::LinkedList<Engine::GraphicalObject*> m_objs;
 	bool drawGrid{ false };
 	Engine::Vec3 highlightedColor{ 1.0f, 1.0f, 0.0f };
 	Engine::RayCastingOutput m_rco;

@@ -118,7 +118,7 @@ private:
 	Engine::Keyboard keyboardManager;
 	Engine::GraphicalObject m_originMarker;
 	int m_objCount{ 0 };
-	Engine::LinkedList<Engine::GraphicalObject> m_fromWorldEditorOBJs;
+	Engine::LinkedList<Engine::GraphicalObject*> m_fromWorldEditorOBJs;
 };
 
 #endif // ifndef EngineDemo_H
