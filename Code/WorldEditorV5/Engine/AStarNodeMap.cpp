@@ -9,8 +9,7 @@
 
 namespace Engine
 {
-	const Vec3 BASE_ARROW_DIR = Engine::Vec3(1.0f, 0.0f, 0.0f);
-
+	const Vec3 BASE_ARROW_DIR(1.0f, 0.0f, 0.0f);
 
 	AStarNodeMap::AStarNodeMap()
 	{
@@ -51,7 +50,7 @@ namespace Engine
 
 		// find which nodes it goes between so we can fully remove it
 		int toIndex = *toIndexPtr;
-		int fromIndex;
+		unsigned fromIndex;
 
 		// to get the index of the node it goes from, we iterate through the nodes until we would pass it on the next iteration, leaving us on the correct from index
 		for (fromIndex = 0; fromIndex < m_numNodes; fromIndex++)
@@ -141,6 +140,28 @@ namespace Engine
 		return ToFile(this, filePath);
 	}
 
+	void AStarNodeMap::AddArrowGobToList(const Vec3 & iRightVec, const Vec3 & iToJRightVec, int* pExtra, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int * outCountToUpdate)
+	{
+		// obj should get deleted externally in list we put it in
+		GraphicalObject *pArrow = new GraphicalObject();
+		ShapeGenerator::MakeDebugArrow(pArrow, Vec3(0.25f, .75f, 0.0f), Vec3(0.0f, .75f, 0.0f));
+
+		// make go from i right to j right
+		pArrow->SetRotMat(Mat4::RotationToFace(BASE_ARROW_DIR, iToJRightVec.Normalize()));
+		pArrow->SetScaleMat(Mat4::Scale(iToJRightVec.Length() / 2.0f, BASE_ARROW_DIR));
+		pArrow->SetTransMat(Mat4::Translation(iRightVec));
+		pArrow->CalcFullTransform();
+
+		// ugly make it work thing
+		pArrow->m_pExtraData = pExtra;
+
+		// add it where it goes
+		RenderEngine::AddGraphicalObject(pArrow);
+		CollisionTester::AddGraphicalObjectToLayer(pArrow, connectionLayer);
+		pObjs->AddToList(pArrow);
+		*outCountToUpdate++;
+	}
+
 	bool AStarNodeMap::ResetPreCalculation(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate)
 	{
 		CollisionLayer checkLayer = connectionLayer;
@@ -195,7 +216,7 @@ namespace Engine
 		if (m_nextWalkIndex != nodeCount) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Failed to create nodes from gobs! Needed to make [%d] nodes but made [%d]!\n", nodeCount, m_nextWalkIndex); return false; }
 
 		// to be even more obsessively thorough, lets make sure nodes were allocated for every single slot in the array
-		for (int i = 0; i < nodeCount; ++i)
+		for (unsigned i = 0; i < nodeCount; ++i)
 		{
 			if (m_pNodesWithConnections[i].m_pNode == nullptr) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Failed to create nodes from gobs! Node [%d] has no node pointer!\n", i); return false; }
 		}
@@ -208,7 +229,6 @@ namespace Engine
 	}
 
 	const Vec3 UP(0.0f, 1.0f, 0.0f);
-	const Vec3 BASE_ARROW_DIR(1.0f, 0.0f, 0.0f);
 	const int INDEX_NOT_SET = -1;
 	bool AStarNodeMap::MakeAutomagicNodeConnections(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int *outCountToUpdate)
 	{
@@ -229,13 +249,13 @@ namespace Engine
 		int nextStartIndex = 0;
 
 		// for each node
-		for (int i = 0; i < m_numNodes; ++i)
+		for (unsigned i = 0; i < m_numNodes; ++i)
 		{
 			// how many nodes this node can see
 			int numICanSee = 0;
 
 			// compare to each other node
-			for (int j = 0; j < m_numNodes; ++j)
+			for (unsigned j = 0; j < m_numNodes; ++j)
 			{
 				// don't ever raycast to self
 				if (j == i) { continue; }
@@ -272,22 +292,8 @@ namespace Engine
 					// put in that index the index of the node to which it is connected
 					m_pConnectionsTo[arrayIndex] = j;
 
-					// TODO: ADD GOB
-					// 4. when make connection, set m_pExtra data to point to the toIndex in the array
-					GraphicalObject *pArrow = new GraphicalObject();
-					ShapeGenerator::MakeDebugArrow(pArrow, Vec3(0.25f, .75f, 0.0f), Vec3(0.0f, .75f, 0.0f));
-					
-					// make go from i right to j right
-					pArrow->SetRotMat(Mat4::RotationToFace(BASE_ARROW_DIR, iToJRight.Normalize()));
-					pArrow->SetScaleMat(Mat4::Scale(iToJRight.Length() / 2.0f, BASE_ARROW_DIR));
-					pArrow->SetTransMat(Mat4::Translation(iRight));
-					pArrow->CalcFullTransform();
-
-					// add it where it goes
-					RenderEngine::AddGraphicalObject(pArrow);
-					CollisionTester::AddGraphicalObjectToLayer(pArrow, connectionLayer);
-					pObjs->AddToList(pArrow);
-					*outCountToUpdate++;
+					// make the arrow gob
+					AddArrowGobToList(iRight, iToJRight, &m_pConnectionsTo[arrayIndex], pObjs, connectionLayer, outCountToUpdate);
 
 					// update counts
 					numICanSee++;
@@ -313,7 +319,7 @@ namespace Engine
 	void AStarNodeMap::RemoveConnectionAndCondense(int fromIndex, int toIndex)
 	{
 		// we are removing one connection from node[fromIndex], so all of the things after start one earlier now as we want no holes in the array
-		for (int i = fromIndex + 1; i < m_numNodes; ++i)
+		for (unsigned i = fromIndex + 1; i < m_numNodes; ++i)
 		{
 			(m_pNodesWithConnections + i)->m_connectionIndex--;
 		}

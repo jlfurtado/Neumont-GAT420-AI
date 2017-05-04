@@ -46,6 +46,7 @@ namespace Engine
 		bool ToFile(const char *const filePath);
 
 	private:
+		void AddArrowGobToList(const Vec3& iRightVec, const Vec3& iToJRightVec, int *pExtra, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int *outCountToUpdate);
 		bool ResetPreCalculation(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate);
 		bool MakeNodesWithNoConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer);
 		bool MakeAutomagicNodeConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, int *outCountToUpdate);

@@ -187,13 +187,13 @@ namespace Engine
 			Node *pCurrentNode = pLastNode->m_pNextNode;
 
 			// if the head node is included, increment counter from 0
-			if (callback(m_pHeadNode->m_data, pClassInstance)) { ++count; }
+			if (callback(m_pHeadNode->m_data, pInstance)) { ++count; }
 
 			// while there are nodes, call the callback, acting if indicated by return value, otherwise moving to the next node
 			while (pCurrentNode)
 			{
 				// see if we should remove the current node
-				if (callback(pCurrentNode->m_data, pClassInstance)) { ++count; } // found a match, remove it
+				if (callback(pCurrentNode->m_data, pInstance)) { ++count; } // found a match, remove it
 
 				// keep track of current and last node for removing purposes
 				pLastNode = pLastNode->m_pNextNode;
