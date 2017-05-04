@@ -105,6 +105,7 @@ bool WorldEditor::DestroyObjsCallback(Engine::GraphicalObject * pObj, void *pCla
 	return true;
 }
 
+const float MULTIPLIER = 1.0f;
 void WorldEditor::PlaceObject(WorldEditor *pEditor)
 {
 	if (Engine::MouseManager::IsLeftMouseClicked() && (pEditor->m_rco.m_didIntersect || pEditor->m_objs.GetCount() == 0))
@@ -114,7 +115,7 @@ void WorldEditor::PlaceObject(WorldEditor *pEditor)
 		Engine::GraphicalObject *pNewObj = s_placementData[pEditor->m_currentPlacement].m_callback(pEditor, &outLayer);
 
 		// if scene is empty, place at 0 0 0, else, place at where clicked
-		pNewObj->SetTransMat(Engine::Mat4::Translation(pEditor->m_objs.GetCount() == 0 ? Engine::Vec3(0.0f) : pEditor->m_rco.m_intersectionPoint));
+		pNewObj->SetTransMat(Engine::Mat4::Translation(pEditor->m_objs.GetCount() == 0 ? Engine::Vec3(0.0f) : pEditor->m_rco.m_intersectionPoint + MULTIPLIER * pEditor->m_rco.m_triangleNormal));
 		if (pEditor->m_objs.GetCount() != 0) { pNewObj->SetRotMat(Engine::Mat4::RotationToFace(PLUS_Y, pEditor->m_rco.m_triangleNormal)); }
 		pNewObj->CalcFullTransform();
 
@@ -320,8 +321,10 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 
 }
 
-void WorldEditor::SetPCUniforms(WorldEditor * pEditor, Engine::GraphicalObject * pObj)
+void WorldEditor::SetPCUniforms(Engine::GraphicalObject * pObj, void *editor)
 {
+	WorldEditor *pEditor = reinterpret_cast<WorldEditor *>(editor);
+
 	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pObj->GetFullTransformPtr(), pEditor->modelToWorldMatLoc));
 	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, &pEditor->wtv, pEditor->worldToViewMatLoc));
 	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pEditor->m_perspective.GetPerspectivePtr(), pEditor->perspectiveMatLoc));
@@ -372,7 +375,7 @@ bool WorldEditor::Initialize(Engine::MyWindow * pWindow)
 	}
 
 	// setup keys for the world editor
-	if (!keyboardManager.AddKeys("XWASD1234567890MN ") || !keyboardManager.AddKey(VK_SHIFT)
+	if (!keyboardManager.AddKeys("XWASD1234567890MNK ") || !keyboardManager.AddKey(VK_SHIFT)
 		|| !keyboardManager.AddToggle('G', &drawGrid))
 	{
 		Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to add keys for WorldEditor!\n");
@@ -627,14 +630,14 @@ bool WorldEditor::ProcessInput(float dt)
 
 	if (m_walkEnabled)
 	{
-		Engine::RayCastingOutput moveRCO = Engine::CollisionTester::FindWall(m_camera.GetPosition() - (moveCheckOffset * movementVector.Normalize()), movementVector.Normalize(), moveCheckOffset + moveCheckDist + 1.0f,  EDITOR_LIST_OBJS);
+		Engine::RayCastingOutput moveRCO = Engine::CollisionTester::FindWall(m_camera.GetPosition() - (moveCheckOffset * movementVector.Normalize()), movementVector.Normalize(), moveCheckOffset + moveCheckDist + 1.0f, EDITOR_LIST_OBJS);
 		while (moveRCO.m_didIntersect && moveRCO.m_distance < (moveCheckOffset + moveCheckDist))
 		{
 			movementVector = movementVector - movementVector.ProjectOnto(moveRCO.m_triangleNormal);
 
 			moveRCO = Engine::CollisionTester::FindWall(m_camera.GetPosition() - (moveCheckOffset * movementVector.Normalize()), movementVector.Normalize(), moveCheckOffset + moveCheckDist + 1.0f, EDITOR_LIST_OBJS);
 		}
-		
+
 
 	}
 
@@ -642,8 +645,15 @@ bool WorldEditor::ProcessInput(float dt)
 	{
 		m_camera.SetPosition(m_camera.GetPosition() + movementVector);
 	}
-	
 
+	if (keyboardManager.KeyWasPressed('K') && keyboardManager.KeyIsDown(VK_SHIFT))
+	{
+		Engine::CollisionLayer nl = NODE_LAYER;
+		if (m_objs.GetCountWhere(Engine::AStarNodeMap::IsObjInLayer, &nl) > 0)
+		{
+			m_nodeMap.CalculateMap(&m_objs, NODE_LAYER, CONNECTION_LAYER, WorldEditor::DestroyObjsCallback, this, &m_objCount, WorldEditor::SetPCUniforms, this);
+		}
+	}
 
 	if (keyboardManager.KeyWasPressed('1')) { SwapToPlace(); }
 	if (keyboardManager.KeyWasPressed('2')) { SwapToRemove(); }
@@ -728,7 +738,7 @@ bool WorldEditor::UglyDemoCode()
 
 	Engine::ShapeGenerator::MakeDebugArrow(&m_xArrow, YELLOW, GREEN);
 
-	SetPCUniforms(this, &m_xArrow);
+	SetPCUniforms(&m_xArrow, this);
 
 	m_xArrow.GetMatPtr()->m_specularIntensity = 0.7f;
 	m_xArrow.GetMatPtr()->m_materialColor = RED;
@@ -744,7 +754,7 @@ bool WorldEditor::UglyDemoCode()
 
 	Engine::ShapeGenerator::MakeDebugArrow(&m_yArrow, YELLOW, GREEN);
 
-	SetPCUniforms(this, &m_yArrow);
+	SetPCUniforms(&m_yArrow, this);
 
 	m_yArrow.GetMatPtr()->m_specularIntensity = 0.7f;
 	m_yArrow.GetMatPtr()->m_materialColor = GREEN;
@@ -760,7 +770,7 @@ bool WorldEditor::UglyDemoCode()
 
 	Engine::ShapeGenerator::MakeDebugArrow(&m_zArrow, YELLOW, BLUE);
 
-	SetPCUniforms(this, &m_zArrow);
+	SetPCUniforms(&m_zArrow, this);
 
 	m_zArrow.GetMatPtr()->m_specularIntensity = 0.7f;
 	m_zArrow.GetMatPtr()->m_materialColor = BLUE;
@@ -853,7 +863,7 @@ void WorldEditor::InitObj(Engine::GraphicalObject * pObj, void *pClass)
 {
 	WorldEditor *pEditor = reinterpret_cast<WorldEditor*>(pClass);
 
-	SetPCUniforms(pEditor, pObj);
+	SetPCUniforms(pObj, pEditor);
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
 	pObj->GetMatPtr()->m_specularIntensity = 0.5f;
 
@@ -915,7 +925,7 @@ Engine::GraphicalObject * WorldEditor::MakeCube(WorldEditor * pEditor, Engine::C
 	Engine::GraphicalObject *pNewObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::MakeCube(pNewObj);
 
-	SetPCUniforms(pEditor, pNewObj);
+	SetPCUniforms(pNewObj, pEditor);
 	pNewObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
 	pNewObj->GetMatPtr()->m_specularIntensity = 0.5f;
 
@@ -929,7 +939,7 @@ Engine::GraphicalObject * WorldEditor::MakeHideout(WorldEditor * pEditor, Engine
 	Engine::GraphicalObject *pHideout = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\AIWorld.PC.scene", pHideout, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pHideout);
+	SetPCUniforms(pHideout, pEditor);
 
 	pHideout->GetMatPtr()->m_specularIntensity = 0.75f;
 	pHideout->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -944,7 +954,7 @@ Engine::GraphicalObject * WorldEditor::MakeHouse(WorldEditor * pEditor, Engine::
 	Engine::GraphicalObject *pHouse = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::MakeHouse(pHouse);
 
-	SetPCUniforms(pEditor, pHouse);	
+	SetPCUniforms(pHouse, pEditor);
 
 	pHouse->GetMatPtr()->m_specularIntensity = 0.75f;
 	pHouse->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -959,7 +969,7 @@ Engine::GraphicalObject * WorldEditor::MakeBetterDargon(WorldEditor * pEditor, E
 	Engine::GraphicalObject *pBetterDargon = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\BetterDargon.PC.scene", pBetterDargon, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pBetterDargon);
+	SetPCUniforms(pBetterDargon, pEditor);
 
 	pBetterDargon->GetMatPtr()->m_specularIntensity = 0.8f;
 	pBetterDargon->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -974,7 +984,7 @@ Engine::GraphicalObject * WorldEditor::MakeChair(WorldEditor * pEditor, Engine::
 	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Chair.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pObj);
+	SetPCUniforms(pObj, pEditor);
 
 	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -989,7 +999,7 @@ Engine::GraphicalObject * WorldEditor::MakeCoil(WorldEditor * pEditor, Engine::C
 	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Coil.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pObj);
+	SetPCUniforms(pObj, pEditor);
 
 	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -1004,7 +1014,7 @@ Engine::GraphicalObject * WorldEditor::MakeCone(WorldEditor * pEditor, Engine::C
 	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Cone.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pObj);
+	SetPCUniforms(pObj, pEditor);
 
 	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -1019,7 +1029,7 @@ Engine::GraphicalObject * WorldEditor::MakeCup(WorldEditor * pEditor, Engine::Co
 	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Cup.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pObj);
+	SetPCUniforms(pObj, pEditor);
 
 	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -1034,7 +1044,7 @@ Engine::GraphicalObject * WorldEditor::MakeStar(WorldEditor * pEditor, Engine::C
 	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Star.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pObj);
+	SetPCUniforms(pObj, pEditor);
 
 	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -1049,7 +1059,7 @@ Engine::GraphicalObject * WorldEditor::MakePipe(WorldEditor * pEditor, Engine::C
 	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Pipe.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pObj);
+	SetPCUniforms(pObj, pEditor);
 
 	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -1064,7 +1074,7 @@ Engine::GraphicalObject * WorldEditor::MakeTree(WorldEditor * pEditor, Engine::C
 	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Tree.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pObj);
+	SetPCUniforms(pObj, pEditor);
 
 	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -1079,7 +1089,7 @@ Engine::GraphicalObject * WorldEditor::MakeWedge(WorldEditor * pEditor, Engine::
 	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Wedge.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pObj);
+	SetPCUniforms(pObj, pEditor);
 
 	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
@@ -1094,11 +1104,11 @@ Engine::GraphicalObject * WorldEditor::MakeNodeObj(WorldEditor * pEditor, Engine
 	Engine::GraphicalObject *pObj = new Engine::GraphicalObject();
 	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Soccer.PC.scene", pObj, pEditor->m_shaderPrograms[1].GetProgramId());
 
-	SetPCUniforms(pEditor, pObj);
+	SetPCUniforms(pObj, pEditor);
 
 	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
-
+	
 	*outLayer = NODE_LAYER;
 
 	return pObj;

@@ -10,6 +10,7 @@
 namespace Engine
 {
 	const Vec3 BASE_ARROW_DIR(1.0f, 0.0f, 0.0f);
+	const Vec3 UP(0.0f, 1.0f, 0.0f);
 
 	AStarNodeMap::AStarNodeMap()
 	{
@@ -67,7 +68,7 @@ namespace Engine
 		RemoveConnectionAndCondense(fromIndex, toIndex);
 	}
 
-	bool AStarNodeMap::CalculateMap(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate)
+	bool AStarNodeMap::CalculateMap(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
 	{
 		// lets clean up before we start...
 		if (!ResetPreCalculation(pObjs, connectionLayer, destroyCallback, pDestructionInstance, outCountToUpdate)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not ResetPreCalculation!\n"); return false; }
@@ -83,7 +84,7 @@ namespace Engine
 			// we have the correct number of them, and they should all be placed at decent positions
 
 		// lets make some connections!
-		if (!MakeAutomagicNodeConnections(pObjs, connectionLayer, outCountToUpdate)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not MakeAutomagicNodeConnections!\n"); return false; }
+		if (!MakeAutomagicNodeConnections(pObjs, connectionLayer, outCountToUpdate, uniformCallback, uniformInstance)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not MakeAutomagicNodeConnections!\n"); return false; }
 
 		// HOOORRRAY ITS FINALLY OVER!!!!!!!!!!!
 		return true;
@@ -120,6 +121,43 @@ namespace Engine
 		} while (pToRemove);
 	}
 
+	void AStarNodeMap::MakeArrowsForExistingConnections(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
+	{
+		// clear possibly existing connection gobs
+		ClearGobsForLayer(pObjs, connectionLayer, destroyCallback, pDestructionInstance, outCountToUpdate);
+
+		// make new gobs for existing connections
+		for (unsigned i = 0; i < m_numNodes; ++i)
+		{
+			int start = m_pNodesWithConnections[i].m_connectionIndex;
+			int end = start + m_pNodesWithConnections[i].m_connectionCount;
+			for (int j = start; j < end; ++j)
+			{
+				int k = m_pConnectionsTo[j];
+
+				// centers of objects
+				Vec3 iCenter = m_pNodesWithConnections[i].m_pNode->GetPosition();
+				Vec3 kCenter = m_pNodesWithConnections[k].m_pNode->GetPosition();
+
+				// vector going from i to j
+				Vec3 iToKCenter = kCenter - iCenter;
+
+				// vector going from center to right edge for sphere based on its radius
+				Vec3 iRightOffset = iToKCenter.Normalize().Cross(UP).Normalize() * m_pNodesWithConnections[i].m_pNode->GetRadius();
+				Vec3 kRightOffset = (-iToKCenter).Normalize().Cross(UP).Normalize() * m_pNodesWithConnections[k].m_pNode->GetRadius();
+
+				// edge points to raycast from
+				Vec3 iRight = iCenter + iRightOffset;
+				Vec3 kRight = kCenter - kRightOffset;
+
+				// vectors going from edges to other edges
+				Vec3 iToKRight = kRight - iRight;
+
+				AddArrowGobToList(iRight, iToKRight, &m_pConnectionsTo[j], pObjs, connectionLayer, outCountToUpdate, uniformCallback, uniformInstance);
+			}
+		}
+	}
+
 	// reads a node map from a file and returns it, returns default (empty) node map in case of failure
 	AStarNodeMap AStarNodeMap::FromFile(const char * const filePath)
 	{
@@ -140,20 +178,24 @@ namespace Engine
 		return ToFile(this, filePath);
 	}
 
-	void AStarNodeMap::AddArrowGobToList(const Vec3 & iRightVec, const Vec3 & iToJRightVec, int* pExtra, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int * outCountToUpdate)
+	void AStarNodeMap::AddArrowGobToList(const Vec3 & iRightVec, const Vec3 & iToJRightVec, int* pExtra, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
 	{
 		// obj should get deleted externally in list we put it in
 		GraphicalObject *pArrow = new GraphicalObject();
-		ShapeGenerator::MakeDebugArrow(pArrow, Vec3(0.25f, .75f, 0.0f), Vec3(0.0f, .75f, 0.0f));
+		ShapeGenerator::MakeDebugArrow(pArrow, Vec3(0.15f, 0.75f, 0.0f), Vec3(0.0f, 0.75f, 0.0f));
 
 		// make go from i right to j right
 		pArrow->SetRotMat(Mat4::RotationToFace(BASE_ARROW_DIR, iToJRightVec.Normalize()));
 		pArrow->SetScaleMat(Mat4::Scale(iToJRightVec.Length() / 2.0f, BASE_ARROW_DIR));
-		pArrow->SetTransMat(Mat4::Translation(iRightVec));
+		pArrow->SetTransMat(Mat4::Translation(iRightVec + iToJRightVec / 2.0f));
 		pArrow->CalcFullTransform();
 
+		pArrow->GetMatPtr()->m_specularIntensity = 0.0f;
 		// ugly make it work thing
 		pArrow->m_pExtraData = pExtra;
+
+		// make it visible
+		uniformCallback(pArrow, uniformInstance);
 
 		// add it where it goes
 		RenderEngine::AddGraphicalObject(pArrow);
@@ -189,6 +231,9 @@ namespace Engine
 		// check that there are no objects in this list that are in the connection layer
 		unsigned int countInConnectionLayer = pObjs->GetCountWhere(AStarNodeMap::IsObjInLayer, &checkLayer);
 		if (countInConnectionLayer != 0) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Connection Gobs not cleared successfully! [%d] remain in Layer [%s]", countInConnectionLayer, CollisionTester::LayerString(checkLayer)); return false; }
+
+		// Re-calculate the grid because we took stuff out!
+		CollisionTester::CalculateGrid(connectionLayer);
 
 		// we're ready to go and make some nodes!
 		return true;
@@ -228,10 +273,10 @@ namespace Engine
 		return true;
 	}
 
-	const Vec3 UP(0.0f, 1.0f, 0.0f);
 	const int INDEX_NOT_SET = -1;
-	bool AStarNodeMap::MakeAutomagicNodeConnections(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int *outCountToUpdate)
+	bool AStarNodeMap::MakeAutomagicNodeConnections(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
 	{
+
 		// absolute max num connections is n*n-n 
 		// 2 nodes = 4-2 connections = 2 (check)
 		// 3 nodes = 9-3 connections = 6 (check)
@@ -274,8 +319,8 @@ namespace Engine
 				// edge points to raycast from
 				Vec3 iLeft = iCenter - iRightOffset;
 				Vec3 iRight = iCenter + iRightOffset;
-				Vec3 jLeft = jCenter - jRightOffset;
-				Vec3 jRight = jCenter + jRightOffset;
+				Vec3 jLeft = jCenter + jRightOffset;
+				Vec3 jRight = jCenter - jRightOffset;
 
 				// vectors going from edges to other edges
 				Vec3 iToJRight = jRight - iRight;
@@ -293,7 +338,7 @@ namespace Engine
 					m_pConnectionsTo[arrayIndex] = j;
 
 					// make the arrow gob
-					AddArrowGobToList(iRight, iToJRight, &m_pConnectionsTo[arrayIndex], pObjs, connectionLayer, outCountToUpdate);
+					AddArrowGobToList(iRight, iToJRight, &m_pConnectionsTo[arrayIndex], pObjs, connectionLayer, outCountToUpdate, uniformCallback, uniformInstance);
 
 					// update counts
 					numICanSee++;

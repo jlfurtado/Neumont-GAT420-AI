@@ -16,6 +16,7 @@
 #include "AStarNode.h"
 #include "LinkedList.h"
 #include "CollisionTester.h"
+#include "AStarNodeMap.h"
 
 class WorldEditor
 {
@@ -45,7 +46,7 @@ private:
 	static void TranslateObject(WorldEditor *pEditor);
 	static void RotateObject(WorldEditor *pEditor);
 	static void ScaleObject(WorldEditor *pEditor);
-	static void SetPCUniforms(WorldEditor *pEditor, Engine::GraphicalObject *pObj);
+	static void SetPCUniforms(Engine::GraphicalObject *pObj, void *pInstance);
 
 	static Engine::GraphicalObject *MakeCube(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
 	static Engine::GraphicalObject *MakeHideout(WorldEditor *pEditor, Engine::CollisionLayer *outLayer);
@@ -147,7 +148,7 @@ private:
 	static const Engine::Vec3 YELLOW;
 	static const Engine::Vec3 GREEN;
 	static const Engine::Vec3 BLUE;
-
+	Engine::AStarNodeMap m_nodeMap;
 };
 
 #endif // ifndef WORLDEDITOR_H
