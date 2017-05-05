@@ -145,11 +145,21 @@ void WorldEditor::RemoveObject(WorldEditor *pEditor)
 {
 	// show which object will be acted upon
 	pEditor->DoMouseOverHighlight();
+	Engine::CollisionLayer c;
 
 	if (Engine::MouseManager::IsLeftMouseClicked() && pEditor->m_rco.m_didIntersect && pEditor->m_objs.Contains(pEditor->m_rco.m_belongsTo))
 	{
 		pEditor->DeMouseOver();
 		Engine::CollisionLayer cl = CONNECTION_LAYER;
+
+		// slightly uglier, but faster - only recalculate the layer the object was removed from
+		for (c = Engine::CollisionLayer::STATIC_GEOMETRY; c != Engine::CollisionLayer::NUM_LAYERS; c = (Engine::CollisionLayer)(((unsigned)c) + 1))
+		{
+			if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_rco.m_belongsTo, &c))
+			{
+				break;
+			}
+		}
 
 		if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_rco.m_belongsTo, &cl)) { pEditor->m_nodeMap.RemoveConnection(&pEditor->m_objs, pEditor->m_rco.m_belongsTo, WorldEditor::DestroyObjsCallback, pEditor, &pEditor->m_objCount); }
 		else
@@ -158,14 +168,8 @@ void WorldEditor::RemoveObject(WorldEditor *pEditor)
 			pEditor->m_objs.RemoveFirstFromList(pEditor->m_rco.m_belongsTo);
 		}
 
-		// slightly uglier, but faster - only recalculate the layer the object was removed from
-		for (Engine::CollisionLayer c = Engine::CollisionLayer::STATIC_GEOMETRY; c != Engine::CollisionLayer::NUM_LAYERS; c = (Engine::CollisionLayer)(((unsigned)c) + 1))
-		{
-			if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_rco.m_belongsTo, &c))
-			{
-				Engine::CollisionTester::CalculateGrid(c); 
-			}
-		}
+
+		Engine::CollisionTester::CalculateGrid(c);
 	}
 }
 
