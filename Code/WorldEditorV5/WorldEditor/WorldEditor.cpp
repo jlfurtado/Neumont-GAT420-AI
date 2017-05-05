@@ -105,6 +105,15 @@ bool WorldEditor::DestroyObjsCallback(Engine::GraphicalObject * pObj, void *pCla
 	return true;
 }
 
+bool WorldEditor::CopyObjList(Engine::GraphicalObject * pObj, void * pDoingSomethingDifferent)
+{
+	Engine::LinkedList<Engine::GraphicalObject *> *pObjCopy = reinterpret_cast<Engine::LinkedList<Engine::GraphicalObject *>*>(pDoingSomethingDifferent);
+	
+	pObjCopy->AddToList(pObj);
+
+	return true;
+}
+
 const float MULTIPLIER = 1.0f;
 void WorldEditor::PlaceObject(WorldEditor *pEditor)
 {
@@ -137,9 +146,16 @@ void WorldEditor::RemoveObject(WorldEditor *pEditor)
 
 	if (Engine::MouseManager::IsLeftMouseClicked() && pEditor->m_rco.m_didIntersect && pEditor->m_objs.Contains(pEditor->m_rco.m_belongsTo))
 	{
-		pEditor->m_pLastHit = nullptr; // prevent crash on obj remove
-		DestroyObjsCallback(pEditor->m_rco.m_belongsTo, pEditor);
-		pEditor->m_objs.RemoveFirstFromList(pEditor->m_rco.m_belongsTo);
+		pEditor->DeMouseOver();
+		Engine::CollisionLayer cl = CONNECTION_LAYER;
+
+		if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_rco.m_belongsTo, &cl)) { pEditor->m_nodeMap.RemoveConnection(&pEditor->m_objs, pEditor->m_rco.m_belongsTo, WorldEditor::DestroyObjsCallback, pEditor, &pEditor->m_objCount); }
+		else
+		{
+			DestroyObjsCallback(pEditor->m_rco.m_belongsTo, pEditor);
+			pEditor->m_objs.RemoveFirstFromList(pEditor->m_rco.m_belongsTo);
+		}
+
 		Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::NUM_LAYERS); // need to recalc grid so not colliding with non-existant objects	
 		// TODO: only recalculate the layer we need
 	}
@@ -594,7 +610,7 @@ bool WorldEditor::InitializeGL()
 		m_shaderPrograms[4].UseProgram();
 	}
 
-	// TODO:
+
 	debugColorLoc = m_shaderPrograms[0].GetUniformLocation("tint");
 	tintLoc = m_shaderPrograms[3].GetUniformLocation("tint");
 	tintIntensityLoc = m_shaderPrograms[1].GetUniformLocation("tintIntensity");
@@ -648,11 +664,14 @@ bool WorldEditor::ProcessInput(float dt)
 
 	if (keyboardManager.KeyWasPressed('K') && keyboardManager.KeyIsDown(VK_SHIFT))
 	{
+		//Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "count: [%d]\n", m_objCount);
 		Engine::CollisionLayer nl = NODE_LAYER;
 		if (m_objs.GetCountWhere(Engine::AStarNodeMap::IsObjInLayer, &nl) > 0)
 		{
 			m_nodeMap.CalculateMap(&m_objs, NODE_LAYER, CONNECTION_LAYER, WorldEditor::DestroyObjsCallback, this, &m_objCount, WorldEditor::SetPCUniforms, this);
 		}
+		//Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "count: [%d]\n", m_objCount);
+
 	}
 
 	if (keyboardManager.KeyWasPressed('1')) { SwapToPlace(); }
@@ -875,12 +894,22 @@ void WorldEditor::InitObj(Engine::GraphicalObject * pObj, void *pClass)
 
 void WorldEditor::WriteFile(const char * const filePath)
 {
-	// TODO: WRITE NODES SEPARATELY!!! DOn'T DUPLICATE!
-	Engine::WorldFileIO::WriteGobFile(&m_objs, filePath);
+	// WRITE THE OBJS TO THE WORLD FILE
+	Engine::CollisionLayer toCopy = EDITOR_LIST_OBJS;
+	Engine::LinkedList<Engine::GraphicalObject*> objsOnly;
+
+	m_objs.WalkListWhere(Engine::AStarNodeMap::IsObjInLayer, &toCopy, WorldEditor::CopyObjList, &objsOnly);
+
+	Engine::WorldFileIO::WriteGobFile(&objsOnly, filePath);
+
+	// TODO: WRITE THE NODES TO THE NODE FILE
+
 }
 
 void WorldEditor::ReadFile(const char * const filePath)
 {
+	// READ THE OBJS FROM THE WORLD FILE
+
 	// clear the whole scene
 	m_objs.WalkList(DestroyObjsCallback, this);
 	if (m_objCount != 0) { Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to DestroyObjs! Check for memory leak or counter inaccuracy [%d] objs left!\n", m_objCount); return; }
@@ -893,6 +922,8 @@ void WorldEditor::ReadFile(const char * const filePath)
 	Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::NUM_LAYERS);
 
 	m_objCount = m_objs.GetCount();
+
+	// TODO: READ THE NODES FROM THE NODE FILE
 }
 
 void WorldEditor::HandleOutsideGrid(Engine::GraphicalObject * pObjToCheck)

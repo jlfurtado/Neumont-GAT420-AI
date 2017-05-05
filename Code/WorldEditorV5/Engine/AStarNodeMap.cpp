@@ -43,32 +43,18 @@ namespace Engine
 		}
 	}
 
-	void AStarNodeMap::RemoveConnection(LinkedList<GraphicalObject*>* pObjs, GraphicalObject * pConnectionToRemove, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate)
+	void AStarNodeMap::RemoveConnection(LinkedList<GraphicalObject*>* pObjs, GraphicalObject * pConnectionToRemove, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * outCountToUpdate)
 	{
-		// p extra data points to the to index in the array, so we can get its index in the full array and the index of the node 
-		int *toIndexPtr = reinterpret_cast<int*>(pConnectionToRemove->m_pExtraData);
-		int arrayIndex = toIndexPtr - m_pConnectionsTo; // Clever use of pointer arithmetic, huh?
-
-		// find which nodes it goes between so we can fully remove it
-		int toIndex = *toIndexPtr;
-		unsigned fromIndex;
-
-		// to get the index of the node it goes from, we iterate through the nodes until we would pass it on the next iteration, leaving us on the correct from index
-		for (fromIndex = 0; fromIndex < m_numNodes; fromIndex++)
-		{
-			if ((m_pNodesWithConnections + fromIndex + 1)->m_connectionIndex > arrayIndex) { break; }
-		}
+		// remove the connection from our connections
+		RemoveConnectionAndCondense(pConnectionToRemove->fromTempDeleteMeLater, pConnectionToRemove->toTempDeleteMeLater);
 
 		// destory the gob
 		destroyCallback(pConnectionToRemove, pDestructionInstance);
 		pObjs->RemoveFirstFromList(pConnectionToRemove);
-		*outCountToUpdate--;
-
-		// remove the connection from our connections
-		RemoveConnectionAndCondense(fromIndex, toIndex);
+		//*outCountToUpdate--;
 	}
 
-	bool AStarNodeMap::CalculateMap(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
+	bool AStarNodeMap::CalculateMap(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
 	{
 		// lets clean up before we start...
 		if (!ResetPreCalculation(pObjs, connectionLayer, destroyCallback, pDestructionInstance, outCountToUpdate)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not ResetPreCalculation!\n"); return false; }
@@ -114,7 +100,7 @@ namespace Engine
 				// if we found one, call the destruction callback for it and remove it from the list
 				destroyCallback(pToRemove, pDestructionInstance);
 				pObjs->RemoveFirstFromList(pToRemove);
-				*outCountToUpdate--;
+				//*outCountToUpdate--;
 			}
 
 			// keep going until we don't find one
@@ -153,7 +139,7 @@ namespace Engine
 				// vectors going from edges to other edges
 				Vec3 iToKRight = kRight - iRight;
 
-				AddArrowGobToList(iRight, iToKRight, &m_pConnectionsTo[j], pObjs, connectionLayer, outCountToUpdate, uniformCallback, uniformInstance);
+				AddArrowGobToList(iRight, iToKRight, i, k, pObjs, connectionLayer, outCountToUpdate, uniformCallback, uniformInstance);
 			}
 		}
 	}
@@ -178,7 +164,7 @@ namespace Engine
 		return ToFile(this, filePath);
 	}
 
-	void AStarNodeMap::AddArrowGobToList(const Vec3 & iRightVec, const Vec3 & iToJRightVec, int* pExtra, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
+	void AStarNodeMap::AddArrowGobToList(const Vec3 & iRightVec, const Vec3 & iToJRightVec, int from, int to, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
 	{
 		// obj should get deleted externally in list we put it in
 		GraphicalObject *pArrow = new GraphicalObject();
@@ -190,9 +176,11 @@ namespace Engine
 		pArrow->SetTransMat(Mat4::Translation(iRightVec + iToJRightVec / 2.0f));
 		pArrow->CalcFullTransform();
 
-		pArrow->GetMatPtr()->m_specularIntensity = 0.0f;
+		pArrow->GetMatPtr()->m_specularIntensity = 0.5f;
+
 		// ugly make it work thing
-		pArrow->m_pExtraData = pExtra;
+		pArrow->fromTempDeleteMeLater = from;
+		pArrow->fromTempDeleteMeLater = to;
 
 		// make it visible
 		uniformCallback(pArrow, uniformInstance);
@@ -201,7 +189,7 @@ namespace Engine
 		RenderEngine::AddGraphicalObject(pArrow);
 		CollisionTester::AddGraphicalObjectToLayer(pArrow, connectionLayer);
 		pObjs->AddToList(pArrow);
-		*outCountToUpdate++;
+		(*outCountToUpdate)++;
 	}
 
 	bool AStarNodeMap::ResetPreCalculation(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate)
@@ -338,10 +326,11 @@ namespace Engine
 					m_pConnectionsTo[arrayIndex] = j;
 
 					// make the arrow gob
-					AddArrowGobToList(iRight, iToJRight, &m_pConnectionsTo[arrayIndex], pObjs, connectionLayer, outCountToUpdate, uniformCallback, uniformInstance);
+					AddArrowGobToList(iRight, iToJRight, i, j, pObjs, connectionLayer, outCountToUpdate, uniformCallback, uniformInstance);
 
 					// update counts
 					numICanSee++;
+					m_numConnections++;
 				}
 			}
 
@@ -350,6 +339,11 @@ namespace Engine
 			nextStartIndex += numICanSee;
 		}
 
+		// set the number of connections we have so far removed (0 to start)
+		m_numRemoved = 0;
+
+		// we added connections, yo!
+		CollisionTester::CalculateGrid(connectionLayer);
 		return true;
 	}
 
@@ -395,6 +389,7 @@ namespace Engine
 
 		// update our conter, we removed a connection
 		m_numConnections--;
+		m_numRemoved++;
 	}
 
 	// returns true if an object is in the collision layer, altered to be match signature for linked list walk callback

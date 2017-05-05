@@ -29,6 +29,12 @@ namespace Engine
 			int m_connectionCount{ 0 };
 		};
 
+		struct ExtraData
+		{
+			int m_from{ 0 };
+			int m_to{ 0 };
+		};
+
 	public:
 		typedef bool(*DestroyObjectCallback)(GraphicalObject *pObjToDestroy, void *pClassInstance);
 		typedef void(*SetUniformCallback)(GraphicalObject *pObj, void *pClasSInstance);
@@ -48,7 +54,7 @@ namespace Engine
 		static bool IsObjInLayer(GraphicalObject *pObj, void *pClass);
 
 	private:
-		void AddArrowGobToList(const Vec3& iRightVec, const Vec3& iToJRightVec, int *pExtra, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
+		void AddArrowGobToList(const Vec3& iRightVec, const Vec3& iToJRightVec, int from, int to, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
 		bool ResetPreCalculation(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate);
 		bool MakeNodesWithNoConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer);
 		bool MakeAutomagicNodeConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
@@ -62,6 +68,7 @@ namespace Engine
 		NodeWithConnections *m_pNodesWithConnections{ nullptr };
 		unsigned int m_numNodes{ 0 };
 		unsigned int m_nextWalkIndex{ 0 };
+		unsigned int m_numRemoved{ 0 };
 	};
 }
 

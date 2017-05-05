@@ -68,7 +68,8 @@ namespace Engine
 		Mat4 *GetFullTransformPtr();
 		
 		// its ugly but force something to work for now
-		void *m_pExtraData{ nullptr };
+		int fromTempDeleteMeLater;
+		int toTempDeleteMeLater;
 
 	private:
 		// data

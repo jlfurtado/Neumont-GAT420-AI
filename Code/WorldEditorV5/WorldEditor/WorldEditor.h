@@ -40,6 +40,7 @@ public:
 	
 private:
 	static bool DestroyObjsCallback(Engine::GraphicalObject *pObj, void *pClassInstance);
+	static bool CopyObjList(Engine::GraphicalObject *pObj, void *pDoingSomethingDifferent);
 
 	static void PlaceObject(WorldEditor *pEditor);
 	static void RemoveObject(WorldEditor *pEditor);
