@@ -1,6 +1,7 @@
 #include "AStarNodeMap.h"
 #include "ShapeGenerator.h"
 #include "RenderEngine.h"
+#include <fstream>
 
 // Justin Furtado
 // 5/2/2017
@@ -11,6 +12,7 @@ namespace Engine
 {
 	const Vec3 BASE_ARROW_DIR(1.0f, 0.0f, 0.0f);
 	const Vec3 UP(0.0f, 1.0f, 0.0f);
+	const float RADIUS_MULTIPLIER = 1.0f; // TODO: adjust this to match display object
 
 	AStarNodeMap::AStarNodeMap()
 	{
@@ -43,7 +45,7 @@ namespace Engine
 		}
 	}
 
-	void AStarNodeMap::RemoveConnection(LinkedList<GraphicalObject*>* pObjs, GraphicalObject * pConnectionToRemove, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * outCountToUpdate)
+	void AStarNodeMap::RemoveConnection(LinkedList<GraphicalObject*>* pObjs, GraphicalObject * pConnectionToRemove, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * /*outCountToUpdate*/)
 	{
 		// remove the connection from our connections
 		RemoveConnectionAndCondense(pConnectionToRemove->fromTempDeleteMeLater, pConnectionToRemove->toTempDeleteMeLater);
@@ -84,7 +86,7 @@ namespace Engine
 	}
 
 	// removes all 
-	void AStarNodeMap::ClearGobsForLayer(LinkedList<GraphicalObject*>* pObjs, CollisionLayer layer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate)
+	void AStarNodeMap::ClearGobsForLayer(LinkedList<GraphicalObject*>* pObjs, CollisionLayer layer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int * /*outCountToUpdate*/)
 	{
 		// data for iteration
 		CollisionLayer layerCpy = layer;
@@ -144,24 +146,143 @@ namespace Engine
 		}
 	}
 
-	// reads a node map from a file and returns it, returns default (empty) node map in case of failure
-	AStarNodeMap AStarNodeMap::FromFile(const char * const filePath)
+	void AStarNodeMap::MakeObjsForExistingNodes(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * outCountToUpdate, SetUniformCallback uniformCallback, void * uniformInstance)
 	{
+		// clear possibly existing connection gobs
+		ClearGobsForLayer(pObjs, nodeLayer, destroyCallback, pDestructionInstance, outCountToUpdate);
+
+		// make new gobs for existing nodes
+		for (unsigned i = 0; i < m_numNodes; ++i)
+		{
+			AddSphereGobToList(i, pObjs, nodeLayer, outCountToUpdate, uniformCallback, uniformInstance);
+		}
+	}
+
+	// reads a node map from a file and returns it, returns default (empty) node map in case of failure
+	bool AStarNodeMap::FromFile(const char * const filePath, AStarNodeMap *pMap)
+	{
+		std::ifstream inFile;
+
+		// open the file, start at the beginning, error check
+		inFile.open(filePath, std::ios::binary | std::ios::in);
+		if (!inFile) { GameLogger::Log(MessageType::cError, "Failed to read file [%s]! Could not open file!\n", filePath); return false; }
+
+		// read the format version
+		int version = -1;
+		inFile.read(reinterpret_cast<char*>(&version), sizeof(NODE_MAP_FILE_VERSION));
+
+		// check that the version matches
+		if (version != NODE_MAP_FILE_VERSION)
+		{
+			// if it is not the latest version, log an error and refuse to load the file
+			GameLogger::Log(MessageType::cError, "FAILED TO READ IN WORLD FILE [%s]!!! NODE MAP FILE VERSION FOUND IN HEADER [%d] DOES NOT MATCH THE LATEST FILE VERSION [%d]!! PLEASE ENSURE YOU ARE USING THE LATEST VERSION OF NODE MAP FILE!\n", filePath, version, NODE_MAP_FILE_VERSION);
+			return false;
+		}
+
+		// read in num nodes
+		inFile.read(reinterpret_cast<char *>(&pMap->m_numNodes), sizeof(pMap->m_numNodes));
+
+		// allocate array
+		pMap->m_pNodesWithConnections = new NodeWithConnections[pMap->m_numNodes];
+
+		// read in nodes into whole array
+		for (unsigned i = 0; i < pMap->m_numNodes; ++i)
+		{
+			// read in the data for the node
+			inFile.read(reinterpret_cast<char *>(&pMap->m_pNodesWithConnections[i].m_connectionCount), sizeof(pMap->m_pNodesWithConnections[i].m_connectionCount));
+			inFile.read(reinterpret_cast<char *>(&pMap->m_pNodesWithConnections[i].m_connectionIndex), sizeof(pMap->m_pNodesWithConnections[i].m_connectionIndex));
+			inFile.read(reinterpret_cast<char *>(&pMap->m_pNodesWithConnections[i].m_pNodeOrigin), sizeof(pMap->m_pNodesWithConnections[i].m_pNodeOrigin)); // read a nullptr, we delete the gob anyways
+
+			// make a new node that should get cleaned up nicely, set its data below
+			pMap->m_pNodesWithConnections[i].m_pNode = new AStarNode();
+
+			// write out data for the AStarNode we'll be pointer-hookup-ing on the other side
+			inFile.read(reinterpret_cast<char *>(&pMap->m_pNodesWithConnections[i].m_pNode->m_position), sizeof(pMap->m_pNodesWithConnections[i].m_pNode->m_position));
+			inFile.read(reinterpret_cast<char *>(&pMap->m_pNodesWithConnections[i].m_pNode->m_radius), sizeof(pMap->m_pNodesWithConnections[i].m_pNode->m_radius));
+			inFile.read(reinterpret_cast<char *>(&pMap->m_pNodesWithConnections[i].m_pNode->m_enabled), sizeof(pMap->m_pNodesWithConnections[i].m_pNode->m_enabled));
+		}
+
+		// read in num connections
+		inFile.read(reinterpret_cast<char *>(&pMap->m_numConnections), sizeof(pMap->m_numConnections));
+
+		// allocate array
+		pMap->m_pConnectionsTo = new int[pMap->m_numConnections];
+
+		// read in connections into whole array
+		inFile.read(reinterpret_cast<char *>(&pMap->m_pConnectionsTo[0]), sizeof(pMap->m_pConnectionsTo[0]) * pMap->m_numConnections);
+		
 		// load the map from a file (VALIDATE VERSION, log error accordingly)
-		return AStarNodeMap();
+		return true;
 	}
 
 	// writes a node map to a file
 	bool AStarNodeMap::ToFile(const AStarNodeMap * const mapToWrite, const char * const filePath)
 	{
-		// write the map to a file (INCLUDING VERSION)
-		return false;
+		std::ofstream outFile;
+
+		// open the file, start at the beginning, error check
+		outFile.open(filePath, std::ios::binary | std::ios::out);
+		if (!outFile) { GameLogger::Log(MessageType::cError, "Failed to write file [%s]! Could not open file!\n", filePath); return false; }
+		outFile.seekp(0);
+
+		// write the format version
+		outFile.write(reinterpret_cast<const char*>(&NODE_MAP_FILE_VERSION), sizeof(NODE_MAP_FILE_VERSION));
+
+		// write num nodes
+		outFile.write(reinterpret_cast<const char *>(&mapToWrite->m_numNodes), sizeof(mapToWrite->m_numNodes));
+
+		// write out whole nodes array
+		for (unsigned i = 0; i < mapToWrite->m_numNodes; ++i)
+		{
+			int q = 0;
+			// write out data for the node
+			outFile.write(reinterpret_cast<const char *>(&mapToWrite->m_pNodesWithConnections[i].m_connectionCount), sizeof(mapToWrite->m_pNodesWithConnections[i].m_connectionCount));
+			outFile.write(reinterpret_cast<const char *>(&mapToWrite->m_pNodesWithConnections[i].m_connectionIndex), sizeof(mapToWrite->m_pNodesWithConnections[i].m_connectionIndex));
+			outFile.write(reinterpret_cast<const char *>(&q), sizeof(q)); // write a nullptr, we delete the gob anyways
+
+			// write out data for the AStarNode we'll be pointer-hookup-ing on the other side
+			outFile.write(reinterpret_cast<const char *>(&mapToWrite->m_pNodesWithConnections[i].m_pNode->m_position), sizeof(mapToWrite->m_pNodesWithConnections[i].m_pNode->m_position));
+			outFile.write(reinterpret_cast<const char *>(&mapToWrite->m_pNodesWithConnections[i].m_pNode->m_radius), sizeof(mapToWrite->m_pNodesWithConnections[i].m_pNode->m_radius));
+			outFile.write(reinterpret_cast<const char *>(&mapToWrite->m_pNodesWithConnections[i].m_pNode->m_enabled), sizeof(mapToWrite->m_pNodesWithConnections[i].m_pNode->m_enabled));
+		}
+
+		// write out num connections
+		outFile.write(reinterpret_cast<const char *>(&mapToWrite->m_numConnections), sizeof(mapToWrite->m_numConnections));
+
+		// write out whole connections array
+		outFile.write(reinterpret_cast<const char *>(&mapToWrite->m_pConnectionsTo[0]), sizeof(mapToWrite->m_pConnectionsTo[0]) * mapToWrite->m_numConnections);
+		
+		// indicate success
+		return true;
 	}
 
 	// writes this node map to a file
 	bool AStarNodeMap::ToFile(const char * const filePath)
 	{
 		return ToFile(this, filePath);
+	}
+
+	void AStarNodeMap::AddSphereGobToList(int index, LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, int * outCountToUpdate, SetUniformCallback uniformCallback, void * uniformInstance)
+	{
+		// obj should get deleted externally in list we put it in
+		GraphicalObject *pSphere = new GraphicalObject();
+		ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\Soccer.PC.scene", pSphere, ShapeGenerator::GetPCShaderID());
+
+		// make go from i right to j right
+		pSphere->SetScaleMat(Mat4::Scale(m_pNodesWithConnections[index].m_pNode->GetRadius() / RADIUS_MULTIPLIER));
+		pSphere->SetTransMat(Mat4::Translation(m_pNodesWithConnections[index].m_pNode->GetPosition()));
+		pSphere->CalcFullTransform();
+
+		pSphere->GetMatPtr()->m_specularIntensity = 0.5f;
+
+		// make it visible
+		uniformCallback(pSphere, uniformInstance);
+
+		// add it where it goes
+		RenderEngine::AddGraphicalObject(pSphere);
+		CollisionTester::AddGraphicalObjectToLayer(pSphere, nodeLayer);
+		pObjs->AddToList(pSphere);
+		(*outCountToUpdate)++;
 	}
 
 	void AStarNodeMap::AddArrowGobToList(const Vec3 & iRightVec, const Vec3 & iToJRightVec, int from, int to, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
@@ -398,7 +519,6 @@ namespace Engine
 		return Engine::CollisionTester::IsInLayer(pObj, *reinterpret_cast<Engine::CollisionLayer*>(pDoinSomethingDifferentHere));
 	}
 
-	const float RADIUS_MULTIPLIER = 1.0f; // TODO: adjust this to match display object
 	bool AStarNodeMap::DoMakeNodesFromGobs(GraphicalObject * pObj, void * pClass)
 	{
 		// get pointer to our map

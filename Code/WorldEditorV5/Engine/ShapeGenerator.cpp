@@ -54,6 +54,11 @@ namespace Engine
 		return s_PShaderID;
 	}
 
+	unsigned ShapeGenerator::GetPCShaderID()
+	{
+		return s_PCShaderID;
+	}
+
 	ColorVertex ShapeGenerator::cubeColorVerts[CUBE_VERTEX_COUNT] = {
 		/* First Face */
 		Vec3(-1.0f, -1.0f, +1.0f), Vec3(0.0f, 0.0f, 0.0f), // bottom left

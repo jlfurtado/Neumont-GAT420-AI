@@ -664,14 +664,11 @@ bool WorldEditor::ProcessInput(float dt)
 
 	if (keyboardManager.KeyWasPressed('K') && keyboardManager.KeyIsDown(VK_SHIFT))
 	{
-		//Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "count: [%d]\n", m_objCount);
 		Engine::CollisionLayer nl = NODE_LAYER;
 		if (m_objs.GetCountWhere(Engine::AStarNodeMap::IsObjInLayer, &nl) > 0)
 		{
 			m_nodeMap.CalculateMap(&m_objs, NODE_LAYER, CONNECTION_LAYER, WorldEditor::DestroyObjsCallback, this, &m_objCount, WorldEditor::SetPCUniforms, this);
 		}
-		//Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "count: [%d]\n", m_objCount);
-
 	}
 
 	if (keyboardManager.KeyWasPressed('1')) { SwapToPlace(); }
@@ -681,14 +678,30 @@ bool WorldEditor::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('5')) { SwapToScale(); }
 	if (keyboardManager.KeyWasPressed('7')) { SwapMakeForward(); }
 	if (keyboardManager.KeyWasPressed('8')) { SwapMakeBackward(); }
-	if (keyboardManager.KeyWasPressed('9') && keyboardManager.KeyIsDown(VK_SHIFT) && Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputFile", buffer))
+	if (keyboardManager.KeyWasPressed('9') && keyboardManager.KeyIsDown(VK_SHIFT))
 	{
-		WriteFile(&buffer[0]);
+		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputFile", buffer))
+		{
+			WriteFile(&buffer[0]);
+		}
+
+		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.OutputNodeFile", buffer))
+		{
+			WriteNodeFile(&buffer[0]);
+		}
 	}
 
-	if (keyboardManager.KeyWasPressed('0') && keyboardManager.KeyIsDown(VK_SHIFT) && Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.InputFile", buffer))
+	if (keyboardManager.KeyWasPressed('0') && keyboardManager.KeyIsDown(VK_SHIFT))
 	{
-		ReadFile(&buffer[0]);
+		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.InputFile", buffer))
+		{
+			ReadFile(&buffer[0]);
+		}
+
+		if (Engine::ConfigReader::pReader->GetStringForKey("WorldEditor.InputNodeFile", buffer))
+		{
+			ReadNodeFile(&buffer[0]);
+		}
 	}
 
 	if (keyboardManager.KeyWasPressed('M')) { m_adjustmentSpeedMultiplier *= 1.1f; }
@@ -901,15 +914,10 @@ void WorldEditor::WriteFile(const char * const filePath)
 	m_objs.WalkListWhere(Engine::AStarNodeMap::IsObjInLayer, &toCopy, WorldEditor::CopyObjList, &objsOnly);
 
 	Engine::WorldFileIO::WriteGobFile(&objsOnly, filePath);
-
-	// TODO: WRITE THE NODES TO THE NODE FILE
-
 }
 
 void WorldEditor::ReadFile(const char * const filePath)
 {
-	// READ THE OBJS FROM THE WORLD FILE
-
 	// clear the whole scene
 	m_objs.WalkList(DestroyObjsCallback, this);
 	if (m_objCount != 0) { Engine::GameLogger::Log(Engine::MessageType::cFatal_Error, "Failed to DestroyObjs! Check for memory leak or counter inaccuracy [%d] objs left!\n", m_objCount); return; }
@@ -924,6 +932,21 @@ void WorldEditor::ReadFile(const char * const filePath)
 	m_objCount = m_objs.GetCount();
 
 	// TODO: READ THE NODES FROM THE NODE FILE
+}
+
+void WorldEditor::WriteNodeFile(const char * const filePath)
+{
+	m_nodeMap.ToFile(filePath);
+}
+
+void WorldEditor::ReadNodeFile(const char * const filePath)
+{
+	m_nodeMap.ClearGobs(&m_objs, NODE_LAYER, CONNECTION_LAYER, WorldEditor::DestroyObjsCallback, this, &m_objCount);
+	m_nodeMap.ClearMap();
+	Engine::AStarNodeMap::FromFile(filePath, &m_nodeMap);
+	m_nodeMap.MakeArrowsForExistingConnections(&m_objs, CONNECTION_LAYER, WorldEditor::DestroyObjsCallback, this, &m_objCount, WorldEditor::SetPCUniforms, this);
+	m_nodeMap.MakeObjsForExistingNodes(&m_objs, NODE_LAYER, WorldEditor::DestroyObjsCallback, this, &m_objCount, WorldEditor::SetPCUniforms, this);
+
 }
 
 void WorldEditor::HandleOutsideGrid(Engine::GraphicalObject * pObjToCheck)

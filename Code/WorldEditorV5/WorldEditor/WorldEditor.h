@@ -106,6 +106,8 @@ private:
 	static void InitObj(Engine::GraphicalObject *pObj, void *pClass);
 	void WriteFile(const char *const filePath);
 	void ReadFile(const char *const filePath);
+	void WriteNodeFile(const char *const filePath);
+	void ReadNodeFile(const char *const filePath);
 	void HandleOutsideGrid(Engine::GraphicalObject *pObjToCheck);
 
 	static const int NUM_PLACEMENT_DATA = 13;

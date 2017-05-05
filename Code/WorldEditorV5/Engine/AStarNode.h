@@ -29,6 +29,8 @@ namespace Engine
 		void SetParent(AStarNode *pParent);
 		AStarNode *GetParentPointer();
 
+		friend class AStarNodeMap;
+
 	private:
 		AStarNode* m_pParent{ nullptr };
 		bool m_enabled{ true };

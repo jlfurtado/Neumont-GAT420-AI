@@ -48,12 +48,14 @@ namespace Engine
 		void ClearGobs(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate);
 		void ClearGobsForLayer(LinkedList<GraphicalObject*> *pObjs, CollisionLayer layer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate);
 		void MakeArrowsForExistingConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
-		static AStarNodeMap FromFile(const char *const filePath);
+		void MakeObjsForExistingNodes(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
+		static bool FromFile(const char *const filePath, AStarNodeMap *pMap);
 		static bool ToFile(const AStarNodeMap *const mapToWrite, const char *const filePath);
 		bool ToFile(const char *const filePath);
 		static bool IsObjInLayer(GraphicalObject *pObj, void *pClass);
 
 	private:
+		void AddSphereGobToList(int index, LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
 		void AddArrowGobToList(const Vec3& iRightVec, const Vec3& iToJRightVec, int from, int to, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
 		bool ResetPreCalculation(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate);
 		bool MakeNodesWithNoConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer);
@@ -62,7 +64,7 @@ namespace Engine
 		void RemoveConnectionAndCondense(int fromIndex, int toIndex);
 		static bool DoMakeNodesFromGobs(GraphicalObject *pObj, void *pClass);
 
-		static const int NODE_MAP_FILE_VERSION = 1;
+		static const int NODE_MAP_FILE_VERSION = 3;
 		int *m_pConnectionsTo{ nullptr };
 		unsigned int m_numConnections{ 0 };
 		NodeWithConnections *m_pNodesWithConnections{ nullptr };
