@@ -439,9 +439,9 @@ namespace Engine
 				Vec3 iToJLeft = jLeft - iLeft;
 
 				// only check other points if the first path is clear, because raycasting is very expensive (will only do subsequent raycasts if the previous are a clear path
-				if (PathClear(CollisionTester::FindWall(iCenter, iToJCenter.Normalize(), iToJCenter.Length(), geometryLayer), m_pNodesWithConnections[j].m_pNodeOrigin)
-					&& PathClear(CollisionTester::FindWall(iRight, iToJRight.Normalize(), iToJRight.Length(), geometryLayer), m_pNodesWithConnections[j].m_pNodeOrigin)
-					&& PathClear(CollisionTester::FindWall(iLeft, iToJLeft.Normalize(), iToJLeft.Length(), geometryLayer), m_pNodesWithConnections[j].m_pNodeOrigin))
+				if (PathClear(CollisionTester::FindWall(iCenter, iToJCenter.Normalize(), iToJCenter.Length(), geometryLayer), m_pNodesWithConnections[j].m_pNodeOrigin, iToJCenter.Length())
+					&& PathClear(CollisionTester::FindWall(iRight, iToJRight.Normalize(), iToJRight.Length(), geometryLayer), m_pNodesWithConnections[j].m_pNodeOrigin, iToJRight.Length())
+					&& PathClear(CollisionTester::FindWall(iLeft, iToJLeft.Normalize(), iToJLeft.Length(), geometryLayer), m_pNodesWithConnections[j].m_pNodeOrigin, iToJLeft.Length()))
 				{
 					// the index in the array is the start plus the num seen so far
 					int arrayIndex = nextStartIndex + numICanSee;
@@ -472,10 +472,10 @@ namespace Engine
 	}
 
 	// returns false if a ray cast from one object to another hit anything in between
-	bool AStarNodeMap::PathClear(const RayCastingOutput & rco, const GraphicalObject *pDestObj)
+	bool AStarNodeMap::PathClear(const RayCastingOutput & rco, const GraphicalObject *pDestObj, float dist)
 	{
-		// the path is clear if we hit the destination object or it hit nothing
-		return (rco.m_didIntersect && rco.m_belongsTo == pDestObj) || !(rco.m_didIntersect);
+		// the path is clear if we hit the destination object or it hit nothing withinthe distance
+		return (rco.m_didIntersect && rco.m_belongsTo == pDestObj) || !(rco.m_didIntersect) || (rco.m_distance > dist);
 	}
 
 	// iterates through array, condensing and updating nodes with connections

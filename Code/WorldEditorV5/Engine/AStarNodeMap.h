@@ -60,7 +60,7 @@ namespace Engine
 		bool ResetPreCalculation(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate);
 		bool MakeNodesWithNoConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer);
 		bool MakeAutomagicNodeConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, CollisionLayer geometryLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
-		static bool PathClear(const RayCastingOutput& rco, const GraphicalObject *pDestObj);
+		static bool PathClear(const RayCastingOutput& rco, const GraphicalObject *pDestObj, float dist);
 		void RemoveConnectionAndCondense(int fromIndex, int toIndex);
 		static bool DoMakeNodesFromGobs(GraphicalObject *pObj, void *pClass);
 
