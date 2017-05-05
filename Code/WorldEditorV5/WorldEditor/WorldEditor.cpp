@@ -229,7 +229,7 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 	static Engine::Vec3 d;
 	static bool arrowClicked = false;
 
-	Engine::CollisionLayer layerCheck = NODE_LAYER;
+	//Engine::CollisionLayer layerCheck = NODE_LAYER;
 
 	if (pEditor->m_pSelected)
 	{
