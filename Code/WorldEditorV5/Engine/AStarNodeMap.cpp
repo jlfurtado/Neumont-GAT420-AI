@@ -12,7 +12,7 @@ namespace Engine
 {
 	const Vec3 BASE_ARROW_DIR(1.0f, 0.0f, 0.0f);
 	const Vec3 UP(0.0f, 1.0f, 0.0f);
-	const float RADIUS_MULTIPLIER = 1.0f; // TODO: adjust this to match display object
+	const float RADIUS_MULTIPLIER = 1.9f; // TODO: adjust this to match display object
 
 	AStarNodeMap::AStarNodeMap()
 	{

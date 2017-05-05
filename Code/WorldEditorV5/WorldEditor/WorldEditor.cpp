@@ -230,6 +230,8 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 	static Engine::Vec3 d;
 	static bool arrowClicked = false;
 
+	Engine::CollisionLayer layerCheck = NODE_LAYER;
+
 	if (pEditor->m_pSelected)
 	{
 		Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
@@ -242,7 +244,7 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 			lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
 			v = arrowCheck.m_intersectionPoint - lastOrigin;
 		}
-		else if (Engine::MouseManager::IsLeftMouseDown() && arrowClicked)
+		else if (Engine::MouseManager::IsLeftMouseDown() && arrowClicked /* && !Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &layerCheck)*/)
 		{
 			Engine::Vec3 newOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
 			Engine::Vec3 r = Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY()) + (newOrigin - lastOrigin);
@@ -314,7 +316,16 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 				Engine::Vec3 movementAmount = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat)))).ProjectOnto(d);
 
 				float scaleAmount = d.Dot(movementAmount) > 0.0f ? 1 + pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length() : 1 - pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length();
-				pEditor->m_pSelected->SetScaleMat((pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(1.0f, movementAmount.Normalize())) * Engine::Mat4::Scale(scaleAmount, movementAmount.Normalize()));
+				Engine::CollisionLayer layerCheck = NODE_LAYER;
+				if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &layerCheck))
+				{
+					pEditor->m_pSelected->SetScaleMat((pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(scaleAmount)));
+				}
+				else
+				{
+					pEditor->m_pSelected->SetScaleMat((pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(scaleAmount, movementAmount.Normalize())));
+				}
+
 				pEditor->m_pSelected->CalcFullTransform();
 				pEditor->AttachArrowsTo(pEditor->m_pSelected);
 
