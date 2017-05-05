@@ -96,6 +96,9 @@ bool WorldEditor::DestroyObjsCallback(Engine::GraphicalObject * pObj, void *pCla
 {
 	WorldEditor* pEditor = reinterpret_cast<WorldEditor*>(pClassInstance);
 	
+	if (pEditor->m_pSelected == pObj) { pEditor->DeSelect(); }
+	if (pEditor->m_pLastHit == pObj) { pEditor->DeMouseOver(); }
+
 	Engine::RenderEngine::RemoveGraphicalObject(pObj);
 	Engine::CollisionTester::RemoveGraphicalObjectFromLayer(pObj, Engine::CollisionLayer::NUM_LAYERS); // removes object from all layers
 	delete pObj;
@@ -946,6 +949,7 @@ void WorldEditor::ReadNodeFile(const char * const filePath)
 	Engine::AStarNodeMap::FromFile(filePath, &m_nodeMap);
 	m_nodeMap.MakeArrowsForExistingConnections(&m_objs, CONNECTION_LAYER, WorldEditor::DestroyObjsCallback, this, &m_objCount, WorldEditor::SetPCUniforms, this);
 	m_nodeMap.MakeObjsForExistingNodes(&m_objs, NODE_LAYER, WorldEditor::DestroyObjsCallback, this, &m_objCount, WorldEditor::SetPCUniforms, this);
+	Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::NUM_LAYERS);
 
 }
 

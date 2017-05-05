@@ -58,6 +58,7 @@ namespace Engine
 
 	bool AStarNodeMap::CalculateMap(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
 	{
+		GameLogger::Log(MessageType::ConsoleOnly, "-----MAKE MAP-----\n");
 		// lets clean up before we start...
 		if (!ResetPreCalculation(pObjs, connectionLayer, destroyCallback, pDestructionInstance, outCountToUpdate)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not ResetPreCalculation!\n"); return false; }
 
@@ -74,6 +75,7 @@ namespace Engine
 		// lets make some connections!
 		if (!MakeAutomagicNodeConnections(pObjs, connectionLayer, outCountToUpdate, uniformCallback, uniformInstance)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not MakeAutomagicNodeConnections!\n"); return false; }
 
+		GameLogger::Log(MessageType::ConsoleOnly, "-----MAKE MAP-----\n");
 		// HOOORRRAY ITS FINALLY OVER!!!!!!!!!!!
 		return true;
 	}
@@ -111,6 +113,8 @@ namespace Engine
 
 	void AStarNodeMap::MakeArrowsForExistingConnections(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
 	{
+		GameLogger::Log(MessageType::ConsoleOnly, "-----MAKE ARROWS FOR READ MAP-----\n");
+
 		// clear possibly existing connection gobs
 		ClearGobsForLayer(pObjs, connectionLayer, destroyCallback, pDestructionInstance, outCountToUpdate);
 
@@ -141,9 +145,13 @@ namespace Engine
 				// vectors going from edges to other edges
 				Vec3 iToKRight = kRight - iRight;
 
+				//GameLogger::Log(MessageType::ConsoleOnly, "Connecting from [%d] to [%d]\n", i, k);
 				AddArrowGobToList(iRight, iToKRight, i, k, pObjs, connectionLayer, outCountToUpdate, uniformCallback, uniformInstance);
 			}
 		}
+
+		GameLogger::Log(MessageType::ConsoleOnly, "-----MAKE ARROWS FOR READ MAP-----\n");
+
 	}
 
 	void AStarNodeMap::MakeObjsForExistingNodes(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * outCountToUpdate, SetUniformCallback uniformCallback, void * uniformInstance)
@@ -161,6 +169,8 @@ namespace Engine
 	// reads a node map from a file and returns it, returns default (empty) node map in case of failure
 	bool AStarNodeMap::FromFile(const char * const filePath, AStarNodeMap *pMap)
 	{
+		GameLogger::Log(MessageType::ConsoleOnly, "-----READ MAP-----\n");
+
 		std::ifstream inFile;
 
 		// open the file, start at the beginning, error check
@@ -210,7 +220,22 @@ namespace Engine
 
 		// read in connections into whole array
 		inFile.read(reinterpret_cast<char *>(&pMap->m_pConnectionsTo[0]), sizeof(pMap->m_pConnectionsTo[0]) * pMap->m_numConnections);
-		
+
+		//for (int i = 0; i < pMap->m_numConnections; ++i)
+		//{
+		//	GameLogger::Log(MessageType::ConsoleOnly, "[%d]\n", pMap->m_pConnectionsTo[i]);
+		//}
+
+		for (int i = 0; i < pMap->m_numNodes; ++i)
+		{
+			for (int j = pMap->m_pNodesWithConnections[i].m_connectionIndex; j < pMap->m_pNodesWithConnections[i].m_connectionIndex + pMap->m_pNodesWithConnections[i].m_connectionCount; ++j)
+			{
+				GameLogger::Log(MessageType::ConsoleOnly, "[%d] to [%d]\n", i, pMap->m_pConnectionsTo[j]);
+			}
+		}
+
+		GameLogger::Log(MessageType::ConsoleOnly, "-----READ MAP-----\n");
+
 		// load the map from a file (VALIDATE VERSION, log error accordingly)
 		return true;
 	}
@@ -218,6 +243,8 @@ namespace Engine
 	// writes a node map to a file
 	bool AStarNodeMap::ToFile(const AStarNodeMap * const mapToWrite, const char * const filePath)
 	{
+		GameLogger::Log(MessageType::ConsoleOnly, "-----SAVE MAP-----\n");
+
 		std::ofstream outFile;
 
 		// open the file, start at the beginning, error check
@@ -252,6 +279,16 @@ namespace Engine
 		// write out whole connections array
 		outFile.write(reinterpret_cast<const char *>(&mapToWrite->m_pConnectionsTo[0]), sizeof(mapToWrite->m_pConnectionsTo[0]) * mapToWrite->m_numConnections);
 		
+		for (int i = 0; i < mapToWrite->m_numNodes; ++i)
+		{
+			for (int j = mapToWrite->m_pNodesWithConnections[i].m_connectionIndex; j < mapToWrite->m_pNodesWithConnections[i].m_connectionIndex + mapToWrite->m_pNodesWithConnections[i].m_connectionCount; ++j)
+			{
+				GameLogger::Log(MessageType::ConsoleOnly, "[%d] to [%d]\n", i, mapToWrite->m_pConnectionsTo[j]);
+			}
+		}
+
+		GameLogger::Log(MessageType::ConsoleOnly, "-----SAVE MAP-----\n");
+
 		// indicate success
 		return true;
 	}
@@ -287,6 +324,8 @@ namespace Engine
 
 	void AStarNodeMap::AddArrowGobToList(const Vec3 & iRightVec, const Vec3 & iToJRightVec, int from, int to, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
 	{
+		GameLogger::Log(MessageType::ConsoleOnly, "IRV: (%.3f, %.3f, %.3f) | IJRV (%.3f, %.3f, %.3f) | FROM [%d] | TO [%d]\n", iRightVec.GetX(), iRightVec.GetY(), iRightVec.GetZ(), iToJRightVec.GetX(), iToJRightVec.GetY(), iToJRightVec.GetZ(), from, to);
+
 		// obj should get deleted externally in list we put it in
 		GraphicalObject *pArrow = new GraphicalObject();
 		ShapeGenerator::MakeDebugArrow(pArrow, Vec3(0.15f, 0.75f, 0.0f), Vec3(0.0f, 0.75f, 0.0f));
@@ -301,7 +340,7 @@ namespace Engine
 
 		// ugly make it work thing
 		pArrow->fromTempDeleteMeLater = from;
-		pArrow->fromTempDeleteMeLater = to;
+		pArrow->toTempDeleteMeLater = to;
 
 		// make it visible
 		uniformCallback(pArrow, uniformInstance);
@@ -478,6 +517,8 @@ namespace Engine
 	// iterates through array, condensing and updating nodes with connections
 	void AStarNodeMap::RemoveConnectionAndCondense(int fromIndex, int toIndex)
 	{
+		GameLogger::Log(MessageType::ConsoleOnly, "Removed from [%d] to [%d]\n", fromIndex, toIndex);
+
 		// we are removing one connection from node[fromIndex], so all of the things after start one earlier now as we want no holes in the array
 		for (unsigned i = fromIndex + 1; i < m_numNodes; ++i)
 		{
