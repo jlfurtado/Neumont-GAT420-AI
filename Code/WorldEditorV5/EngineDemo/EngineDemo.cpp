@@ -108,6 +108,8 @@ Engine::Mat4 newCam;
 Engine::Camera floatingCam;
 float speedMultiplier = 1.0f;
 int currentFractalBuffer = 0;
+const Engine::CollisionLayer NODE_LAYER = Engine::CollisionLayer::LAYER_3;
+const Engine::CollisionLayer CONNECTION_LAYER = Engine::CollisionLayer::LAYER_4;
 
 bool EngineDemo::Initialize(Engine::MyWindow *window)
 {
@@ -1010,6 +1012,18 @@ void EngineDemo::LoadWorldFileAndApplyPCUniforms()
 
 		Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::LAYER_2);
 	}
+
+	if (Engine::ConfigReader::pReader->GetStringForKey("EngineDemo.World.InputNodeFileName", buffer))
+	{
+		// read file
+
+		m_nodeMap.ClearGobs(&m_fromWorldEditorOBJs, NODE_LAYER, CONNECTION_LAYER, EngineDemo::DestroyObjsCallback, this, &m_objCount);
+		m_nodeMap.ClearMap();
+		Engine::AStarNodeMap::FromFile(&buffer[0], &m_nodeMap);
+		m_nodeMap.MakeArrowsForExistingConnections(&m_fromWorldEditorOBJs, CONNECTION_LAYER, EngineDemo::DestroyObjsCallback, this, &m_objCount, EngineDemo::SetPCUniforms, this);
+		m_nodeMap.MakeObjsForExistingNodes(&m_fromWorldEditorOBJs, NODE_LAYER, EngineDemo::DestroyObjsCallback, this, &m_objCount, EngineDemo::SetPCUniforms, this);
+		Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::NUM_LAYERS);
+	}
 }
 
 bool EngineDemo::DestroyObjsCallback(Engine::GraphicalObject * pObj, void * pClassInstance)
@@ -1030,11 +1044,7 @@ void EngineDemo::InitEditorObj(Engine::GraphicalObject * pObj, void * pClass)
 {
 	EngineDemo *pGame = reinterpret_cast<EngineDemo*>(pClass);
 
-	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pObj->GetFullTransformPtr(), pGame->modelToWorldMatLoc));
-	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), pGame->worldToViewMatLoc));
-	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pGame->m_perspective.GetPerspectivePtr(), pGame->perspectiveMatLoc));
-	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pObj->GetMatPtr()->m_materialColor, pGame->tintColorLoc));
-	pObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pObj->GetMatPtr()->m_specularIntensity, pGame->tintIntensityLoc));
+	SetPCUniforms(pObj, pGame);
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
 	pObj->GetMatPtr()->m_specularIntensity = 0.5f;
 
@@ -1042,4 +1052,15 @@ void EngineDemo::InitEditorObj(Engine::GraphicalObject * pObj, void * pClass)
 	Engine::RenderEngine::AddGraphicalObject(pObj);
 	Engine::CollisionTester::AddGraphicalObjectToLayer(pObj, Engine::CollisionLayer::LAYER_2);
 	pGame->m_objCount++;
+}
+
+void EngineDemo::SetPCUniforms(Engine::GraphicalObject * pObj, void * pInstance)
+{
+	EngineDemo *pGame = reinterpret_cast<EngineDemo*>(pInstance);
+
+	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pObj->GetFullTransformPtr(), pGame->modelToWorldMatLoc));
+	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), pGame->worldToViewMatLoc));
+	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_MAT4, pGame->m_perspective.GetPerspectivePtr(), pGame->perspectiveMatLoc));
+	pObj->AddUniformData(Engine::UniformData(GL_FLOAT_VEC3, &pObj->GetMatPtr()->m_materialColor, pGame->tintColorLoc));
+	pObj->AddUniformData(Engine::UniformData(GL_FLOAT, &pObj->GetMatPtr()->m_specularIntensity, pGame->tintIntensityLoc));
 }

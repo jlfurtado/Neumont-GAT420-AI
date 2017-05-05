@@ -18,6 +18,7 @@
 #include "GraphicalObject.h"
 #include "FrameBuffer.h"
 #include "LinkedList.h"
+#include "AStarNodeMap.h"
 
 class QMouseEvent;
 
@@ -62,6 +63,7 @@ private:
 	void LoadWorldFileAndApplyPCUniforms();
 	static bool DestroyObjsCallback(Engine::GraphicalObject *pObj, void *pClassInstance);
 	static void InitEditorObj(Engine::GraphicalObject *pObj, void *pClass);
+	static void SetPCUniforms(Engine::GraphicalObject *pObj, void *pInstance);
 
 	//data
 	static const int NUM_SHADER_PROGRAMS = 8;
@@ -101,6 +103,7 @@ private:
 	GLint repeatScaleLoc;
 	Engine::GraphicalObject m_gazebo;
 	Engine::GraphicalObject m_flag;
+	Engine::AStarNodeMap m_nodeMap;
 	float repeatScale;
 	GLint numIterationsLoc;
 	int numIterations;
