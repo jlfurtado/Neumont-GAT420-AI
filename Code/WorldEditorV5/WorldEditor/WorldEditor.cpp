@@ -117,7 +117,6 @@ bool WorldEditor::CopyObjList(Engine::GraphicalObject * pObj, void * pDoingSomet
 	return true;
 }
 
-const float MULTIPLIER = 1.0f;
 void WorldEditor::PlaceObject(WorldEditor *pEditor)
 {
 	if (Engine::MouseManager::IsLeftMouseClicked() && (pEditor->m_rco.m_didIntersect || pEditor->m_objs.GetCount() == 0))
@@ -127,7 +126,7 @@ void WorldEditor::PlaceObject(WorldEditor *pEditor)
 		Engine::GraphicalObject *pNewObj = s_placementData[pEditor->m_currentPlacement].m_callback(pEditor, &outLayer);
 
 		// if scene is empty, place at 0 0 0, else, place at where clicked
-		pNewObj->SetTransMat(Engine::Mat4::Translation(pEditor->m_objs.GetCount() == 0 ? Engine::Vec3(0.0f) : pEditor->m_rco.m_intersectionPoint + MULTIPLIER * pEditor->m_rco.m_triangleNormal));
+		pNewObj->SetTransMat(Engine::Mat4::Translation(pEditor->m_objs.GetCount() == 0 ? Engine::Vec3(0.0f) : pEditor->m_rco.m_intersectionPoint + (pNewObj->GetScaleMatPtr()[0] * pEditor->m_rco.m_triangleNormal.Normalize())));
 		if (pEditor->m_objs.GetCount() != 0) { pNewObj->SetRotMat(Engine::Mat4::RotationToFace(PLUS_Y, pEditor->m_rco.m_triangleNormal)); }
 		pNewObj->CalcFullTransform();
 
@@ -1178,6 +1177,13 @@ Engine::GraphicalObject * WorldEditor::MakeNodeObj(WorldEditor * pEditor, Engine
 	pObj->GetMatPtr()->m_specularIntensity = 0.8f;
 	pObj->GetMatPtr()->m_materialColor = Engine::MathUtility::Rand(Engine::Vec3(0.0f), Engine::Vec3(1.0f));
 	
+	float scale = 1.0f;
+	if (Engine::ConfigReader::pReader->GetFloatForKey("WorldEditor.DefaultNodeWidth", scale))
+	{
+		pObj->SetScaleMat(Engine::Mat4::Scale(scale));
+		pObj->CalcFullTransform();
+	}
+
 	*outLayer = NODE_LAYER;
 
 	return pObj;
