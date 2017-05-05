@@ -167,6 +167,8 @@ void WorldEditor::RemoveObject(WorldEditor *pEditor)
 const float tolerance = 0.00001f;
 void WorldEditor::TranslateObject(WorldEditor *pEditor)
 {
+	Engine::CollisionLayer checkLayer = CONNECTION_LAYER;
+
 	static Engine::Vec3 lastOrigin;
 	static Engine::Vec3 v;
 	static Engine::Vec3 d;
@@ -174,6 +176,7 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 
 	if (pEditor->m_pSelected)
 	{
+		if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &checkLayer)) { return; }
 		Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
 
 		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
@@ -223,6 +226,8 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 
 void WorldEditor::RotateObject(WorldEditor *pEditor)
 {
+	Engine::CollisionLayer checkLayer = CONNECTION_LAYER;
+
 	static Engine::Mat4 startRot;
 	static Engine::Vec3 lastOrigin;
 	static Engine::Vec3 v;
@@ -233,6 +238,8 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 
 	if (pEditor->m_pSelected)
 	{
+		if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &checkLayer)) { return; }
+
 		Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
 
 		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
@@ -285,6 +292,8 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 
 void WorldEditor::ScaleObject(WorldEditor *pEditor)
 {
+	Engine::CollisionLayer checkLayer = CONNECTION_LAYER;
+
 	static Engine::Vec3 lastOrigin;
 	static Engine::Vec3 v;
 	static Engine::Vec3 d;
@@ -292,6 +301,8 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 
 	if (pEditor->m_pSelected)
 	{
+		if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &checkLayer)) { return; }
+
 		Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
 
 		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
