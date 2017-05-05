@@ -158,8 +158,14 @@ void WorldEditor::RemoveObject(WorldEditor *pEditor)
 			pEditor->m_objs.RemoveFirstFromList(pEditor->m_rco.m_belongsTo);
 		}
 
-		Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::NUM_LAYERS); // need to recalc grid so not colliding with non-existant objects	
-		// TODO: only recalculate the layer we need
+		// slightly uglier, but faster - only recalculate the layer the object was removed from
+		for (Engine::CollisionLayer c = Engine::CollisionLayer::STATIC_GEOMETRY; c != Engine::CollisionLayer::NUM_LAYERS; c = (Engine::CollisionLayer)(((unsigned)c) + 1))
+		{
+			if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_rco.m_belongsTo, &c))
+			{
+				Engine::CollisionTester::CalculateGrid(c); 
+			}
+		}
 	}
 }
 
@@ -985,8 +991,15 @@ void WorldEditor::HandleOutsideGrid(Engine::GraphicalObject * pObjToCheck)
 		AttachArrowsTo(&m_grid);
 	}
 
-	Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::NUM_LAYERS); // TODO: ONLY LAYER OF OBJ
-	
+
+	// slightly uglier, but faster - only recalculate the layer the object was added to from
+	for (Engine::CollisionLayer c = Engine::CollisionLayer::STATIC_GEOMETRY; c != Engine::CollisionLayer::NUM_LAYERS; c = (Engine::CollisionLayer)(((unsigned)c) + 1))
+	{
+		if (Engine::AStarNodeMap::IsObjInLayer(pObjToCheck, &c))
+		{
+			Engine::CollisionTester::CalculateGrid(c);
+		}
+	}
 }
 
 Engine::Vec3 WorldEditor::GetArrowDir(Engine::GraphicalObject * pArrow)
