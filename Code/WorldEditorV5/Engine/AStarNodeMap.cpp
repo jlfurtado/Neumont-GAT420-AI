@@ -56,7 +56,7 @@ namespace Engine
 		//*outCountToUpdate--;
 	}
 
-	bool AStarNodeMap::CalculateMap(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
+	bool AStarNodeMap::CalculateMap(LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, CollisionLayer geometryLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int * outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
 	{
 		// lets clean up before we start...
 		if (!ResetPreCalculation(pObjs, connectionLayer, destroyCallback, pDestructionInstance, outCountToUpdate)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not ResetPreCalculation!\n"); return false; }
@@ -72,7 +72,7 @@ namespace Engine
 			// we have the correct number of them, and they should all be placed at decent positions
 
 		// lets make some connections!
-		if (!MakeAutomagicNodeConnections(pObjs, connectionLayer, outCountToUpdate, uniformCallback, uniformInstance)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not MakeAutomagicNodeConnections!\n"); return false; }
+		if (!MakeAutomagicNodeConnections(pObjs, connectionLayer, geometryLayer, outCountToUpdate, uniformCallback, uniformInstance)) { GameLogger::Log(MessageType::cError, "Failed to CalculateNodeMap! Could not MakeAutomagicNodeConnections!\n"); return false; }
 
 		// HOOORRRAY ITS FINALLY OVER!!!!!!!!!!!
 		return true;
@@ -386,7 +386,7 @@ namespace Engine
 	}
 
 	const int INDEX_NOT_SET = -1;
-	bool AStarNodeMap::MakeAutomagicNodeConnections(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
+	bool AStarNodeMap::MakeAutomagicNodeConnections(LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, CollisionLayer geometryLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance)
 	{
 
 		// absolute max num connections is n*n-n 
@@ -439,9 +439,9 @@ namespace Engine
 				Vec3 iToJLeft = jLeft - iLeft;
 
 				// only check other points if the first path is clear, because raycasting is very expensive (will only do subsequent raycasts if the previous are a clear path
-				if (PathClear(CollisionTester::FindWall(iCenter, iToJCenter.Normalize(), iToJCenter.Length(), CollisionLayer::NUM_LAYERS), m_pNodesWithConnections[j].m_pNodeOrigin)
-					&& PathClear(CollisionTester::FindWall(iRight, iToJRight.Normalize(), iToJRight.Length(), CollisionLayer::NUM_LAYERS), m_pNodesWithConnections[j].m_pNodeOrigin)
-					&& PathClear(CollisionTester::FindWall(iLeft, iToJLeft.Normalize(), iToJLeft.Length(), CollisionLayer::NUM_LAYERS), m_pNodesWithConnections[j].m_pNodeOrigin))
+				if (PathClear(CollisionTester::FindWall(iCenter, iToJCenter.Normalize(), iToJCenter.Length(), geometryLayer), m_pNodesWithConnections[j].m_pNodeOrigin)
+					&& PathClear(CollisionTester::FindWall(iRight, iToJRight.Normalize(), iToJRight.Length(), geometryLayer), m_pNodesWithConnections[j].m_pNodeOrigin)
+					&& PathClear(CollisionTester::FindWall(iLeft, iToJLeft.Normalize(), iToJLeft.Length(), geometryLayer), m_pNodesWithConnections[j].m_pNodeOrigin))
 				{
 					// the index in the array is the start plus the num seen so far
 					int arrayIndex = nextStartIndex + numICanSee;

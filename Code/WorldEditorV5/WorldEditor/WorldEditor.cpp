@@ -670,7 +670,7 @@ bool WorldEditor::ProcessInput(float dt)
 		Engine::CollisionLayer nl = NODE_LAYER;
 		if (m_objs.GetCountWhere(Engine::AStarNodeMap::IsObjInLayer, &nl) > 0)
 		{
-			m_nodeMap.CalculateMap(&m_objs, NODE_LAYER, CONNECTION_LAYER, WorldEditor::DestroyObjsCallback, this, &m_objCount, WorldEditor::SetPCUniforms, this);
+			m_nodeMap.CalculateMap(&m_objs, NODE_LAYER, CONNECTION_LAYER, EDITOR_LIST_OBJS, WorldEditor::DestroyObjsCallback, this, &m_objCount, WorldEditor::SetPCUniforms, this);
 		}
 	}
 

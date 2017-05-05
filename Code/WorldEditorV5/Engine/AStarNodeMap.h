@@ -44,7 +44,7 @@ namespace Engine
 
 		void ClearMap();
 		void RemoveConnection(LinkedList<GraphicalObject*> *pObjs, GraphicalObject *pConnectionToRemove, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate);
-		bool CalculateMap(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
+		bool CalculateMap(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, CollisionLayer geometryLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
 		void ClearGobs(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate);
 		void ClearGobsForLayer(LinkedList<GraphicalObject*> *pObjs, CollisionLayer layer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate);
 		void MakeArrowsForExistingConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void *pDestructionInstance, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
@@ -59,7 +59,7 @@ namespace Engine
 		void AddArrowGobToList(const Vec3& iRightVec, const Vec3& iToJRightVec, int from, int to, LinkedList<GraphicalObject*>* pObjs, CollisionLayer connectionLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
 		bool ResetPreCalculation(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, DestroyObjectCallback destroyCallback, void * pDestructionInstance, int *outCountToUpdate);
 		bool MakeNodesWithNoConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer nodeLayer);
-		bool MakeAutomagicNodeConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
+		bool MakeAutomagicNodeConnections(LinkedList<GraphicalObject*> *pObjs, CollisionLayer connectionLayer, CollisionLayer geometryLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);
 		static bool PathClear(const RayCastingOutput& rco, const GraphicalObject *pDestObj);
 		void RemoveConnectionAndCondense(int fromIndex, int toIndex);
 		static bool DoMakeNodesFromGobs(GraphicalObject *pObj, void *pClass);
