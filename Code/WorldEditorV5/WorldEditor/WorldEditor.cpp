@@ -155,10 +155,7 @@ void WorldEditor::RemoveObject(WorldEditor *pEditor)
 		// slightly uglier, but faster - only recalculate the layer the object was removed from
 		for (c = Engine::CollisionLayer::STATIC_GEOMETRY; c != Engine::CollisionLayer::NUM_LAYERS; c = (Engine::CollisionLayer)(((unsigned)c) + 1))
 		{
-			if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_rco.m_belongsTo, &c))
-			{
-				break;
-			}
+			if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_rco.m_belongsTo, &c)) { break; }
 		}
 
 		if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_rco.m_belongsTo, &cl)) { pEditor->m_nodeMap.RemoveConnection(&pEditor->m_objs, pEditor->m_rco.m_belongsTo, WorldEditor::DestroyObjsCallback, pEditor, &pEditor->m_objCount); }
@@ -186,43 +183,45 @@ void WorldEditor::TranslateObject(WorldEditor *pEditor)
 
 	if (pEditor->m_pSelected)
 	{
-		if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &checkLayer)) { return; }
-		Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
-
-		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
-		{			
-			arrowClicked = true;
-			d = arrowCheck.m_belongsTo->GetRotMat() * BASE_ARROW_DIR;
-			lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
-			v = arrowCheck.m_intersectionPoint - lastOrigin;
-		}
-		else if (Engine::MouseManager::IsLeftMouseDown() && arrowClicked)
+		if (!Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &checkLayer))
 		{
-			Engine::Vec3 newOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
-			Engine::Vec3 r = Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY()) + (newOrigin - lastOrigin);
-			
-			// HOLY MATH BATMAN!!!
-			Engine::Vec3 vhat = v.Normalize();
-			Engine::Vec3 rhat = r.Normalize();
-			Engine::Vec3 innerCross = rhat.Cross(vhat);
-			if (innerCross.LengthSquared() > tolerance)
+			Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
+
+			if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
 			{
-				Engine::Vec3 movementAmount = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat)))).ProjectOnto(d);
-
-				pEditor->MoveSelectedObjectTo(pEditor->m_pSelected->GetPos() + pEditor->m_adjustmentSpeedMultiplier*movementAmount);
-				pEditor->AttachArrowsTo(pEditor->m_pSelected);
-
-				v = v + lastOrigin - newOrigin + movementAmount;
-				lastOrigin = newOrigin;
+				arrowClicked = true;
+				d = arrowCheck.m_belongsTo->GetRotMat() * BASE_ARROW_DIR;
+				lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
+				v = arrowCheck.m_intersectionPoint - lastOrigin;
 			}
-		}	
+			else if (Engine::MouseManager::IsLeftMouseDown() && arrowClicked)
+			{
+				Engine::Vec3 newOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
+				Engine::Vec3 r = Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY()) + (newOrigin - lastOrigin);
+
+				// HOLY MATH BATMAN!!!
+				Engine::Vec3 vhat = v.Normalize();
+				Engine::Vec3 rhat = r.Normalize();
+				Engine::Vec3 innerCross = rhat.Cross(vhat);
+				if (innerCross.LengthSquared() > tolerance)
+				{
+					Engine::Vec3 movementAmount = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat)))).ProjectOnto(d);
+
+					pEditor->MoveSelectedObjectTo(pEditor->m_pSelected->GetPos() + pEditor->m_adjustmentSpeedMultiplier*movementAmount);
+					pEditor->AttachArrowsTo(pEditor->m_pSelected);
+
+					v = v + lastOrigin - newOrigin + movementAmount;
+					lastOrigin = newOrigin;
+				}
+			}
 
 
-		if (Engine::MouseManager::IsLeftMouseReleased())
-		{
-			arrowClicked = false;
-			pEditor->HandleOutsideGrid(pEditor->m_pSelected);
-			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
+			if (Engine::MouseManager::IsLeftMouseReleased())
+			{
+				arrowClicked = false;
+				pEditor->HandleOutsideGrid(pEditor->m_pSelected);
+				Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
+			}
 		}
 	}
 	
@@ -248,48 +247,49 @@ void WorldEditor::RotateObject(WorldEditor *pEditor)
 
 	if (pEditor->m_pSelected)
 	{
-		if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &checkLayer)) { return; }
-
-		Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
-
-		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
+		if (!Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &checkLayer))
 		{
-			arrowClicked = true;
-			startRot = pEditor->m_pSelected->GetRotMat();
-			d = arrowCheck.m_belongsTo->GetRotMat() * BASE_ARROW_DIR;
-			lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
-			v = arrowCheck.m_intersectionPoint - lastOrigin;
-		}
-		else if (Engine::MouseManager::IsLeftMouseDown() && arrowClicked /* && !Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &layerCheck)*/)
-		{
-			Engine::Vec3 newOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
-			Engine::Vec3 r = Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY()) + (newOrigin - lastOrigin);
+			Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
 
-			// HOLY MATH BATMAN!!!
-			Engine::Vec3 vhat = v.Normalize();
-			Engine::Vec3 rhat = r.Normalize();
-			Engine::Vec3 innerCross = rhat.Cross(vhat);
-			if (innerCross.LengthSquared() > tolerance)
+			if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
 			{
-				Engine::Vec3 s1 = v + lastOrigin - pEditor->m_pSelected->GetPos();
-				Engine::Vec3 rminusv = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat))));
-				Engine::Vec3 d2 = s1 + rminusv;
-
-				pEditor->m_pSelected->SetRotMat(Engine::Mat4::RotationToFace(d, d2) * startRot);
-				pEditor->m_pSelected->CalcFullTransform();
-				pEditor->AttachArrowsTo(pEditor->m_pSelected);
-
-				lastOrigin = newOrigin;
-
+				arrowClicked = true;
+				startRot = pEditor->m_pSelected->GetRotMat();
+				d = arrowCheck.m_belongsTo->GetRotMat() * BASE_ARROW_DIR;
+				lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
+				v = arrowCheck.m_intersectionPoint - lastOrigin;
 			}
-		}
+			else if (Engine::MouseManager::IsLeftMouseDown() && arrowClicked /* && !Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &layerCheck)*/)
+			{
+				Engine::Vec3 newOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
+				Engine::Vec3 r = Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY()) + (newOrigin - lastOrigin);
+
+				// HOLY MATH BATMAN!!!
+				Engine::Vec3 vhat = v.Normalize();
+				Engine::Vec3 rhat = r.Normalize();
+				Engine::Vec3 innerCross = rhat.Cross(vhat);
+				if (innerCross.LengthSquared() > tolerance)
+				{
+					Engine::Vec3 s1 = v + lastOrigin - pEditor->m_pSelected->GetPos();
+					Engine::Vec3 rminusv = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat))));
+					Engine::Vec3 d2 = s1 + rminusv;
+
+					pEditor->m_pSelected->SetRotMat(Engine::Mat4::RotationToFace(d, d2) * startRot);
+					pEditor->m_pSelected->CalcFullTransform();
+					pEditor->AttachArrowsTo(pEditor->m_pSelected);
+
+					lastOrigin = newOrigin;
+
+				}
+			}
 
 
-		if (Engine::MouseManager::IsLeftMouseReleased())
-		{
-			arrowClicked = false;
-			pEditor->HandleOutsideGrid(pEditor->m_pSelected);
-			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
+			if (Engine::MouseManager::IsLeftMouseReleased())
+			{
+				arrowClicked = false;
+				pEditor->HandleOutsideGrid(pEditor->m_pSelected);
+				Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
+			}
 		}
 	}
 
@@ -311,55 +311,56 @@ void WorldEditor::ScaleObject(WorldEditor *pEditor)
 
 	if (pEditor->m_pSelected)
 	{
-		if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &checkLayer)) { return; }
+		if (!Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &checkLayer)) 
+		{ 
+			Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
 
-		Engine::RayCastingOutput arrowCheck = Engine::CollisionTester::FindFromMousePos(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY(), RENDER_DISTANCE, EDITOR_ITEMS);
-
-		if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
-		{
-			arrowClicked = true;
-			d = pEditor->GetArrowDir(arrowCheck.m_belongsTo);
-			lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
-			v = arrowCheck.m_intersectionPoint - lastOrigin;
-		}
-		else if (Engine::MouseManager::IsLeftMouseDown() && arrowClicked)
-		{
-			Engine::Vec3 newOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
-			Engine::Vec3 r = Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY()) + (newOrigin - lastOrigin);
-
-			// HOLY MATH BATMAN!!!
-			Engine::Vec3 vhat = v.Normalize();
-			Engine::Vec3 rhat = r.Normalize();
-			Engine::Vec3 innerCross = rhat.Cross(vhat);
-			if (innerCross.LengthSquared() > tolerance)
+			if (arrowCheck.m_didIntersect && Engine::MouseManager::IsLeftMouseClicked())
 			{
-				Engine::Vec3 movementAmount = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat)))).ProjectOnto(d);
-
-				float scaleAmount = d.Dot(movementAmount) > 0.0f ? 1 + pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length() : 1 - pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length();
-				Engine::CollisionLayer layerCheck = NODE_LAYER;
-				if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &layerCheck))
-				{
-					pEditor->m_pSelected->SetScaleMat((pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(scaleAmount)));
-				}
-				else
-				{
-					pEditor->m_pSelected->SetScaleMat((pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(scaleAmount, movementAmount.Normalize())));
-				}
-
-				pEditor->m_pSelected->CalcFullTransform();
-				pEditor->AttachArrowsTo(pEditor->m_pSelected);
-
-				v = v + lastOrigin - newOrigin + movementAmount;
-				lastOrigin = newOrigin;
+				arrowClicked = true;
+				d = pEditor->GetArrowDir(arrowCheck.m_belongsTo);
+				lastOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
+				v = arrowCheck.m_intersectionPoint - lastOrigin;
 			}
-		}
+			else if (Engine::MouseManager::IsLeftMouseDown() && arrowClicked)
+			{
+				Engine::Vec3 newOrigin = Engine::MousePicker::GetOrigin(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY());
+				Engine::Vec3 r = Engine::MousePicker::GetDirection(Engine::MouseManager::GetMouseX(), Engine::MouseManager::GetMouseY()) + (newOrigin - lastOrigin);
+
+				// HOLY MATH BATMAN!!!
+				Engine::Vec3 vhat = v.Normalize();
+				Engine::Vec3 rhat = r.Normalize();
+				Engine::Vec3 innerCross = rhat.Cross(vhat);
+				if (innerCross.LengthSquared() > tolerance)
+				{
+					Engine::Vec3 movementAmount = (vhat.Cross(innerCross) * v.Length() * tanf(acosf(vhat.Dot(rhat)))).ProjectOnto(d);
+
+					float scaleAmount = d.Dot(movementAmount) > 0.0f ? 1 + pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length() : 1 - pEditor->m_adjustmentSpeedMultiplier*movementAmount.Length();
+					Engine::CollisionLayer layerCheck = NODE_LAYER;
+					if (Engine::AStarNodeMap::IsObjInLayer(pEditor->m_pSelected, &layerCheck))
+					{
+						pEditor->m_pSelected->SetScaleMat((pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(scaleAmount)));
+					}
+					else
+					{
+						pEditor->m_pSelected->SetScaleMat((pEditor->m_pSelected->GetScaleMat() * Engine::Mat4::Scale(scaleAmount, movementAmount.Normalize())));
+					}
+
+					pEditor->m_pSelected->CalcFullTransform();
+					pEditor->AttachArrowsTo(pEditor->m_pSelected);
+
+					v = v + lastOrigin - newOrigin + movementAmount;
+					lastOrigin = newOrigin;
+				}
+			}
 
 
-		if (Engine::MouseManager::IsLeftMouseReleased())
-		{
-			arrowClicked = false;
-			pEditor->HandleOutsideGrid(pEditor->m_pSelected);
-			Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
+			if (Engine::MouseManager::IsLeftMouseReleased())
+			{
+				arrowClicked = false;
+				pEditor->HandleOutsideGrid(pEditor->m_pSelected);
+				Engine::CollisionTester::CalculateGrid(EDITOR_ITEMS);
+			}
 		}
 	}
 
