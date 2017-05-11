@@ -746,7 +746,14 @@ bool WorldEditor::ProcessInput(float dt)
 		m_camera.SetSpeed(m_camera.GetSpeed() * (m_walkEnabled ? 0.25f : 4.0f));
 	}
 
-	if (keyboardManager.KeyWasPressed('U')) { m_scaleUniformly = !m_scaleUniformly; SetupModeText(m_scaleUniformly ? "Mode: Uniform Scale\n" : "Mode: Non-Uniform Scale\n"); }
+	if (keyboardManager.KeyWasPressed('U'))
+	{ 
+		m_scaleUniformly = !m_scaleUniformly; 
+		if (m_currentMode == WorldEditor::ScaleObject)
+		{
+			SetupModeText(m_scaleUniformly ? "Mode: Uniform Scale\n" : "Mode: Non-Uniform Scale\n");
+		}
+	}
 
 	return true;
 }
