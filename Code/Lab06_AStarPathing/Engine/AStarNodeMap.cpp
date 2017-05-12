@@ -292,7 +292,7 @@ namespace Engine
 
 		// obj should get deleted externally in list we put it in
 		GraphicalObject *pArrow = new GraphicalObject();
-		ShapeGenerator::MakeDebugArrow(pArrow, Vec3(0.15f, 0.75f, 0.0f), Vec3(0.0f, 0.75f, 0.0f));
+		ShapeGenerator::MakeDebugArrow(pArrow, Vec3(.9f, 0.9f, 0.0f), Vec3(0.9f, 0.0f, 0.0f));
 
 		// make go from i right to j right
 		pArrow->SetRotMat(Mat4::RotationToFace(BASE_ARROW_DIR, iToJRightVec.Normalize()));
