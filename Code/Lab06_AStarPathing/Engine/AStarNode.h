@@ -30,12 +30,14 @@ namespace Engine
 		AStarNode *GetParentPointer();
 
 		friend class AStarNodeMap;
+		friend class AStarPathFinder;
 
 	private:
 		AStarNode* m_pParent{ nullptr };
 		bool m_enabled{ true };
 		Vec3 m_position;
 		float m_radius{ 1.0f };
+		float m_cost{ 0.0f };
 	};
 	
 }

@@ -522,6 +522,58 @@ namespace Engine
 		return Engine::CollisionTester::IsInLayer(pObj, *reinterpret_cast<Engine::CollisionLayer*>(pDoinSomethingDifferentHere));
 	}
 
+	const AStarNode * AStarNodeMap::FindNearestNodeTo(const Vec3 & location) const
+	{
+		// get the index of the node, return the node at that index
+		return (m_pNodesWithConnections + FindNearestNodeIndex(location))->m_pNode;
+	}
+
+	const int AStarNodeMap::FindNearestNodeIndex(const Vec3 & location) const
+	{
+		// defaults
+		int nearestIndex = -1;
+		float nearestDistanceSquared = -1.0f;
+
+		// iterate through the nodes we own, and if the node exists, return its index
+		for (int i = 0; i < m_numNodes; ++i)
+		{
+			// grab the dist squared (sqrt can be expensive!)
+			float currentDistanceSquared = ((m_pNodesWithConnections + i)->m_pNode->m_position - location).LengthSquared();
+			if ((nearestDistanceSquared < 0.0f) || (currentDistanceSquared < nearestDistanceSquared))
+			{
+				// if we haven't checked any nodes, or if its closer than what we've checked, set it to the closest
+				nearestIndex = i;
+				nearestDistanceSquared = currentDistanceSquared;
+			}
+			// keep looking...
+		}
+
+		// return the index (-1 if not set)
+		return nearestIndex;
+	}
+
+	const int AStarNodeMap::NodeIndex(const AStarNode *const pNode) const
+	{
+		// iterate through the nodes we own, and if the node exists, return its index
+		for (int i = 0; i < m_numNodes; ++i)
+		{
+			if ((m_pNodesWithConnections + i)->m_pNode == pNode) { return i; }
+		}
+
+		// if we don't have the node, return -1
+		return -1;
+	}
+
+	const AStarNodeMap::NodeWithConnections * AStarNodeMap::GetConnectedNodes() const
+	{
+		return m_pNodesWithConnections;
+	}
+
+	const int * AStarNodeMap::GetConnections() const
+	{
+		return m_pConnectionsTo;
+	}
+
 	bool AStarNodeMap::DoMakeNodesFromGobs(GraphicalObject * pObj, void * pClass)
 	{
 		// get pointer to our map

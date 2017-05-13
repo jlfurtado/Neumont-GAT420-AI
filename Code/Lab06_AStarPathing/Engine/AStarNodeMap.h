@@ -27,6 +27,8 @@ namespace Engine
 			AStarNode *m_pNode{ nullptr };
 			int m_connectionIndex{ 0 };
 			int m_connectionCount{ 0 };
+
+			friend class AStarPathFinder;
 		};
 
 		struct ExtraData
@@ -53,6 +55,11 @@ namespace Engine
 		static bool ToFile(const AStarNodeMap *const mapToWrite, const char *const filePath);
 		bool ToFile(const char *const filePath);
 		static bool IsObjInLayer(GraphicalObject *pObj, void *pClass);
+		const AStarNode *FindNearestNodeTo(const Vec3& location) const;
+		const int FindNearestNodeIndex(const Vec3& location) const;
+		const int NodeIndex(const AStarNode *const pNode) const;
+		const NodeWithConnections *GetConnectedNodes() const;
+		const int *GetConnections() const;
 
 	private:
 		void AddSphereGobToList(int index, LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);

@@ -50,13 +50,42 @@ namespace Engine
 			return m_pHeadNode ? m_pHeadNode->m_data : T();
 		}
 
-		void AddToList(T data)
+		void AddToListFront(T data)
 		{
 			// add node to the front of list - its at the front and it points to the node that used to be at the front, nullptr if only node
 			m_pHeadNode = new Node(data, m_pHeadNode);
 
 			// there is now one more node
 			m_nodeCount++;
+		}
+
+		// used to sort the list at time of addition, adds to end if callback never returns true
+		void AddToListWhere(T data, LinkedListIterationCallback goesBefore, void *pClassInstance)
+		{
+			// calls a method to determine when to add it, adds node at locaction where callback firstreturns true;
+ 			if (!m_pHeadNode) { AddToListFront(data); return; /*count updated in method*/ } // if empty list make it the head
+
+			// if belongs before head node, make new head node
+			if (goesBefore(m_pHeadNode->m_pData)) { AddToListFront(data); return; /*count updated in method*/ }
+
+			// handle the rest
+			Node *pCurrentNode = m_pHeadNode;
+			Node *pNextNode = pCurrentNode->m_pNextNode;
+
+			// while there is a next node
+			while (pNextNode)
+			{
+				// if we need to insert between these two nodes stop
+				if (goesBefore(pNextNode)) { break; }
+
+				// otherwise keep moving forward
+				pCurrentNode = pCurrentNode->m_pNextNode;
+				pNextNode = pCurrentNode->m_pNextNode;
+			}
+
+			// we have the two nodes to insert between (if end, next is just nullptr, which makes the new one go at the end, exacly like we want
+			pCurrentNode->m_pNextNode = new Node(data, pNextNode);
+			m_nodeCount++; // don't forget to update the count
 		}
 
 		T GetWhere(LinkedListIterationCallback callback, void *pClassInstance)

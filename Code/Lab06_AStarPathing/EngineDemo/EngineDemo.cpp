@@ -102,6 +102,12 @@ int currentFractalBuffer = 0;
 const Engine::CollisionLayer NODE_LAYER = Engine::CollisionLayer::LAYER_3;
 const Engine::CollisionLayer CONNECTION_LAYER = Engine::CollisionLayer::LAYER_4;
 
+const int MAX_NPCS = 10;
+Engine::Entity s_NPCS[MAX_NPCS];
+Engine::SpatialComponent s_NPCSpatials[MAX_NPCS];
+Engine::GraphicalObjectComponent s_NPCGobsComps[MAX_NPCS];
+Engine::GraphicalObject s_NPCGobs[MAX_NPCS];
+
 bool EngineDemo::Initialize(Engine::MyWindow *window)
 {
 	m_pWindow = window;
@@ -355,7 +361,6 @@ void EngineDemo::Draw()
 {
 	// Clear window
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 
 	Engine::RenderEngine::Draw();
 
@@ -663,6 +668,34 @@ bool EngineDemo::UglyDemoCode()
 	player.AddComponent(&playerInput, "PlayerInput");
 	player.AddComponent(&mouseComponent, "MouseComponent");
 	player.Initialize();
+
+	for (int i = 0; i < MAX_NPCS; ++i)
+	{
+		char nameBuffer[6] = "NPC";
+		nameBuffer[3] = '0' + i / 10;
+		nameBuffer[4] = '0' + i % 10;
+		nameBuffer[5] = '\0';
+
+		Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\BetterDargon.PN.scene", &s_NPCGobs[i], m_shaderPrograms[3].GetProgramId());
+		s_NPCGobs[i].AddPhongUniforms(modelToWorldMatLoc, worldToViewMatLoc, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), perspectiveMatLoc, m_perspective.GetPerspectivePtr()->GetAddress(),
+			tintColorLoc, diffuseColorLoc, ambientColorLoc, specularColorLoc, specularPowerLoc, diffuseIntensityLoc, ambientIntensityLoc, specularIntensityLoc,
+			&s_NPCGobs[i].GetMatPtr()->m_materialColor, cameraPosLoc, playerCamera.GetPosPtr(), lightLoc, m_lights[0].GetLocPtr());
+		s_NPCGobs[i].AddUniformData(Engine::UniformData(GL_INT, &numCelLevels, 18));
+
+		s_NPCGobs[i].GetMatPtr()->m_specularIntensity = 32.0f;
+		s_NPCGobs[i].GetMatPtr()->m_ambientReflectivity = Engine::Vec3(0.1f, 0.0f, 0.0f);
+		s_NPCGobs[i].GetMatPtr()->m_diffuseReflectivity = Engine::Vec3(0.7f, 0.0f, 0.0f);
+		s_NPCGobs[i].GetMatPtr()->m_specularReflectivity = Engine::Vec3(0.1f, 0.0f, 0.0f);
+		s_NPCGobs[i].SetScaleMat(Engine::Mat4::Scale(1.0f));
+		s_NPCGobs[i].SetTransMat(Engine::Mat4::Translation(Engine::Vec3(0.0f, 5.0f, 0.0f)));
+
+		s_NPCS[i].SetName(&nameBuffer[0]);
+		s_NPCS[i].AddComponent(&s_NPCSpatials[i], "NPC Spatial");
+		s_NPCS[i].AddComponent(&s_NPCGobsComps[i], "NPC Gob");
+		s_NPCS[i].Initialize();
+
+		Engine::RenderEngine::AddGraphicalObject(&s_NPCGobs[i]);
+	}
 
 	player.GetComponentByType<Engine::SpatialComponent>()->SetPosition(Engine::Vec3(375.0f, 5.0f, 5.0f));
 	if (!Engine::TextObject::Initialize(matLoc, tintColorLoc))

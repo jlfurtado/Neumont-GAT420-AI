@@ -602,7 +602,6 @@ bool WorldEditor::InitializeGL()
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
-
 	glClearStencil(0);
 
 	if (m_shaderPrograms[0].Initialize())
@@ -688,8 +687,6 @@ bool WorldEditor::ProcessInput(float dt)
 
 			moveRCO = Engine::CollisionTester::FindWall(m_camera.GetPosition() - (moveCheckOffset * movementVector.Normalize()), movementVector.Normalize(), moveCheckOffset + moveCheckDist + 1.0f, EDITOR_LIST_OBJS);
 		}
-
-
 	}
 
 	if (movementVector.LengthSquared() > 0.0f)
