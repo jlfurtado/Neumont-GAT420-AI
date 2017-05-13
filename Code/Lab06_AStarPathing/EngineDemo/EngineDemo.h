@@ -56,6 +56,7 @@ private:
 	bool ProcessInput(float dt);
 	void ShowFrameRate(float dt);
 	bool UglyDemoCode();
+	bool InitDargon(int index);
 	void InitIndicesForMeshNames(const char *const meshNames, int *indices, int numMeshes);
 	void SetObjPosDataPtrs();
 	void RaycastFlag();

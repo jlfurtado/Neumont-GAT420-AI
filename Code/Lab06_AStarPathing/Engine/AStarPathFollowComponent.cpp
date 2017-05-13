@@ -32,7 +32,7 @@ namespace Engine
 		return true;
 	}
 
-	bool AStarPathFollowComponent::Update(float dt)
+	bool AStarPathFollowComponent::Update(float /*dt*/)
 	{
 		SpatialComponent *pSpatial = GetSiblingComponent<SpatialComponent>();
 		if (!pSpatial) { GameLogger::Log(MessageType::cError, "Cannot follow path! Entity has AStarPathFollowComponent but no SpatialComponent!\n"); return true; }

@@ -103,7 +103,7 @@ int currentFractalBuffer = 0;
 const Engine::CollisionLayer NODE_LAYER = Engine::CollisionLayer::LAYER_3;
 const Engine::CollisionLayer CONNECTION_LAYER = Engine::CollisionLayer::LAYER_4;
 
-const int MAX_NPCS = 25;
+const int MAX_NPCS = 100;
 Engine::Entity s_NPCS[MAX_NPCS];
 Engine::SpatialComponent s_NPCSpatials[MAX_NPCS];
 Engine::GraphicalObjectComponent s_NPCGobsComps[MAX_NPCS];
@@ -240,6 +240,8 @@ void EngineDemo::MouseMoveCallback(void * game, int dx, int dy)
 	reinterpret_cast<EngineDemo *>(game)->OnMouseMove(dx, dy);
 }
 
+float tmr = 0.0f;
+bool spawnNow = true;
 void EngineDemo::Update(float dt)
 {
 	const float maxBorder = 0.1f;
@@ -281,6 +283,19 @@ void EngineDemo::Update(float dt)
 	}
 
 	if (paused) { return; }
+
+	static int lastDargon = 0;
+	tmr += dt;
+	if (tmr > 10.0f || spawnNow)
+	{
+		spawnNow = false;
+		tmr -= 10.0f;
+
+		if (lastDargon < MAX_NPCS)
+		{
+			InitDargon(lastDargon++);
+		}
+	}
 
 	static float scaleMult = 1.0f;
 
@@ -357,7 +372,7 @@ void EngineDemo::Update(float dt)
 	m_gazebo.CalcFullTransform();
 	lastCollisionLayer = currentCollisionLayer;
 
-	for (int i = 0; i < MAX_NPCS; ++i)
+	for (int i = 0; i < lastDargon; ++i)
 	{
 		s_NPCGobs[i].CalcFullTransform();
 		s_NPCS[i].Update(dt);
@@ -618,6 +633,7 @@ bool EngineDemo::ProcessInput(float dt)
 	if (keyboardManager.KeyWasPressed('9')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_9; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
 
 	if (keyboardManager.KeyWasPressed('U')) { currentCollisionLayer = Engine::CollisionLayer::NUM_LAYERS; Engine::CollisionTester::OnlyShowLayer(Engine::CollisionLayer::NUM_LAYERS); }
+	if (keyboardManager.KeyWasPressed('K')) { spawnNow = true; }
 
 	//if (keyboardManager.KeyWasPressed('1')) { currentFractalTexID = fractalGradientTextureID; }
 	//if (keyboardManager.KeyWasPressed('2')) { currentFractalTexID = fractalGradientAlternateTextureID; }
@@ -677,41 +693,6 @@ bool EngineDemo::UglyDemoCode()
 	player.AddComponent(&mouseComponent, "MouseComponent");
 	player.Initialize();
 
-	for (int i = 0; i < MAX_NPCS; ++i)
-	{
-		char nameBuffer[6] = "NPC";
-		nameBuffer[3] = '0' + (char)(i / 10);
-		nameBuffer[4] = '0' + (char)(i % 10);
-		nameBuffer[5] = '\0';
-
-		Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\BetterDargon.PN.scene", &s_NPCGobs[i], m_shaderPrograms[3].GetProgramId());
-		s_NPCGobs[i].AddPhongUniforms(modelToWorldMatLoc, worldToViewMatLoc, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), perspectiveMatLoc, m_perspective.GetPerspectivePtr()->GetAddress(),
-			tintColorLoc, diffuseColorLoc, ambientColorLoc, specularColorLoc, specularPowerLoc, diffuseIntensityLoc, ambientIntensityLoc, specularIntensityLoc,
-			&s_NPCGobs[i].GetMatPtr()->m_materialColor, cameraPosLoc, playerCamera.GetPosPtr(), lightLoc, m_lights[0].GetLocPtr());
-		s_NPCGobs[i].AddUniformData(Engine::UniformData(GL_INT, &numCelLevels, 18));
-
-		s_NPCGobs[i].GetMatPtr()->m_specularIntensity = 32.0f;
-		s_NPCGobs[i].GetMatPtr()->m_ambientReflectivity = Engine::Vec3(0.1f, 0.0f, 0.0f);
-		s_NPCGobs[i].GetMatPtr()->m_diffuseReflectivity = Engine::Vec3(0.7f, 0.0f, 0.0f);
-		s_NPCGobs[i].GetMatPtr()->m_specularReflectivity = Engine::Vec3(0.1f, 0.0f, 0.0f);
-		s_NPCGobs[i].SetScaleMat(Engine::Mat4::Scale(1.0f));
-		Engine::Vec3 pos = Engine::MathUtility::Rand(Engine::Vec3(500.0f, 100.0f, (i-MAX_NPCS/2.0f) * 25.0f), Engine::Vec3(300.0f, 150.0f, (i - MAX_NPCS / 2.0f)*25.0f));
-		s_NPCGobs[i].SetTransMat(Engine::Mat4::Translation(pos));
-		s_NPCSpatials[i].SetPosition(pos);
-		s_NPCGobsComps[i].SetGraphicalObject(&s_NPCGobs[i]);
-
-		s_NPCFollows[i].SetNodeMapPtr(&m_nodeMap);
-		s_NPCFollows[i].SetCheckLayer(Engine::CollisionLayer::LAYER_2);
-
-		s_NPCS[i].SetName(&nameBuffer[0]);
-		s_NPCS[i].AddComponent(&s_NPCSpatials[i], "NPC Spatial");
-		s_NPCS[i].AddComponent(&s_NPCGobsComps[i], "NPC Gob");
-		s_NPCS[i].AddComponent(&s_NPCFollows[i], "NPC Follow");
-		s_NPCS[i].Initialize();
-
-		Engine::RenderEngine::AddGraphicalObject(&s_NPCGobs[i]);
-	}
-
 	player.GetComponentByType<Engine::SpatialComponent>()->SetPosition(Engine::Vec3(375.0f, 5.0f, 5.0f));
 	if (!Engine::TextObject::Initialize(matLoc, tintColorLoc))
 	{
@@ -768,6 +749,42 @@ bool EngineDemo::UglyDemoCode()
 
 	LoadWorldFileAndApplyPCUniforms();
 
+	return true;
+}
+
+bool EngineDemo::InitDargon(int index)
+{
+	char nameBuffer[6] = "NPC";
+	nameBuffer[3] = '0' + (char)(index / 10);
+	nameBuffer[4] = '0' + (char)(index % 10);
+	nameBuffer[5] = '\0';
+
+	Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\BetterDargon.PN.scene", &s_NPCGobs[index], m_shaderPrograms[3].GetProgramId());
+	s_NPCGobs[index].AddPhongUniforms(modelToWorldMatLoc, worldToViewMatLoc, playerCamera.GetWorldToViewMatrixPtr()->GetAddress(), perspectiveMatLoc, m_perspective.GetPerspectivePtr()->GetAddress(),
+		tintColorLoc, diffuseColorLoc, ambientColorLoc, specularColorLoc, specularPowerLoc, diffuseIntensityLoc, ambientIntensityLoc, specularIntensityLoc,
+		&s_NPCGobs[index].GetMatPtr()->m_materialColor, cameraPosLoc, playerCamera.GetPosPtr(), lightLoc, m_lights[0].GetLocPtr());
+	s_NPCGobs[index].AddUniformData(Engine::UniformData(GL_INT, &numCelLevels, 18));
+
+	s_NPCGobs[index].GetMatPtr()->m_specularIntensity = 32.0f;
+	s_NPCGobs[index].GetMatPtr()->m_ambientReflectivity = Engine::Vec3(0.1f, 0.0f, 0.0f);
+	s_NPCGobs[index].GetMatPtr()->m_diffuseReflectivity = Engine::Vec3(0.7f, 0.0f, 0.0f);
+	s_NPCGobs[index].GetMatPtr()->m_specularReflectivity = Engine::Vec3(0.1f, 0.0f, 0.0f);
+	s_NPCGobs[index].SetScaleMat(Engine::Mat4::Scale(1.0f));
+	Engine::Vec3 pos = Engine::Vec3(100.0f + (index % 10) * 25.0f, 50.0f * (index % 4 + 3), (index / 40 - 2) * -100.0f);
+	s_NPCGobs[index].SetTransMat(Engine::Mat4::Translation(pos));
+	s_NPCSpatials[index].SetPosition(pos);
+	s_NPCGobsComps[index].SetGraphicalObject(&s_NPCGobs[index]);
+
+	s_NPCFollows[index].SetNodeMapPtr(&m_nodeMap);
+	s_NPCFollows[index].SetCheckLayer(Engine::CollisionLayer::LAYER_2);
+
+	s_NPCS[index].SetName(&nameBuffer[0]);
+	s_NPCS[index].AddComponent(&s_NPCSpatials[index], "NPC Spatial");
+	s_NPCS[index].AddComponent(&s_NPCGobsComps[index], "NPC Gob");
+	s_NPCS[index].AddComponent(&s_NPCFollows[index], "NPC Follow");
+	s_NPCS[index].Initialize();
+
+	Engine::RenderEngine::AddGraphicalObject(&s_NPCGobs[index]);
 	return true;
 }
 
