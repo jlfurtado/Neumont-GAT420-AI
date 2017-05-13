@@ -1,4 +1,5 @@
 #include "EngineDemo.h"
+#include "AStarPathFinder.h"
 #include "MousePicker.h"
 #include "MyWindow.h"
 #include <iostream>
@@ -24,7 +25,7 @@
 #pragma warning(pop)
 
 #include "ShapeGenerator.h"
-
+#include "AStarPathFollowComponent.h"
 #include "RenderEngine.h"
 #include "ConfigReader.h"
 #include "MathUtility.h"
@@ -102,11 +103,12 @@ int currentFractalBuffer = 0;
 const Engine::CollisionLayer NODE_LAYER = Engine::CollisionLayer::LAYER_3;
 const Engine::CollisionLayer CONNECTION_LAYER = Engine::CollisionLayer::LAYER_4;
 
-const int MAX_NPCS = 10;
+const int MAX_NPCS = 25;
 Engine::Entity s_NPCS[MAX_NPCS];
 Engine::SpatialComponent s_NPCSpatials[MAX_NPCS];
 Engine::GraphicalObjectComponent s_NPCGobsComps[MAX_NPCS];
 Engine::GraphicalObject s_NPCGobs[MAX_NPCS];
+Engine::AStarPathFollowComponent s_NPCFollows[MAX_NPCS];
 
 bool EngineDemo::Initialize(Engine::MyWindow *window)
 {
@@ -354,6 +356,12 @@ void EngineDemo::Update(float dt)
 
 	m_gazebo.CalcFullTransform();
 	lastCollisionLayer = currentCollisionLayer;
+
+	for (int i = 0; i < MAX_NPCS; ++i)
+	{
+		s_NPCGobs[i].CalcFullTransform();
+		s_NPCS[i].Update(dt);
+	}
 
 }
 
@@ -687,11 +695,18 @@ bool EngineDemo::UglyDemoCode()
 		s_NPCGobs[i].GetMatPtr()->m_diffuseReflectivity = Engine::Vec3(0.7f, 0.0f, 0.0f);
 		s_NPCGobs[i].GetMatPtr()->m_specularReflectivity = Engine::Vec3(0.1f, 0.0f, 0.0f);
 		s_NPCGobs[i].SetScaleMat(Engine::Mat4::Scale(1.0f));
-		s_NPCGobs[i].SetTransMat(Engine::Mat4::Translation(Engine::Vec3(0.0f, 5.0f, 0.0f)));
+		Engine::Vec3 pos = Engine::MathUtility::Rand(Engine::Vec3(500.0f, 100.0f, (i-MAX_NPCS/2.0f) * 25.0f), Engine::Vec3(300.0f, 150.0f, (i - MAX_NPCS / 2.0f)*25.0f));
+		s_NPCGobs[i].SetTransMat(Engine::Mat4::Translation(pos));
+		s_NPCSpatials[i].SetPosition(pos);
+		s_NPCGobsComps[i].SetGraphicalObject(&s_NPCGobs[i]);
+
+		s_NPCFollows[i].SetNodeMapPtr(&m_nodeMap);
+		s_NPCFollows[i].SetCheckLayer(Engine::CollisionLayer::LAYER_2);
 
 		s_NPCS[i].SetName(&nameBuffer[0]);
 		s_NPCS[i].AddComponent(&s_NPCSpatials[i], "NPC Spatial");
 		s_NPCS[i].AddComponent(&s_NPCGobsComps[i], "NPC Gob");
+		s_NPCS[i].AddComponent(&s_NPCFollows[i], "NPC Follow");
 		s_NPCS[i].Initialize();
 
 		Engine::RenderEngine::AddGraphicalObject(&s_NPCGobs[i]);
@@ -843,7 +858,7 @@ void EngineDemo::LoadWorldFileAndApplyPCUniforms()
 		// read file
 		Engine::WorldFileIO::ReadGobFile(&buffer[0], &m_fromWorldEditorOBJs, m_shaderPrograms[1].GetProgramId(), InitEditorObj, this);
 
-		Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::LAYER_2);
+		Engine::CollisionTester::CalculateGrid(Engine::CollisionLayer::NUM_LAYERS);
 	}
 
 	if (Engine::ConfigReader::pReader->GetStringForKey("EngineDemo.World.InputNodeFileName", buffer))

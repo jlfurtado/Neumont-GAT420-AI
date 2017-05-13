@@ -54,10 +54,11 @@ namespace Engine
 		bool ToFile(const char *const filePath);
 		static bool IsObjInLayer(GraphicalObject *pObj, void *pClass);
 		const AStarNode *FindNearestNodeTo(const Vec3& location) const;
-		const int FindNearestNodeIndex(const Vec3& location) const;
-		const int NodeIndex(const AStarNode *const pNode) const;
+		int FindNearestNodeIndex(const Vec3& location) const;
+		int NodeIndex(const AStarNode *const pNode) const;
 		const NodeWithConnections *GetConnectedNodes() const;
 		const int *GetConnections() const;
+		int GetNumNodes() const;
 
 		friend class AStarPathFinder;
 

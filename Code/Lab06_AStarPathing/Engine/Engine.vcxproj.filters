@@ -186,6 +186,9 @@
     <ClInclude Include="AStarPathFinder.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AStarPathFollowComponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GameLogger.cpp">
@@ -318,6 +321,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AStarPathFinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AStarPathFollowComponent.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -528,7 +528,7 @@ namespace Engine
 		return (m_pNodesWithConnections + FindNearestNodeIndex(location))->m_pNode;
 	}
 
-	const int AStarNodeMap::FindNearestNodeIndex(const Vec3 & location) const
+	int AStarNodeMap::FindNearestNodeIndex(const Vec3 & location) const
 	{
 		// defaults
 		int nearestIndex = -1;
@@ -552,7 +552,7 @@ namespace Engine
 		return nearestIndex;
 	}
 
-	const int AStarNodeMap::NodeIndex(const AStarNode *const pNode) const
+	int AStarNodeMap::NodeIndex(const AStarNode *const pNode) const
 	{
 		// iterate through the nodes we own, and if the node exists, return its index
 		for (unsigned i = 0; i < m_numNodes; ++i)
@@ -572,6 +572,11 @@ namespace Engine
 	const int * AStarNodeMap::GetConnections() const
 	{
 		return m_pConnectionsTo;
+	}
+
+	int AStarNodeMap::GetNumNodes() const
+	{
+		return m_numNodes;
 	}
 
 	bool AStarNodeMap::DoMakeNodesFromGobs(GraphicalObject * pObj, void * pClass)

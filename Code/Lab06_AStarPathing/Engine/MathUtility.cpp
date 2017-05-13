@@ -1,4 +1,5 @@
 #include "MathUtility.h"
+#include "MathUtility.h"
 #include <random>
 #include "Vertex.h"
 #include "GraphicalObject.h"
@@ -45,6 +46,11 @@ namespace Engine
 		if (result < min) { result = min; }
 		else if (result > max) { result = max; }
 		return result;
+	}
+
+	int MathUtility::Rand(int min, int max)
+	{
+		return (rand() % (max - min)) + min;
 	}
 
 	float MathUtility::Rand(float minValue, float maxValue)

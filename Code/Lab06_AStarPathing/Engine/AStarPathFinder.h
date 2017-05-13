@@ -22,7 +22,7 @@ namespace Engine
 		static bool NodeGreaterThan(AStarNodeMap::NodeWithConnections *pNode, void *pCheckNode);
 
 	private:
-		static int *GetPathFromAncestors(const AStarNodeMap *pNodeMap, const AStarNode *pNode, int *outNumNodes);
+		static int *GetPathFromAncestors(const AStarNodeMap *pNodeMap, AStarNode *pNode, int *outNumNodes);
 
 	};
 }

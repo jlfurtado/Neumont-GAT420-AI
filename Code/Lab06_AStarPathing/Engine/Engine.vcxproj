@@ -129,6 +129,7 @@
     <ClInclude Include="AStarNode.h" />
     <ClInclude Include="AStarNodeMap.h" />
     <ClInclude Include="AStarPathFinder.h" />
+    <ClInclude Include="AStarPathFollowComponent.h" />
     <ClInclude Include="BinaryWriter.h" />
     <ClInclude Include="BitmapLoader.h" />
     <ClInclude Include="BufferGroup.h" />
@@ -188,6 +189,7 @@
     <ClCompile Include="AStarNode.cpp" />
     <ClCompile Include="AStarNodeMap.cpp" />
     <ClCompile Include="AStarPathFinder.cpp" />
+    <ClCompile Include="AStarPathFollowComponent.cpp" />
     <ClCompile Include="BinaryWriter.cpp" />
     <ClCompile Include="BitmapLoader.cpp" />
     <ClCompile Include="BufferGroup.cpp" />

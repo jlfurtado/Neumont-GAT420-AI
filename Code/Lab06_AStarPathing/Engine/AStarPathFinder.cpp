@@ -19,7 +19,7 @@ namespace Engine
 		AStarNodeMap::NodeWithConnections *pEndNode = &pNodeMap->m_pNodesWithConnections[toNodeIndex];
 
 		// if they are trying to pathfind from a node to itself... they needn't move!
-		if (pStartNode == pEndNode) { return nullptr; }
+		if (pStartNode == pEndNode) { *outNumNodes = 0; return nullptr; }
 
 		// make the open and closed lists
 		LinkedList<AStarNodeMap::NodeWithConnections*> openList;
@@ -28,6 +28,7 @@ namespace Engine
 		// add the start node to the open list
 		openList.AddToListFront(pStartNode); // no need for callback as it should be the only node in the list right now
 		pStartNode->m_pNode->m_cost = (pStartNode->m_pNode->m_position - pEndNode->m_pNode->m_position).Length(); // set the total cost of the start node... just the h cost????
+		pStartNode->m_pNode->m_pParent = nullptr; // prevent circular path
 
 		// keep going so long as we have nodes in our open list
 		while (openList.GetCount() > 0)
@@ -49,7 +50,7 @@ namespace Engine
 			for (int i = pCurrentNode->m_connectionIndex; i < end; ++i)
 			{
 				// find out neighbor
-				AStarNodeMap::NodeWithConnections *pNeighbor = &pNodeMap->m_pNodesWithConnections[i];
+				AStarNodeMap::NodeWithConnections *pNeighbor = &pNodeMap->m_pNodesWithConnections[pNodeMap->m_pConnectionsTo[i]];
 
 				// see if its closed or not traversable
 				if (closedList.Contains(pNeighbor) /* || not traversable!!!*/) { continue; }
@@ -92,10 +93,10 @@ namespace Engine
 		return pNode->m_pNode->m_cost > pNodeCompare->m_pNode->m_cost;
 	}
 
-	int * AStarPathFinder::GetPathFromAncestors(const AStarNodeMap *pNodeMap, const AStarNode * pNode, int *outNumNodes)
+	int * AStarPathFinder::GetPathFromAncestors(const AStarNodeMap *pNodeMap, AStarNode * pNode, int *outNumNodes)
 	{
 		// start at the node
-		const AStarNode *pCurrentNode = pNode;
+		AStarNode *pCurrentNode = pNode;
 
 		// initialize counter
 		int numSteps = 0;
