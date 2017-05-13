@@ -27,8 +27,6 @@ namespace Engine
 			AStarNode *m_pNode{ nullptr };
 			int m_connectionIndex{ 0 };
 			int m_connectionCount{ 0 };
-
-			friend class AStarPathFinder;
 		};
 
 		struct ExtraData
@@ -60,6 +58,8 @@ namespace Engine
 		const int NodeIndex(const AStarNode *const pNode) const;
 		const NodeWithConnections *GetConnectedNodes() const;
 		const int *GetConnections() const;
+
+		friend class AStarPathFinder;
 
 	private:
 		void AddSphereGobToList(int index, LinkedList<GraphicalObject*>* pObjs, CollisionLayer nodeLayer, int *outCountToUpdate, SetUniformCallback uniformCallback, void *uniformInstance);

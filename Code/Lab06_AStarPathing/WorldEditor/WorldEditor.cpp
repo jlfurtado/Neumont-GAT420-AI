@@ -112,7 +112,7 @@ bool WorldEditor::CopyObjList(Engine::GraphicalObject * pObj, void * pDoingSomet
 {
 	Engine::LinkedList<Engine::GraphicalObject *> *pObjCopy = reinterpret_cast<Engine::LinkedList<Engine::GraphicalObject *>*>(pDoingSomethingDifferent);
 	
-	pObjCopy->AddToList(pObj);
+	pObjCopy->AddToListFront(pObj);
 
 	return true;
 }
@@ -134,7 +134,7 @@ void WorldEditor::PlaceObject(WorldEditor *pEditor)
 		Engine::RenderEngine::AddGraphicalObject(pNewObj);
 		Engine::CollisionTester::AddGraphicalObjectToLayer(pNewObj, outLayer);
 		
-		pEditor->m_objs.AddToList(pNewObj);
+		pEditor->m_objs.AddToListFront(pNewObj);
 		pEditor->m_objCount++;
 
 		pEditor->HandleOutsideGrid(pNewObj);
@@ -789,7 +789,7 @@ bool WorldEditor::UglyDemoCode()
 	Engine::RenderEngine::AddGraphicalObject(pHideout);
 	Engine::CollisionTester::AddGraphicalObjectToLayer(pHideout, outLayer);
 
-	m_objs.AddToList(pHideout);
+	m_objs.AddToListFront(pHideout);
 	m_objCount++; // should be one now
 
 	Engine::ShapeGenerator::MakeGrid(&m_grid, 85, 85, Engine::Vec3(0.5f));
@@ -825,7 +825,6 @@ bool WorldEditor::UglyDemoCode()
 	Engine::RenderEngine::AddGraphicalObject(&m_xArrow);
 	Engine::CollisionTester::AddGraphicalObjectToLayer(&m_xArrow, EDITOR_ITEMS);
 
-
 	Engine::ShapeGenerator::MakeDebugArrow(&m_yArrow, YELLOW, GREEN);
 
 	SetPCUniforms(&m_yArrow, this);
@@ -840,7 +839,6 @@ bool WorldEditor::UglyDemoCode()
 
 	Engine::RenderEngine::AddGraphicalObject(&m_yArrow);
 	Engine::CollisionTester::AddGraphicalObjectToLayer(&m_yArrow, EDITOR_ITEMS);
-
 
 	Engine::ShapeGenerator::MakeDebugArrow(&m_zArrow, YELLOW, BLUE);
 

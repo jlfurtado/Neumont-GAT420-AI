@@ -105,7 +105,7 @@ namespace Engine
 	bool SpatialGrid::AddGraphicalObject(GraphicalObject * pGraphicalObjectToAdd)
 	{
 		m_totalTriangleCount += pGraphicalObjectToAdd->GetMeshPointer()->GetVertexCount() / 3;
-		m_objectList.AddToList(pGraphicalObjectToAdd);
+		m_objectList.AddToListFront(pGraphicalObjectToAdd);
 		return true;
 	}
 

@@ -282,7 +282,7 @@ namespace Engine
 		// add it where it goes
 		RenderEngine::AddGraphicalObject(pSphere);
 		CollisionTester::AddGraphicalObjectToLayer(pSphere, nodeLayer);
-		pObjs->AddToList(pSphere);
+		pObjs->AddToListFront(pSphere);
 		(*outCountToUpdate)++;
 	}
 
@@ -312,7 +312,7 @@ namespace Engine
 		// add it where it goes
 		RenderEngine::AddGraphicalObject(pArrow);
 		CollisionTester::AddGraphicalObjectToLayer(pArrow, connectionLayer);
-		pObjs->AddToList(pArrow);
+		pObjs->AddToListFront(pArrow);
 		(*outCountToUpdate)++;
 	}
 
@@ -535,7 +535,7 @@ namespace Engine
 		float nearestDistanceSquared = -1.0f;
 
 		// iterate through the nodes we own, and if the node exists, return its index
-		for (int i = 0; i < m_numNodes; ++i)
+		for (unsigned i = 0; i < m_numNodes; ++i)
 		{
 			// grab the dist squared (sqrt can be expensive!)
 			float currentDistanceSquared = ((m_pNodesWithConnections + i)->m_pNode->m_position - location).LengthSquared();
@@ -555,7 +555,7 @@ namespace Engine
 	const int AStarNodeMap::NodeIndex(const AStarNode *const pNode) const
 	{
 		// iterate through the nodes we own, and if the node exists, return its index
-		for (int i = 0; i < m_numNodes; ++i)
+		for (unsigned i = 0; i < m_numNodes; ++i)
 		{
 			if ((m_pNodesWithConnections + i)->m_pNode == pNode) { return i; }
 		}

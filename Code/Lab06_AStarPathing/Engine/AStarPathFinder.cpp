@@ -9,7 +9,7 @@ namespace Engine
 {
 	int * AStarPathFinder::FindPath(const AStarNodeMap * pNodeMap, const Vec3 & fromLocation, const Vec3 & toLocation, int *outNumNodes)
 	{
-		return FindPath(pNodeMap, pNodeMap->FindNearestNodeIndex(fromLocation), pNodeMap->FindNearestNodeIndex(toLocation));
+		return FindPath(pNodeMap, pNodeMap->FindNearestNodeIndex(fromLocation), pNodeMap->FindNearestNodeIndex(toLocation), outNumNodes);
 	}
 
 	int * AStarPathFinder::FindPath(const AStarNodeMap * pNodeMap, int fromNodeIndex, int toNodeIndex, int *outNumNodes)
@@ -96,6 +96,7 @@ namespace Engine
 	{
 		// start at the node
 		const AStarNode *pCurrentNode = pNode;
+
 		// initialize counter
 		int numSteps = 0;
 

@@ -89,7 +89,7 @@ namespace Engine
 			objInit(pGob, pClass);
 
 			// add it to the list
-			outGobs->AddToList(pGob);
+			outGobs->AddToListFront(pGob);
 		}
 		
 		// close file and indicate success

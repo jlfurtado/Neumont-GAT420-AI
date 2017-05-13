@@ -192,7 +192,7 @@ namespace Engine
 
 	bool BufferInfo::AddGraphicalObject(GraphicalObject *pGraphicalObjectToAdd)
 	{
-		m_graphicalObjectList.AddToList(pGraphicalObjectToAdd);
+		m_graphicalObjectList.AddToListFront(pGraphicalObjectToAdd);
 
 		GameLogger::Log(MessageType::Process, "BufferInfo successfully added GraphicalObject located at [%p]!\n", pGraphicalObjectToAdd);
 		return true;

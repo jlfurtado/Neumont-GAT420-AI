@@ -672,8 +672,8 @@ bool EngineDemo::UglyDemoCode()
 	for (int i = 0; i < MAX_NPCS; ++i)
 	{
 		char nameBuffer[6] = "NPC";
-		nameBuffer[3] = '0' + i / 10;
-		nameBuffer[4] = '0' + i % 10;
+		nameBuffer[3] = '0' + (char)(i / 10);
+		nameBuffer[4] = '0' + (char)(i % 10);
 		nameBuffer[5] = '\0';
 
 		Engine::ShapeGenerator::ReadSceneFile("..\\Data\\Scenes\\BetterDargon.PN.scene", &s_NPCGobs[i], m_shaderPrograms[3].GetProgramId());

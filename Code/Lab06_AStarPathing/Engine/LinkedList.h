@@ -66,7 +66,7 @@ namespace Engine
  			if (!m_pHeadNode) { AddToListFront(data); return; /*count updated in method*/ } // if empty list make it the head
 
 			// if belongs before head node, make new head node
-			if (goesBefore(m_pHeadNode->m_pData)) { AddToListFront(data); return; /*count updated in method*/ }
+			if (goesBefore(m_pHeadNode->m_data, pClassInstance)) { AddToListFront(data); return; /*count updated in method*/ }
 
 			// handle the rest
 			Node *pCurrentNode = m_pHeadNode;
@@ -76,7 +76,7 @@ namespace Engine
 			while (pNextNode)
 			{
 				// if we need to insert between these two nodes stop
-				if (goesBefore(pNextNode)) { break; }
+				if (goesBefore(pNextNode->m_data, pClassInstance)) { break; }
 
 				// otherwise keep moving forward
 				pCurrentNode = pCurrentNode->m_pNextNode;
