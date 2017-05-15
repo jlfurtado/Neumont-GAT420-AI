@@ -13,6 +13,7 @@
 
 namespace Engine
 {
+	class SpatialComponent;
 	class ENGINE_SHARED ChaseCameraComponent :
 		public Component
 	{
@@ -65,6 +66,7 @@ namespace Engine
 		float m_rotateSpeed;
 		float m_moveSpeed;
 		Mat4 m_worldToView;
+		SpatialComponent * m_pSpatial{ nullptr };
 	};
 }
 

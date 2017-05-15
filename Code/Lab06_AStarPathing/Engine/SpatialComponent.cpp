@@ -25,6 +25,9 @@ namespace Engine
 
 	bool SpatialComponent::Initialize()
 	{
+		m_pGobComp = GetSiblingComponent<GraphicalObjectComponent>();
+		if (!m_pGobComp) { GameLogger::Log(MessageType::cError, "Failed to initialize SpatialComponent! Entity contains no Gob component!\n"); return true; }
+
 		GameLogger::Log(MessageType::Process, "SpatialComponent [%s] initialized successfully!\n", GetName());
 		return true;
 	}
@@ -38,11 +41,8 @@ namespace Engine
 
 		m_position = m_position + m_velocity * dt;
 
-		// Requires access to graphical object to position it
-		GraphicalObjectComponent *pGraphicalObjectComponent = GetSiblingComponent<GraphicalObjectComponent>();
-		if (!pGraphicalObjectComponent) { return true; }
-
-		pGraphicalObjectComponent->GetGraphicalObject()->SetTransMat(Mat4::Translation(GetPosition()));
+		// set pos
+		m_pGobComp->GetGraphicalObject()->SetTransMat(Mat4::Translation(GetPosition()));
 
 		return true;
 	}

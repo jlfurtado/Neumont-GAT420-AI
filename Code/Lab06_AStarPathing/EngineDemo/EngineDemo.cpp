@@ -109,6 +109,8 @@ Engine::SpatialComponent s_NPCSpatials[MAX_NPCS];
 Engine::GraphicalObjectComponent s_NPCGobsComps[MAX_NPCS];
 Engine::GraphicalObject s_NPCGobs[MAX_NPCS];
 Engine::AStarPathFollowComponent s_NPCFollows[MAX_NPCS];
+int lastDargon = 0;
+bool followPlayer = false;
 
 bool EngineDemo::Initialize(Engine::MyWindow *window)
 {
@@ -284,7 +286,6 @@ void EngineDemo::Update(float dt)
 
 	if (paused) { return; }
 
-	static int lastDargon = 0;
 	tmr += dt;
 	if (tmr > 10.0f || spawnNow)
 	{
@@ -374,6 +375,11 @@ void EngineDemo::Update(float dt)
 
 	for (int i = 0; i < lastDargon; ++i)
 	{
+		if (followPlayer)
+		{
+			s_NPCFollows[i].SetFollowPos(playerSpatial.GetPosition());
+		}
+
 		s_NPCGobs[i].CalcFullTransform();
 		s_NPCS[i].Update(dt);
 	}
@@ -634,6 +640,15 @@ bool EngineDemo::ProcessInput(float dt)
 
 	if (keyboardManager.KeyWasPressed('U')) { currentCollisionLayer = Engine::CollisionLayer::NUM_LAYERS; Engine::CollisionTester::OnlyShowLayer(Engine::CollisionLayer::NUM_LAYERS); }
 	if (keyboardManager.KeyWasPressed('K')) { spawnNow = true; }
+	if (keyboardManager.KeyWasPressed('J'))
+	{
+		followPlayer = !followPlayer;
+
+		for (int i = 0; i < lastDargon; ++i)
+		{
+			s_NPCFollows[i].SetRandomTargetNode(!followPlayer);
+		}
+	}
 
 	//if (keyboardManager.KeyWasPressed('1')) { currentFractalTexID = fractalGradientTextureID; }
 	//if (keyboardManager.KeyWasPressed('2')) { currentFractalTexID = fractalGradientAlternateTextureID; }

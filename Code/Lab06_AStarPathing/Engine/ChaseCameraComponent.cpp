@@ -31,21 +31,20 @@ namespace Engine
 
 	bool ChaseCameraComponent::Initialize()
 	{
+		m_pSpatial = GetSiblingComponent<SpatialComponent>();
+		if (!m_pSpatial) { GameLogger::Log(MessageType::cError, "Failed to initialize ChaseCameraComponent! Required Spatial Component not found!\n"); return true; }
+
 		GameLogger::Log(MessageType::Process, "Camera Component [%s] initialized successfully!\n", GetName());
 		return true;
 	}
 
 	bool ChaseCameraComponent::Update(float /*dt*/)
 	{
-		// need spatial component to do maths
-		SpatialComponent *pSpatial = GetSiblingComponent<SpatialComponent>();
-		if (!pSpatial) { return true; }
-		
 		// calc rotation matrix for camera
 		Mat4 y = Mat4::RotationAroundAxis(Vec3(0.0f, 1.0f, 0.0f), m_relativeCameraRotation.GetY());
 		Mat4 p = Mat4::RotationAroundAxis(Vec3(1.0f, 0.0f, 0.0f), m_relativeCameraRotation.GetX());
 		Mat4 rotation = y * p;
-		Mat4 fullRotation = pSpatial->CalcRotationMatrix() * rotation;
+		Mat4 fullRotation = m_pSpatial->CalcRotationMatrix() * rotation;
 		
 		float checkDist = m_distanceMultiplier * (m_positionOffset.Length());
 		if (m_collide)

@@ -13,6 +13,8 @@
 
 namespace Engine
 {
+	class GraphicalObjectComponent;
+	class SpatialComponent;
 	class ENGINE_SHARED AStarPathFollowComponent : public Component
 	{
 	public:
@@ -23,13 +25,24 @@ namespace Engine
 		bool Update(float dt) override;
 		void SetNodeMapPtr(AStarNodeMap *pNodeMap);
 		void SetCheckLayer(CollisionLayer layer);
-
+		void SetRandomTargetNode(bool randomTargetNode);
+		void SetFollowPos(const Vec3& followPos);
+		
 	private:
+		void HandleRecalcAtNext();
+		void SetColorFromState();
+		
 		int *followingPath = nullptr;
 		int m_pathSize = 0;
 		int m_nextPathIndex = 0;
 		AStarNodeMap *m_pNodeMap;
 		CollisionLayer m_checkLayer;
+		Vec3 m_followPos;
+		int m_closestToTarget{ 0 };
+		bool m_randomTargetNode{ true };
+		bool m_recalcAtNextNode{ false };
+		GraphicalObjectComponent *m_pGobComp{ nullptr };
+		SpatialComponent *m_pSpatialComp{ nullptr };
 	};
 
 }

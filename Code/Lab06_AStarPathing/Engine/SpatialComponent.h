@@ -13,6 +13,7 @@
 
 namespace Engine
 {
+	class GraphicalObjectComponent;
 	class ENGINE_SHARED SpatialComponent : public Component
 	{
 	public:
@@ -50,6 +51,7 @@ namespace Engine
 		Vec3 m_right;
 		Vec3 m_up;
 		Vec3 m_velocity;
+		GraphicalObjectComponent *m_pGobComp{ nullptr };
 	};
 }
 
