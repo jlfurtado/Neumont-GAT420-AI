@@ -67,6 +67,20 @@ namespace Engine
 			return RotationAroundAxis(pD,acosf(bd.Dot(nd)));
 		}
 
+		static Mat4 AxisRotation(const Vec3& forward, const Vec3& up)
+		{
+			Vec3 f = -forward.Normalize();
+			Vec3 u = up.Normalize();
+			Vec3 r = forward.Cross(up).Normalize();
+
+			// TODO: ASSERT FORWARD AND UP ARE ORTHOGONAL!?!?!
+
+			return Mat4(r.GetX(), u.GetX(), f.GetX(), 0.0f,
+						r.GetY(), u.GetY(), f.GetY(), 0.0f,
+						r.GetZ(), u.GetZ(), f.GetZ(), 0.0f,
+						0.0f, 0.0f, 0.0f, 1.0f);
+		}
+
 		static Mat4 Scale(float scale)
 		{
 			return Mat4(scale, 0.0f, 0.0f, 0.0f,

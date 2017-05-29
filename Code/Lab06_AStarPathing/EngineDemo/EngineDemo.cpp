@@ -63,7 +63,7 @@ Engine::GraphicalObject m_dargons[NUM_DARGONS];
 int m_texIDs[NUM_OBJECTS_TOTAL]{ 0 };
 const float EngineDemo::RENDER_DISTANCE = 3500.0f;
 Engine::Entity player;
-Engine::ChaseCameraComponent playerCamera(Engine::Vec3(0, 30, 50), Engine::Vec3(0, 5, 0), Engine::Vec3(0), false);
+Engine::ChaseCameraComponent playerCamera(Engine::Vec3(0, 30, 50), Engine::Vec3(0, 5, 0), Engine::Vec3(0), true, Engine::CollisionLayer::LAYER_2);
 Engine::GraphicalObjectComponent playerGob;
 Engine::SpatialComponent playerSpatial;
 MouseComponent mouseComponent;
@@ -111,6 +111,7 @@ Engine::GraphicalObject s_NPCGobs[MAX_NPCS];
 Engine::AStarPathFollowComponent s_NPCFollows[MAX_NPCS];
 int lastDargon = 0;
 bool followPlayer = false;
+const float dargontTimer = 10.0f;
 
 bool EngineDemo::Initialize(Engine::MyWindow *window)
 {
@@ -287,10 +288,10 @@ void EngineDemo::Update(float dt)
 	if (paused) { return; }
 
 	tmr += dt;
-	if (tmr > 10.0f || spawnNow)
+	if (tmr > dargontTimer || spawnNow)
 	{
 		spawnNow = false;
-		tmr -= 10.0f;
+		tmr -= dargontTimer;
 
 		if (lastDargon < MAX_NPCS)
 		{

@@ -70,30 +70,21 @@ namespace Engine
 
 		if (followingPath && m_nextPathIndex < m_pathSize)
 		{
+			Vec3 fromNodePos = m_nextPathIndex == 0 ? pos : (m_pNodeMap->GetConnectedNodes() + followingPath[m_nextPathIndex - 1])->m_pNode->GetPosition();
 			Vec3 nextNodePos = (m_pNodeMap->GetConnectedNodes() + followingPath[m_nextPathIndex])->m_pNode->GetPosition();
 			Vec3 toNextNode = nextNodePos - pos;
+			Vec3 fromNode = nextNodePos - fromNodePos;
 
-
-			if (toNextNode.LengthSquared() < OK_DISTANCE_SQUARED)
+			if (toNextNode.Normalize().Dot(fromNode.Normalize()) < 0.01f || toNextNode.LengthSquared() < OK_DISTANCE_SQUARED) 
 			{
 				++m_nextPathIndex;
 				HandleRecalcAtNext();
+				m_pSpatialComp->SetVelocity(Vec3(0.0f));
 			}
 			else
 			{
-				m_pSpatialComp->SetVelocity(toNextNode.Normalize() * 50.0f);
-				Mat4 rtf;
-
-				Vec3 f = -toNextNode.Normalize();
-				Vec3 u = -f.Cross(PLUS_Y).Cross(-f).Normalize();
-				Vec3 r = -f.Cross(u).Normalize();
-
-				rtf = Mat4(r.GetX(), u.GetX(), f.GetX(), 0.0f,
-					r.GetY(), u.GetY(), f.GetY(), 0.0f,
-					r.GetZ(), u.GetZ(), f.GetZ(), 0.0f,
-					0.0f, 0.0f, 0.0f, 1.0f);
-
-				m_pGobComp->GetGraphicalObject()->SetRotMat(rtf);
+				m_pSpatialComp->SetVelocity(toNextNode.Normalize() * 50.0f);	
+				m_pGobComp->GetGraphicalObject()->SetRotMat(Mat4::AxisRotation(toNextNode.Normalize(), toNextNode.Cross(PLUS_Y).Cross(toNextNode).Normalize()));
 				m_pGobComp->GetGraphicalObject()->CalcFullTransform();
 			}
 		}

@@ -17,11 +17,11 @@ namespace Engine
 	{
 	}
 
-	ChaseCameraComponent::ChaseCameraComponent(Vec3 positionOffset, Vec3 targetOffset, Vec3 relativeCameraRotation, bool collide)
+	ChaseCameraComponent::ChaseCameraComponent(Vec3 positionOffset, Vec3 targetOffset, Vec3 relativeCameraRotation, bool collide, CollisionLayer layer)
 		: m_positionOffset(positionOffset), m_targetOffset(targetOffset),
 		m_relativeCameraRotation(relativeCameraRotation),
 		m_springiness(0.15f), m_rotateSpeed(1.0f),
-		m_collide(collide)
+		m_collide(collide), m_collideLayer(layer)
 	{
 	}
 
@@ -49,7 +49,7 @@ namespace Engine
 		float checkDist = m_distanceMultiplier * (m_positionOffset.Length());
 		if (m_collide)
 		{
-			RayCastingOutput output = CollisionTester::FindWall(m_followTargetPosition, (m_position)-m_followTargetPosition, checkDist);
+			RayCastingOutput output = CollisionTester::FindWall(m_followTargetPosition, (m_position)-m_followTargetPosition, checkDist, m_collideLayer);
 
 			m_currentDistanceMultiplier = (output.m_didIntersect && output.m_distance < checkDist) ? 0.99f * output.m_distance / (checkDist)* m_distanceMultiplier : m_distanceMultiplier;
 			m_currentDistanceMultiplier = MathUtility::Clamp(m_currentDistanceMultiplier, 0.5f, 5.0f);

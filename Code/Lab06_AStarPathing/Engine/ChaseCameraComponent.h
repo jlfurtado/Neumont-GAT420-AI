@@ -11,6 +11,8 @@
 #include "Vec3.h"
 #include "Mat4.h"
 
+#include "CollisionTester.h"
+
 namespace Engine
 {
 	class SpatialComponent;
@@ -19,7 +21,7 @@ namespace Engine
 	{
 	public:
 		ChaseCameraComponent();
-		ChaseCameraComponent(Vec3 positionOffset, Vec3 targetOffset, Vec3 relativeCameraRotation, bool collide);
+		ChaseCameraComponent(Vec3 positionOffset, Vec3 targetOffset, Vec3 relativeCameraRotation, bool collide, CollisionLayer layer = Engine::CollisionLayer::NUM_LAYERS);
 		~ChaseCameraComponent();
 
 		bool Initialize() override;
@@ -50,6 +52,7 @@ namespace Engine
 		void MouseRotate(int dx, int dy);
 
 	private:
+		CollisionLayer m_collideLayer;
 		bool m_collide;
 		Vec3 m_up;
 		Vec3 m_viewDir;
