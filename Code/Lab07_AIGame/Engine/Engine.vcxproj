@@ -175,6 +175,7 @@
     <ClInclude Include="SpatialGrid.h" />
     <ClInclude Include="SpatialTriangleData.h" />
     <ClInclude Include="StackFSM.h" />
+    <ClInclude Include="SteeringBehaviors.h" />
     <ClInclude Include="StringFuncs.h" />
     <ClInclude Include="TextCharacter.h" />
     <ClInclude Include="TextObject.h" />
@@ -227,6 +228,7 @@
     <ClCompile Include="SpatialComponent.cpp" />
     <ClCompile Include="SpatialGrid.cpp" />
     <ClCompile Include="StackFSM.cpp" />
+    <ClCompile Include="SteeringBehaviors.cpp" />
     <ClCompile Include="StringFuncs.cpp" />
     <ClCompile Include="TextCharacter.cpp" />
     <ClCompile Include="TextObject.cpp" />

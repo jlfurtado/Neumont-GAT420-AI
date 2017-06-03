@@ -87,37 +87,37 @@ namespace Engine
 		m_roll += amountToRoll;
 	}
 
-	Vec3 SpatialComponent::GetPosition()
+	Vec3 SpatialComponent::GetPosition() const
 	{
 		return m_position;
 	}
 
-	float SpatialComponent::GetYaw()
+	float SpatialComponent::GetYaw() const
 	{
 		return m_yaw;
 	}
 
-	float SpatialComponent::GetPitch()
+	float SpatialComponent::GetPitch() const
 	{
 		return m_pitch;
 	}
 
-	float SpatialComponent::GetRoll()
+	float SpatialComponent::GetRoll() const
 	{
 		return m_roll;
 	}
 
-	Vec3 SpatialComponent::GetForward()
+	Vec3 SpatialComponent::GetForward() const
 	{
 		return m_forward;
 	}
 
-	Vec3 SpatialComponent::GetUp()
+	Vec3 SpatialComponent::GetUp() const
 	{
 		return m_up;
 	}
 
-	Vec3 SpatialComponent::GetRight()
+	Vec3 SpatialComponent::GetRight() const
 	{
 		return m_right;
 	}
@@ -131,7 +131,7 @@ namespace Engine
 		return y * p * r;
 	}
 
-	Vec3 SpatialComponent::GetVelocity()
+	Vec3 SpatialComponent::GetVelocity() const
 	{
 		return m_velocity;
 	}

@@ -37,6 +37,7 @@
 #include "FrameBuffer.h"
 #include <winuser.h>
 #include "StarComp.h"
+#include "AIDemoDargonComponent.h"
 
 // Justin Furtado
 // 6/21/2016
@@ -109,9 +110,10 @@ Engine::SpatialComponent s_NPCSpatials[MAX_NPCS];
 Engine::GraphicalObjectComponent s_NPCGobsComps[MAX_NPCS];
 Engine::GraphicalObject s_NPCGobs[MAX_NPCS];
 Engine::AStarPathFollowComponent s_NPCFollows[MAX_NPCS];
+AIDemoDargonComponent s_NPCBrains[MAX_NPCS];
+
 int lastDargon = 0;
-bool followPlayer = false;
-const float dargontTimer = 10.0f;
+const float dargontTimer = 0.01f;
 
 bool EngineDemo::Initialize(Engine::MyWindow *window)
 {
@@ -376,11 +378,6 @@ void EngineDemo::Update(float dt)
 
 	for (int i = 0; i < lastDargon; ++i)
 	{
-		if (followPlayer)
-		{
-			s_NPCFollows[i].SetFollowPos(playerSpatial.GetPosition());
-		}
-
 		s_NPCGobs[i].CalcFullTransform();
 		s_NPCS[i].Update(dt);
 	}
@@ -603,14 +600,13 @@ const float MIN_SPEED = 250.0f / MULTIPLIER;
 const float MAX_SPEED = 250.0f * MULTIPLIER;
 const float MIN_ROTATION_SPEED = 0.8f / MULTIPLIER;
 const float MAX_ROTATION_SPEED = 0.8f * MULTIPLIER;
-bool EngineDemo::ProcessInput(float dt)
+bool EngineDemo::ProcessInput(float /*dt*/)
 {
 	static int spotLightIndex = 0;
 	static bool specToggle = false;
 
 	//int multiKeyTest[]{ 'J', 'K', VK_OEM_PERIOD };
 	//if (keyboardManager.KeysArePressed(&multiKeyTest[0], 3)) { Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "3 keys pressed!\n"); }
-	if (keyboardManager.KeyWasPressed('T')) { Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "%f\n", dt); }
 	if (keyboardManager.KeyWasReleased('C')) { Engine::CollisionTester::ConsoleLogOutput(); }
 	if (keyboardManager.KeyWasPressed('`')) { Engine::ConfigReader::pReader->ProcessConfigFile(); }
 	if (keyboardManager.KeyWasPressed('I')) { Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "(%.3f, %.3f, %.3f)\n", playerGraphicalObject.GetPos().GetX(), playerGraphicalObject.GetPos().GetY(), playerGraphicalObject.GetPos().GetZ()); }
@@ -641,15 +637,7 @@ bool EngineDemo::ProcessInput(float dt)
 
 	if (keyboardManager.KeyWasPressed('U')) { currentCollisionLayer = Engine::CollisionLayer::NUM_LAYERS; Engine::CollisionTester::OnlyShowLayer(Engine::CollisionLayer::NUM_LAYERS); }
 	if (keyboardManager.KeyWasPressed('K')) { spawnNow = true; }
-	if (keyboardManager.KeyWasPressed('J'))
-	{
-		followPlayer = !followPlayer;
 
-		for (int i = 0; i < lastDargon; ++i)
-		{
-			s_NPCFollows[i].SetRandomTargetNode(!followPlayer);
-		}
-	}
 
 	//if (keyboardManager.KeyWasPressed('1')) { currentFractalTexID = fractalGradientTextureID; }
 	//if (keyboardManager.KeyWasPressed('2')) { currentFractalTexID = fractalGradientAlternateTextureID; }
@@ -794,10 +782,13 @@ bool EngineDemo::InitDargon(int index)
 	s_NPCFollows[index].SetNodeMapPtr(&m_nodeMap);
 	s_NPCFollows[index].SetCheckLayer(Engine::CollisionLayer::LAYER_2);
 
+	s_NPCBrains[index].SetPlayerRef(&playerSpatial);
+	s_NPCBrains[index].SetPCollectibles(&m_fromWorldEditorOBJs);
 	s_NPCS[index].SetName(&nameBuffer[0]);
 	s_NPCS[index].AddComponent(&s_NPCSpatials[index], "NPC Spatial");
 	s_NPCS[index].AddComponent(&s_NPCGobsComps[index], "NPC Gob");
 	s_NPCS[index].AddComponent(&s_NPCFollows[index], "NPC Follow");
+	s_NPCS[index].AddComponent(&s_NPCBrains[index], "NPC Brain");
 	s_NPCS[index].Initialize();
 
 	Engine::RenderEngine::AddGraphicalObject(&s_NPCGobs[index]);

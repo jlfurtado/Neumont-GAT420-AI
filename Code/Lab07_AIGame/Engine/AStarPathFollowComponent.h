@@ -27,7 +27,8 @@ namespace Engine
 		void SetCheckLayer(CollisionLayer layer);
 		void SetRandomTargetNode(bool randomTargetNode);
 		void SetFollowPos(const Vec3& followPos);
-		
+		void ForceRecalc(const Vec3 & followPos);
+
 	private:
 		void HandleRecalcAtNext();
 		void SetColorFromState();

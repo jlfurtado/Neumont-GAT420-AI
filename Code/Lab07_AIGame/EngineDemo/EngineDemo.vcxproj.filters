@@ -40,6 +40,9 @@
     <ClCompile Include="StarComp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="AIDemoDargonComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EngineDemo.h">
@@ -58,6 +61,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StarComp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AIDemoDargonComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

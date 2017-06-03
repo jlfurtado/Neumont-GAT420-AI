@@ -132,6 +132,15 @@ namespace Engine
 					 ((((index / objectsX) % objectsY) - (objectsY / 2 - 0.5f))*spacing),
 					 (((index / (objectsX * objectsY)) - (objectsZ / 2 - 0.5f))*spacing));
 	}
+
+	Vec3 MathUtility::GetRandSphereEdgeVec(float radius)
+	{
+		float phi = MathUtility::Rand(0.0f, 2 * PI);
+		float theta = MathUtility::Rand(0.0f, 2 * PI);
+
+		return (radius * Vec3(sinf(theta)*cosf(phi), cosf(theta), sinf(theta)*sinf(phi)).Normalize());
+	}
+	
 	
 
 }

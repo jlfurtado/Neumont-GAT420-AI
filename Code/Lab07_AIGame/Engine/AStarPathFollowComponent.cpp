@@ -122,6 +122,16 @@ namespace Engine
 		}
 	}
 
+	void AStarPathFollowComponent::ForceRecalc(const Vec3 & followPos)
+	{
+		if (followingPath) { delete[] followingPath; followingPath = nullptr; }
+		m_recalcAtNextNode = false;
+		m_closestToTarget = m_pNodeMap->FindNearestNodeIndex(followPos);
+		m_pathSize = 1;
+		followingPath = new int[1]{m_closestToTarget};
+		m_nextPathIndex = 0;
+	}
+
 	void AStarPathFollowComponent::HandleRecalcAtNext()
 	{
 		if (m_recalcAtNextNode)

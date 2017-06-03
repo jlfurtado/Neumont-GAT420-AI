@@ -154,6 +154,7 @@
   <ItemGroup>
     <ClCompile Include="..\Engine\SoundEngine.cpp" />
     <ClCompile Include="..\Engine\SoundObject.cpp" />
+    <ClCompile Include="AIDemoDargonComponent.cpp" />
     <ClCompile Include="EngineDemo.cpp" />
     <ClCompile Include="KeyboardComponent.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -163,6 +164,7 @@
   <ItemGroup>
     <ClInclude Include="..\Engine\SoundEngine.h" />
     <ClInclude Include="..\Engine\SoundObject.h" />
+    <ClInclude Include="AIDemoDargonComponent.h" />
     <ClInclude Include="EngineDemo.h" />
     <ClInclude Include="KeyboardComponent.h" />
     <ClInclude Include="MouseComponent.h" />

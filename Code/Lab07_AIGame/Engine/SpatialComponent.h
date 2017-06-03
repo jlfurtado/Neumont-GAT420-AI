@@ -31,15 +31,15 @@ namespace Engine
 		void Pitch(float amountToPitch);
 		void SetRoll(float newRoll);
 		void Roll(float amountToRoll);
-		Vec3 GetPosition();
-		float GetYaw();
-		float GetPitch();
-		float GetRoll();
-		Vec3 GetForward();
-		Vec3 GetUp();
-		Vec3 GetRight();
+		Vec3 GetPosition() const;
+		float GetYaw() const;
+		float GetPitch() const;
+		float GetRoll() const;
+		Vec3 GetForward() const;
+		Vec3 GetUp() const;
+		Vec3 GetRight() const;
 		Mat4 CalcRotationMatrix();
-		Vec3 GetVelocity();
+		Vec3 GetVelocity() const;
 		void SetVelocity(Vec3 newVelocity);
 
 	private:
