@@ -104,7 +104,7 @@ int currentFractalBuffer = 0;
 const Engine::CollisionLayer NODE_LAYER = Engine::CollisionLayer::LAYER_3;
 const Engine::CollisionLayer CONNECTION_LAYER = Engine::CollisionLayer::LAYER_4;
 
-const int MAX_NPCS = 100;
+const int MAX_NPCS = 250;
 Engine::Entity s_NPCS[MAX_NPCS];
 Engine::SpatialComponent s_NPCSpatials[MAX_NPCS];
 Engine::GraphicalObjectComponent s_NPCGobsComps[MAX_NPCS];

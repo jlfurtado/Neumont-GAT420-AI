@@ -23,7 +23,12 @@ public:
 
 private:
 	static void DoNothingOnPurpose(void *pData);
+	static void DoNothingOnPurpose(float dt, void *pData);
 	static void StopMoving(void *pData);
+
+	static void FlockEnter(void *pData);
+	static void FlockUpdate(float dt, void *pData);
+	static void FlockExit(void *pData);
 
 	static void WanderEnter(void *pData);
 	static void WanderUpdate(float dt, void *pData);
@@ -47,7 +52,6 @@ private:
 	static void EvadeUpdate(float dt, void *pData);
 
 	static void EnterRandomAStar(void *pData);
-	static void RandomAStar(float dt, void *pData);
 	static void ExitRandomAStar(void *pData);
 
 	static void EnterFollowAStar(void *pData);
@@ -57,8 +61,11 @@ private:
 	static void ForageEnter(void *pData);
 	static void ForageUpdate(float dt, void *pData);
 
+
 	static void SetColor(Engine::Material *pMat, const Engine::Vec3& color);
 	void FaceMoveDir();
+
+
 
 	Engine::Keyboard m_keyboardManager;
 	Engine::StackFSM m_brain;
@@ -70,9 +77,13 @@ private:
 	int m_index{ 0 };
 	static const int NUM_STEERS = 8;
 	static const int NUM_ASTARS = 2;
-	static const int NUM_FUNCS = NUM_STEERS + NUM_ASTARS;
+	static const int NUM_FLOCK = 1;
+	static const int NUM_FUNCS = NUM_STEERS + NUM_ASTARS + NUM_FLOCK;
 	static Engine::FSMPair s_AIFuncs[NUM_FUNCS];
 	Engine::LinkedList<Engine::GraphicalObject*> *m_pCollectibles;
+	Engine::Vec3 m_flockWeights;
+	float m_speed;
+
 };
 
 

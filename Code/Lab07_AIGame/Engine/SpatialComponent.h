@@ -53,6 +53,7 @@ namespace Engine
 		Vec3 m_velocity;
 		GraphicalObjectComponent *m_pGobComp{ nullptr };
 	};
+
 }
 
 #endif // ifndef SPATIALCOMPONENT_H

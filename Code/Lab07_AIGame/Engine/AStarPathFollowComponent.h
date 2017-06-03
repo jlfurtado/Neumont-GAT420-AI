@@ -28,6 +28,7 @@ namespace Engine
 		void SetRandomTargetNode(bool randomTargetNode);
 		void SetFollowPos(const Vec3& followPos);
 		void ForceRecalc(const Vec3 & followPos);
+		void SetSpeed(float speed);
 
 	private:
 		void HandleRecalcAtNext();
@@ -44,6 +45,7 @@ namespace Engine
 		bool m_recalcAtNextNode{ false };
 		GraphicalObjectComponent *m_pGobComp{ nullptr };
 		SpatialComponent *m_pSpatialComp{ nullptr };
+		float m_speed{ 50.0f };
 	};
 
 }

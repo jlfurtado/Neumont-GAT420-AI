@@ -1,5 +1,6 @@
 #include "AIDemoDargonComponent.h"
 #include "GameLogger.h"
+#include "Flocker.h"
 #include "SteeringBehaviors.h"
 #include "MathUtility.h"
 
@@ -11,7 +12,7 @@
 const char *const AIDemoDargonKeys = "YTV";
 
 Engine::FSMPair AIDemoDargonComponent::s_AIFuncs[NUM_FUNCS] = {
-	Engine::FSMPair(AIDemoDargonComponent::EnterRandomAStar, AIDemoDargonComponent::RandomAStar, AIDemoDargonComponent::ExitRandomAStar, nullptr),
+	Engine::FSMPair(AIDemoDargonComponent::EnterRandomAStar, AIDemoDargonComponent::DoNothingOnPurpose, AIDemoDargonComponent::ExitRandomAStar, nullptr),
 	Engine::FSMPair(AIDemoDargonComponent::EnterFollowAStar, AIDemoDargonComponent::FollowAStar, AIDemoDargonComponent::ExitFollowAStar, nullptr),
 	Engine::FSMPair(AIDemoDargonComponent::SeekEnter, AIDemoDargonComponent::SeekUpdate, AIDemoDargonComponent::StopMoving, nullptr),
 	Engine::FSMPair(AIDemoDargonComponent::ArrivalEnter, AIDemoDargonComponent::ArrivalUpdate, AIDemoDargonComponent::StopMoving, nullptr),
@@ -21,7 +22,7 @@ Engine::FSMPair AIDemoDargonComponent::s_AIFuncs[NUM_FUNCS] = {
 	Engine::FSMPair(AIDemoDargonComponent::EvadeEnter, AIDemoDargonComponent::EvadeUpdate, AIDemoDargonComponent::StopMoving, nullptr),
 	Engine::FSMPair(AIDemoDargonComponent::WanderEnter, AIDemoDargonComponent::WanderUpdate, AIDemoDargonComponent::StopMoving, nullptr),
 	Engine::FSMPair(AIDemoDargonComponent::ForageEnter, AIDemoDargonComponent::ForageUpdate, AIDemoDargonComponent::StopMoving, nullptr),
-
+	Engine::FSMPair(AIDemoDargonComponent::FlockEnter, AIDemoDargonComponent::FlockUpdate, AIDemoDargonComponent::FlockExit, nullptr)
 };
 
 bool AIDemoDargonComponent::Initialize()
@@ -66,8 +67,10 @@ bool AIDemoDargonComponent::Initialize()
 	m_brain.Push(pair.m_enter, pair.m_update, pair.m_exit, this);
 	//m_index = Engine::MathUtility::Rand(0, NUM_FUNCS);
 
-
 	m_offset = Engine::MathUtility::GetRandSphereEdgeVec(50.0f);
+	m_flockWeights = Engine::MathUtility::Rand(Engine::Vec3(0.4f, 0.4f, 0.4f), Engine::Vec3(0.6f, 0.6f, 0.6f));
+	m_speed = Engine::MathUtility::Rand(30.0f, 70.0f);
+	m_pAStarFollow->SetSpeed(m_speed);
 
 	// log success
 	Engine::GameLogger::Log(Engine::MessageType::Info, "AIDemoDargonComponent [%s] on [%s] initialized successfully!\n", this->GetName(), this->m_owner->GetName());
@@ -116,10 +119,15 @@ void AIDemoDargonComponent::DoNothingOnPurpose(void * /*pData*/)
 	// does nothing - ON PURPOSE :D
 }
 
+void AIDemoDargonComponent::DoNothingOnPurpose(float /*dt*/, void * /*pData*/)
+{
+	// does nothing - ON PURPOSE :D
+}
+
 void AIDemoDargonComponent::WanderEnter(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	pComp->m_pSpatial->SetVelocity(Engine::MathUtility::GetRandSphereEdgeVec(50.0f));
+	pComp->m_pSpatial->SetVelocity(Engine::MathUtility::GetRandSphereEdgeVec(pComp->m_speed));
 	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(0.5f, 0.5f, 0.5f));
 }
 
@@ -127,6 +135,28 @@ void AIDemoDargonComponent::StopMoving(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
 	pComp->m_pSpatial->SetVelocity(Engine::Vec3(0.0f));
+}
+
+void AIDemoDargonComponent::FlockEnter(void * pData)
+{
+	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
+	Engine::Flocker::AddToFlock(pComp->m_pSpatial);
+	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(0.75f, 0.25f, 0.75f));
+}
+
+
+void AIDemoDargonComponent::FlockUpdate(float /*dt*/, void * pData)
+{
+	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
+	Engine::Flocker::Flock(pComp->m_pSpatial, pComp->m_flockWeights.GetX(), pComp->m_flockWeights.GetY(), pComp->m_flockWeights.GetZ(), pComp->m_speed);
+	pComp->FaceMoveDir();
+}
+
+void AIDemoDargonComponent::FlockExit(void * pData)
+{
+	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
+	Engine::Flocker::RemoveFromFlock(pComp->m_pSpatial);
+	AIDemoDargonComponent::StopMoving(pData);
 }
 
 void AIDemoDargonComponent::SeekEnter(void * pData)
@@ -138,7 +168,7 @@ void AIDemoDargonComponent::SeekEnter(void * pData)
 void AIDemoDargonComponent::SeekUpdate(float /*dt*/, void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	Engine::SteeringBehaviors::Seek(pComp->m_pSpatial, pComp->m_pPlayerSpatial, 50.0f);
+	Engine::SteeringBehaviors::Seek(pComp->m_pSpatial, pComp->m_pPlayerSpatial, pComp->m_speed);
 	pComp->FaceMoveDir();
 }
 
@@ -151,7 +181,7 @@ void AIDemoDargonComponent::ArrivalEnter(void * pData)
 void AIDemoDargonComponent::ArrivalUpdate(float /*dt*/, void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	Engine::SteeringBehaviors::Arrival(pComp->m_pSpatial, pComp->m_pPlayerSpatial, 50.0f, 25.0f);
+	Engine::SteeringBehaviors::Arrival(pComp->m_pSpatial, pComp->m_pPlayerSpatial, pComp->m_speed, 25.0f);
 	pComp->FaceMoveDir();
 }
 
@@ -164,7 +194,7 @@ void AIDemoDargonComponent::FleeEnter(void * pData)
 void AIDemoDargonComponent::FleeUpdate(float /*dt*/, void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	Engine::SteeringBehaviors::Flee(pComp->m_pSpatial, pComp->m_pPlayerSpatial, 50.0f);
+	Engine::SteeringBehaviors::Flee(pComp->m_pSpatial, pComp->m_pPlayerSpatial, pComp->m_speed);
 	pComp->FaceMoveDir();
 }
 
@@ -177,7 +207,7 @@ void AIDemoDargonComponent::PursueEnter(void * pData)
 void AIDemoDargonComponent::PursueUpdate(float dt, void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	Engine::SteeringBehaviors::Pursue(pComp->m_pSpatial, pComp->m_pPlayerSpatial, dt, 50.0f);
+	Engine::SteeringBehaviors::Pursue(pComp->m_pSpatial, pComp->m_pPlayerSpatial, dt, pComp->m_speed);
 	pComp->FaceMoveDir();
 }
 
@@ -190,14 +220,14 @@ void AIDemoDargonComponent::PursueOffsetEnter(void * pData)
 void AIDemoDargonComponent::PursueOffsetUpdate(float dt, void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	Engine::SteeringBehaviors::OffsetPursuitArrival(pComp->m_pSpatial, pComp->m_pPlayerSpatial, dt, 50.0f, 25.0f, pComp->m_offset);
+	Engine::SteeringBehaviors::OffsetPursuitArrival(pComp->m_pSpatial, pComp->m_pPlayerSpatial, dt, pComp->m_speed, 25.0f, pComp->m_offset);
 	pComp->FaceMoveDir();
 }
 
 void AIDemoDargonComponent::WanderUpdate(float /*dt*/, void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	Engine::SteeringBehaviors::Wander(pComp->m_pSpatial, 50.0f, 1.0f, 5.0f);
+	Engine::SteeringBehaviors::Wander(pComp->m_pSpatial, pComp->m_speed, 1.0f, 5.0f);
 	pComp->FaceMoveDir();
 }
 
@@ -218,6 +248,7 @@ void AIDemoDargonComponent::EnterRandomAStar(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
 	pComp->m_pAStarFollow->Enable();
+	pComp->m_pAStarFollow->SetSpeed(pComp->m_speed);
 	pComp->m_pAStarFollow->SetRandomTargetNode(true); 
 }
 
@@ -226,6 +257,7 @@ void AIDemoDargonComponent::EnterFollowAStar(void * pData)
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
 	pComp->m_pAStarFollow->Enable();
 	pComp->m_pAStarFollow->SetRandomTargetNode(false);
+	pComp->m_pAStarFollow->SetSpeed(pComp->m_speed);
 	pComp->m_pAStarFollow->ForceRecalc(pComp->m_pSpatial->GetPosition());
 }
 
@@ -249,16 +281,11 @@ void AIDemoDargonComponent::ForageEnter(void * pData)
 	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(0.75f, 0.5f, 0.2f));
 }
 
-void AIDemoDargonComponent::ForageUpdate(float dt, void * pData)
+void AIDemoDargonComponent::ForageUpdate(float /*dt*/, void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	Engine::SteeringBehaviors::Forage(pComp->m_pSpatial, 50.0f, 1.0f, 25.0f, 100.0f, 5.0f, pComp->m_pCollectibles);
+	Engine::SteeringBehaviors::Forage(pComp->m_pSpatial, pComp->m_speed, 1.0f, 25.0f, 100.0f, 5.0f, pComp->m_pCollectibles);
 	pComp->FaceMoveDir();
-}
-
-void AIDemoDargonComponent::RandomAStar(float /*dt*/, void * /*pData*/)
-{
-	//AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
 }
 
 void AIDemoDargonComponent::FollowAStar(float /*dt*/, void * pData)
@@ -287,3 +314,4 @@ void AIDemoDargonComponent::FaceMoveDir()
 	}
 	
 }
+

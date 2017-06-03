@@ -83,7 +83,7 @@ namespace Engine
 			}
 			else
 			{
-				m_pSpatialComp->SetVelocity(toNextNode.Normalize() * 50.0f);	
+				m_pSpatialComp->SetVelocity(toNextNode.Normalize() * m_speed);	
 				m_pGobComp->GetGraphicalObject()->SetRotMat(Mat4::AxisRotation(toNextNode.Normalize(), toNextNode.Cross(PLUS_Y).Cross(toNextNode).Normalize()));
 				m_pGobComp->GetGraphicalObject()->CalcFullTransform();
 			}
@@ -130,6 +130,11 @@ namespace Engine
 		m_pathSize = 1;
 		followingPath = new int[1]{m_closestToTarget};
 		m_nextPathIndex = 0;
+	}
+
+	void AStarPathFollowComponent::SetSpeed(float speed)
+	{
+		m_speed = speed;
 	}
 
 	void AStarPathFollowComponent::HandleRecalcAtNext()

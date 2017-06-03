@@ -144,6 +144,7 @@
     <ClInclude Include="ConfigReader.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="ExportHeader.h" />
+    <ClInclude Include="Flocker.h" />
     <ClInclude Include="FrameBuffer.h" />
     <ClInclude Include="GameLogger.h" />
     <ClInclude Include="GameTime.h" />
@@ -204,6 +205,7 @@
     <ClCompile Include="Component.cpp" />
     <ClCompile Include="ConfigReader.cpp" />
     <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="Flocker.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="GameLogger.cpp" />
     <ClCompile Include="GameTime.cpp" />
