@@ -3,13 +3,14 @@
 #include "Flocker.h"
 #include "SteeringBehaviors.h"
 #include "MathUtility.h"
+#include "MyWindow.h"
 
 // Justin Furtado
 // 5/30/2017
 // AIDemoDargonComponent.cpp
 // Demonstrates various AI Techniques 
 
-const char *const AIDemoDargonKeys = "YTV";
+const char *const AIDemoDargonKeys = "YTV0123456789";
 
 Engine::FSMPair AIDemoDargonComponent::s_AIFuncs[NUM_FUNCS] = {
 	Engine::FSMPair(AIDemoDargonComponent::EnterRandomAStar, AIDemoDargonComponent::DoNothingOnPurpose, AIDemoDargonComponent::ExitRandomAStar, nullptr),
@@ -28,7 +29,7 @@ Engine::FSMPair AIDemoDargonComponent::s_AIFuncs[NUM_FUNCS] = {
 bool AIDemoDargonComponent::Initialize()
 {
 	// add keys we will need
-	if (!m_keyboardManager.AddKeys(AIDemoDargonKeys))
+	if (!m_keyboardManager.AddKeys(AIDemoDargonKeys) || !m_keyboardManager.AddKey(VK_SHIFT))
 	{
 		// log error if we can't find the keys
 		Engine::GameLogger::Log(Engine::MessageType::cError, "AIDemoDargonComponent [%s] on [%s] failed to initialize successfully! Could not add keys [%s]!\n", this->GetName(), this->m_owner->GetName(), AIDemoDargonKeys);
@@ -83,22 +84,35 @@ bool AIDemoDargonComponent::Update(float dt)
 	m_brain.Update(dt);
 	m_keyboardManager.Update(dt);
 
-	// change brain state if necessary
-	if (m_keyboardManager.KeyWasPressed('Y'))
+	if (m_keyboardManager.KeyIsUp(VK_SHIFT))
 	{
-		++m_index %= NUM_FUNCS;
-		Engine::FSMPair pair = s_AIFuncs[m_index];
-		m_brain.Push(pair.m_enter, pair.m_update, pair.m_exit, this);
-	}
-	else if (m_keyboardManager.KeyWasPressed('T'))
-	{
-		(--m_index += NUM_FUNCS) %= NUM_FUNCS;
-		Engine::FSMPair pair = s_AIFuncs[m_index];
-		m_brain.Push(pair.m_enter, pair.m_update, pair.m_exit, this);
-	}
-	else if (m_keyboardManager.KeyWasPressed('V'))
-	{
-		m_brain.Pop();
+		// change brain state if necessary
+		for (int i = 0; i < 10; ++i)
+		{
+			if (m_keyboardManager.KeyWasPressed('0' + i))
+			{
+				m_index = i;
+				Engine::FSMPair pair = s_AIFuncs[m_index];
+				m_brain.Push(pair.m_enter, pair.m_update, pair.m_exit, this);
+			}
+		}
+
+		if (m_keyboardManager.KeyWasPressed('Y'))
+		{
+			m_index = 10;
+			Engine::FSMPair pair = s_AIFuncs[m_index];
+			m_brain.Push(pair.m_enter, pair.m_update, pair.m_exit, this);
+		}
+		else if (m_keyboardManager.KeyWasPressed('T'))
+		{
+			/*m_index = 11;
+			Engine::FSMPair pair = s_AIFuncs[m_index];
+			m_brain.Push(pair.m_enter, pair.m_update, pair.m_exit, this);*/
+		}
+		else if (m_keyboardManager.KeyWasPressed('V'))
+		{
+			m_brain.Pop();
+		}
 	}
 
 	return true;

@@ -624,18 +624,21 @@ bool EngineDemo::ProcessInput(float /*dt*/)
 		playerCamera.SetRotateSpeed(Engine::MathUtility::Clamp(playerCamera.GetRotateSpeed() * 1.25f, MIN_ROTATION_SPEED, MAX_ROTATION_SPEED));
 	}
 
-	if (keyboardManager.KeyWasPressed('0')) { currentCollisionLayer = Engine::CollisionLayer::STATIC_GEOMETRY; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
-	if (keyboardManager.KeyWasPressed('1')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_1; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
-	if (keyboardManager.KeyWasPressed('2')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_2; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
-	if (keyboardManager.KeyWasPressed('3')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_3; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
-	if (keyboardManager.KeyWasPressed('4')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_4; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
-	if (keyboardManager.KeyWasPressed('5')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_5; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
-	if (keyboardManager.KeyWasPressed('6')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_6; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
-	if (keyboardManager.KeyWasPressed('7')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_7; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
-	if (keyboardManager.KeyWasPressed('8')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_8; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
-	if (keyboardManager.KeyWasPressed('9')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_9; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+	if (keyboardManager.KeyIsDown(VK_SHIFT))
+	{
+		if (keyboardManager.KeyWasPressed('0')) { currentCollisionLayer = Engine::CollisionLayer::STATIC_GEOMETRY; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+		if (keyboardManager.KeyWasPressed('1')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_1; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+		if (keyboardManager.KeyWasPressed('2')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_2; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+		if (keyboardManager.KeyWasPressed('3')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_3; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+		if (keyboardManager.KeyWasPressed('4')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_4; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+		if (keyboardManager.KeyWasPressed('5')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_5; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+		if (keyboardManager.KeyWasPressed('6')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_6; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+		if (keyboardManager.KeyWasPressed('7')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_7; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+		if (keyboardManager.KeyWasPressed('8')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_8; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
+		if (keyboardManager.KeyWasPressed('9')) { currentCollisionLayer = Engine::CollisionLayer::LAYER_9; Engine::CollisionTester::OnlyShowLayer(currentCollisionLayer); }
 
-	if (keyboardManager.KeyWasPressed('U')) { currentCollisionLayer = Engine::CollisionLayer::NUM_LAYERS; Engine::CollisionTester::OnlyShowLayer(Engine::CollisionLayer::NUM_LAYERS); }
+		if (keyboardManager.KeyWasPressed('U')) { currentCollisionLayer = Engine::CollisionLayer::NUM_LAYERS; Engine::CollisionTester::OnlyShowLayer(Engine::CollisionLayer::NUM_LAYERS); }
+	}
 	if (keyboardManager.KeyWasPressed('K')) { spawnNow = true; }
 
 
