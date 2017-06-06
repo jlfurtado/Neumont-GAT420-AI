@@ -13,6 +13,7 @@
 
 namespace Engine
 {
+
 	class ENGINE_SHARED Mat4
 	{
 	public:

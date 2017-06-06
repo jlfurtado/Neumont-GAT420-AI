@@ -140,6 +140,16 @@ namespace Engine
 
 		return (radius * Vec3(sinf(theta)*cosf(phi), cosf(theta), sinf(theta)*sinf(phi)).Normalize());
 	}
+
+	Vec3 MathUtility::TriangleLerp(const Vec3 & p1, const Vec3 & p2, const Vec3 & p3, float alpha, float beta, float gamma)
+	{
+		return ((alpha * p1) + (beta * p2) + (gamma * p3));
+	}
+
+	Vec3 MathUtility::RandTriangleLerp(const Vec3 & p1, const Vec3 & p2, const Vec3 & p3)
+	{
+		return TriangleLerp(p1, p2, p3, Rand(0.0f, 1.0f), Rand(0.0f, 1.0f), Rand(0.0f, 1.0f));
+	}
 	
 	
 

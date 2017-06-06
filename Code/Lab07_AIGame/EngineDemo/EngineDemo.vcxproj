@@ -173,6 +173,8 @@
   <ItemGroup>
     <None Include="..\Data\Shaders\CelPhong.frag.shader" />
     <None Include="..\Data\Shaders\CelPhong.vert.shader" />
+    <None Include="..\Data\Shaders\CelPhongInstanced.frag.shader" />
+    <None Include="..\Data\Shaders\CelPhongInstanced.vert.shader" />
     <None Include="..\Data\Shaders\Debug.Frag.shader" />
     <None Include="..\Data\Shaders\Debug.Vert.shader" />
     <None Include="..\Data\Shaders\DebugInstanced.Frag.shader" />

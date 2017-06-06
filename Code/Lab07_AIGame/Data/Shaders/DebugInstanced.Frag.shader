@@ -8,6 +8,5 @@ layout(location = 11) uniform float tintIntensity;
 
 void main()
 {
-	fColor = color;
-	fColor = vec4((1.0f - tintIntensity) * vec3(fColor) + tintIntensity * tintColor, 1.0f);
+	fColor = mix(color, vec4(tintColor, 1.0f), tintIntensity);
 }

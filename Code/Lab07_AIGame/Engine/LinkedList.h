@@ -24,7 +24,7 @@ namespace Engine
 	public:
 		typedef bool(*LinkedListIterationCallback)(T data, void *pClassInstance);
 
-		LinkedList() : m_pHeadNode(nullptr), m_nodeCount(0) { }
+		LinkedList() : m_pHeadNode(nullptr), m_nodeCount(0) {}
 		~LinkedList() {	ClearList(); }
 
 		bool Contains(T data) const

@@ -128,5 +128,11 @@
     <None Include="..\Data\Shaders\PT.vert.shader">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="..\Data\Shaders\CelPhongInstanced.frag.shader">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="..\Data\Shaders\CelPhongInstanced.vert.shader">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
 </Project>

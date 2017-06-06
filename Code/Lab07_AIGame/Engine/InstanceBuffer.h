@@ -13,11 +13,12 @@ namespace Engine
 	class ENGINE_SHARED InstanceBuffer
 	{
 	public:
-		bool Initialize(void *pData, unsigned stride, unsigned count, unsigned numFloats);
+		bool Initialize(void *pData, unsigned stride, unsigned count, unsigned numFloats, unsigned int draw);
 		bool Shutdown();
 		bool SetupAttrib(int attribIndex);
 		bool UnsetAttrib(int attribIndex);
 		unsigned GetCount();
+		bool UpdateData(void *pData, unsigned start, unsigned amount, unsigned newCount);
 
 	private:
 		unsigned m_bufferID;

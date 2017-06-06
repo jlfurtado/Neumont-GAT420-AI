@@ -33,7 +33,8 @@ namespace Engine
 		static ENGINE_SHARED Vec3 GetQuadification(int index, int objectsX, int objectsZ, float spacing);
 		static ENGINE_SHARED Vec3 GetCubification(int index, int objectsX, int objectsY, int objectsZ, float spacing);
 		static ENGINE_SHARED Vec3 GetRandSphereEdgeVec(float radius);
-
+		static ENGINE_SHARED Vec3 TriangleLerp(const Vec3& p1, const Vec3& p2, const Vec3& p3, float alpha, float beta, float gamma);
+		static ENGINE_SHARED Vec3 RandTriangleLerp(const Vec3& p1, const Vec3& p2, const Vec3& p3);
 	};
 }
 

@@ -58,7 +58,7 @@ namespace Engine
 			modelMatrices[i] = Mat4::Translation(MathUtility::GetCubification(i, SECTIONS_PER_DIRECTION, SECTIONS_PER_DIRECTION, SECTIONS_PER_DIRECTION, GetGridScale())) * Mat4::Scale(m_gridScale, m_gridScale, m_gridScale);
 		}
 
-		m_gridInstanceBuffer.Initialize(modelMatrices, 16 * sizeof(float), numSections, 16 * numSections);
+		m_gridInstanceBuffer.Initialize(modelMatrices, 16 * sizeof(float), numSections, 16 * numSections, GL_STATIC_DRAW);
 
 		delete[] modelMatrices;
 

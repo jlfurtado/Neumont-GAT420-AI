@@ -58,16 +58,13 @@ private:
 	bool UglyDemoCode();
 	bool InitDargon(int index);
 	void InitIndicesForMeshNames(const char *const meshNames, int *indices, int numMeshes);
-	void SetObjPosDataPtrs();
-	void RaycastFlag();
-	void DrawFlagRays();
 	void LoadWorldFileAndApplyPCUniforms();
 	static bool DestroyObjsCallback(Engine::GraphicalObject *pObj, void *pClassInstance);
 	static void InitEditorObj(Engine::GraphicalObject *pObj, void *pClass);
 	static void SetPCUniforms(Engine::GraphicalObject *pObj, void *pInstance);
 
 	//data
-	static const int NUM_SHADER_PROGRAMS = 8;
+	static const int NUM_SHADER_PROGRAMS = 5;
 	bool paused = false;
 	Engine::Perspective m_perspective;
 	Engine::TextObject m_fpsTextObject;
@@ -109,7 +106,6 @@ private:
 	GLint numIterationsLoc;
 	int numIterations;
 	GLint shaderOffsetLoc;
-	GLint currentFractalTexID;
 	float step = 0.1f;
 	float shaderOffset = 0.0f;
 	Engine::Vec2 fractalSeed;

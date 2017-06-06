@@ -366,8 +366,10 @@ namespace Engine
 			// remove from all layers (slower) if layer not properly specified
 			for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i) { RemoveGraphicalObjectFromLayer(pGobToRemove, (CollisionLayer)i); }
 		}
-
-		s_spatialGrids[(unsigned)layer].RemoveGraphicalObject(pGobToRemove);
+		else
+		{
+			s_spatialGrids[(unsigned)layer].RemoveGraphicalObject(pGobToRemove);
+		}
 	}
 
 	int CollisionTester::GetTriangleCountForSpace(float xPos, float yPos, float zPos, CollisionLayer layer)
@@ -378,11 +380,13 @@ namespace Engine
 			for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i) { sum += GetTriangleCountForSpace(xPos, yPos, zPos, (CollisionLayer)i); } 
 			return sum;
 		}
-
-		int gridX = GetGridIndexFromPosX(xPos, layer);
-		int gridY = GetGridIndexFromPosY(yPos, layer);
-		int gridZ = GetGridIndexFromPosZ(zPos, layer);
-		return s_spatialGrids[(unsigned)layer].GetGridTriangleCount(gridX, gridY, gridZ);
+		else
+		{
+			int gridX = GetGridIndexFromPosX(xPos, layer);
+			int gridY = GetGridIndexFromPosY(yPos, layer);
+			int gridZ = GetGridIndexFromPosZ(zPos, layer);
+			return s_spatialGrids[(unsigned)layer].GetGridTriangleCount(gridX, gridY, gridZ);
+		}
 	}
 
 	int CollisionTester::GetGridIndexFromPosX(float xPos, CollisionLayer layer)
@@ -415,8 +419,10 @@ namespace Engine
 			for (unsigned int i = 0; i < (unsigned)CollisionLayer::NUM_LAYERS; ++i) { if (!CalculateGrid((CollisionLayer)i)) { return false; } }
 			return true; 
 		}
-
-		return s_spatialGrids[(unsigned)layer].AddTrianglesToPartitions();
+		else
+		{
+			return s_spatialGrids[(unsigned)layer].AddTrianglesToPartitions();
+		}
 	}
 
 	void CollisionTester::OnlyShowLayer(CollisionLayer layer)

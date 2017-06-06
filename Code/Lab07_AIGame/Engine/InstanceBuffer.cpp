@@ -11,7 +11,7 @@
 namespace Engine
 {
 
-	bool InstanceBuffer::Initialize(void *pData, unsigned stride, unsigned count, unsigned numFloats)
+	bool InstanceBuffer::Initialize(void *pData, unsigned stride, unsigned count, unsigned numFloats, unsigned int draw)
 	{
 		m_stride = stride;
 		m_count = count;
@@ -36,7 +36,7 @@ namespace Engine
 		}
 
 		// initialize the vertex buffer data and check for errors
-		glBufferData(GL_ARRAY_BUFFER, bufferSize, pData, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, bufferSize, pData, draw);
 		if (MyGL::TestForError(MessageType::cFatal_Error, "InstanceBuffer Initialize Buffer Data Errors"))
 		{
 			GameLogger::Log(MessageType::cFatal_Error, "InstanceBuffer was unable to create empty buffer of size [%d] bytes!\n", bufferSize);
@@ -48,6 +48,29 @@ namespace Engine
 	}
 
 	unsigned InstanceBuffer::GetCount() { return m_count; }
+
+	bool InstanceBuffer::UpdateData(void * pData, unsigned start, unsigned amount, unsigned newCount)
+	{
+		// bind the vertex buffer and check for errors
+		glBindBuffer(GL_ARRAY_BUFFER, m_bufferID);
+		if (MyGL::TestForError(MessageType::cError, "InstanceBuffer UpdateData Bind Buffer Errors"))
+		{
+			GameLogger::Log(MessageType::cError, "InstanceBuffer was unable to bind the buffer with id [%d]!\n", m_bufferID);
+			return false;
+		}
+
+		// set the sub data and check for errors
+		glBufferSubData(GL_ARRAY_BUFFER, start, amount, pData);
+		if (MyGL::TestForError(MessageType::cError, "InstanceBuffer UpdateData SubData Errors"))
+		{
+			GameLogger::Log(MessageType::cError, "InstanceBuffer was unable to send data to the GPU!\n");
+			return false;
+		}
+
+		// update count and indicate success
+		m_count = newCount;
+		return true;
+	}
 
 	bool InstanceBuffer::Shutdown()
 	{

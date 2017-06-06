@@ -4,6 +4,7 @@
 #include "SteeringBehaviors.h"
 #include "MathUtility.h"
 #include "MyWindow.h"
+#include "Mesh.h"
 
 // Justin Furtado
 // 5/30/2017
@@ -66,9 +67,10 @@ bool AIDemoDargonComponent::Initialize()
 	// start a-thinking!
 	Engine::FSMPair pair = s_AIFuncs[0];
 	m_brain.Push(pair.m_enter, pair.m_update, pair.m_exit, this);
-	//m_index = Engine::MathUtility::Rand(0, NUM_FUNCS);
 
-	m_offset = Engine::MathUtility::GetRandSphereEdgeVec(50.0f);
+	InitOffset();
+
+	//m_flockWeights = Engine::MathUtility::Rand(Engine::Vec3(1, 0, 0), Engine::Vec3(1, 0, 0));
 	m_flockWeights = Engine::MathUtility::Rand(Engine::Vec3(0.4f, 0.4f, 0.4f), Engine::Vec3(0.6f, 0.6f, 0.6f));
 	m_speed = Engine::MathUtility::Rand(30.0f, 70.0f);
 	m_pAStarFollow->SetSpeed(m_speed);
@@ -105,9 +107,9 @@ bool AIDemoDargonComponent::Update(float dt)
 		}
 		else if (m_keyboardManager.KeyWasPressed('T'))
 		{
-			/*m_index = 11;
+			m_index = Engine::MathUtility::Rand(0, NUM_FUNCS);
 			Engine::FSMPair pair = s_AIFuncs[m_index];
-			m_brain.Push(pair.m_enter, pair.m_update, pair.m_exit, this);*/
+			m_brain.Push(pair.m_enter, pair.m_update, pair.m_exit, this);
 		}
 		else if (m_keyboardManager.KeyWasPressed('V'))
 		{
@@ -128,6 +130,11 @@ void AIDemoDargonComponent::SetPCollectibles(Engine::LinkedList<Engine::Graphica
 	m_pCollectibles = pCollectibles;
 }
 
+void AIDemoDargonComponent::SetFormationGobPtr(Engine::GraphicalObject * pFormationGob)
+{
+	m_pFormationGob = pFormationGob;
+}
+
 void AIDemoDargonComponent::DoNothingOnPurpose(void * /*pData*/)
 {
 	// does nothing - ON PURPOSE :D
@@ -142,7 +149,7 @@ void AIDemoDargonComponent::WanderEnter(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
 	pComp->m_pSpatial->SetVelocity(Engine::MathUtility::GetRandSphereEdgeVec(pComp->m_speed));
-	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(0.5f, 0.5f, 0.5f));
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(0.5f, 0.5f, 0.5f));
 }
 
 void AIDemoDargonComponent::StopMoving(void * pData)
@@ -155,7 +162,7 @@ void AIDemoDargonComponent::FlockEnter(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
 	Engine::Flocker::AddToFlock(pComp->m_pSpatial);
-	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(0.75f, 0.25f, 0.75f));
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(0.75f, 0.25f, 0.75f));
 }
 
 
@@ -176,7 +183,7 @@ void AIDemoDargonComponent::FlockExit(void * pData)
 void AIDemoDargonComponent::SeekEnter(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(0.0f, 0.0f, 1.0f));
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(0.0f, 0.0f, 1.0f));
 }
 
 void AIDemoDargonComponent::SeekUpdate(float /*dt*/, void * pData)
@@ -189,7 +196,7 @@ void AIDemoDargonComponent::SeekUpdate(float /*dt*/, void * pData)
 void AIDemoDargonComponent::ArrivalEnter(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(0.0f, 1.0f, 1.0f));
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(0.0f, 1.0f, 1.0f));
 }
 
 void AIDemoDargonComponent::ArrivalUpdate(float /*dt*/, void * pData)
@@ -202,7 +209,7 @@ void AIDemoDargonComponent::ArrivalUpdate(float /*dt*/, void * pData)
 void AIDemoDargonComponent::FleeEnter(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(1.0f, 0.0f, 1.0f));
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(1.0f, 0.0f, 1.0f));
 }
 
 void AIDemoDargonComponent::FleeUpdate(float /*dt*/, void * pData)
@@ -215,7 +222,7 @@ void AIDemoDargonComponent::FleeUpdate(float /*dt*/, void * pData)
 void AIDemoDargonComponent::PursueEnter(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(1.0f, 1.0f, 1.0f));
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(1.0f, 1.0f, 1.0f));
 }
 
 void AIDemoDargonComponent::PursueUpdate(float dt, void * pData)
@@ -228,13 +235,14 @@ void AIDemoDargonComponent::PursueUpdate(float dt, void * pData)
 void AIDemoDargonComponent::PursueOffsetEnter(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(0.25, 0.5f, 1.0f));
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(0.25, 0.5f, 1.0f));
 }
 
 void AIDemoDargonComponent::PursueOffsetUpdate(float dt, void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	Engine::SteeringBehaviors::OffsetPursuitArrival(pComp->m_pSpatial, pComp->m_pPlayerSpatial, dt, pComp->m_speed, 25.0f, pComp->m_offset);
+	Engine::Mat4 rot = Engine::Mat4::AxisRotation(pComp->m_pPlayerSpatial->GetForward(), pComp->m_pPlayerSpatial->GetUp());
+	Engine::SteeringBehaviors::OffsetPursuitArrival(pComp->m_pSpatial, pComp->m_pPlayerSpatial, dt, pComp->m_speed, 25.0f, rot * pComp->m_offset);
 	pComp->FaceMoveDir();
 }
 
@@ -248,7 +256,7 @@ void AIDemoDargonComponent::WanderUpdate(float /*dt*/, void * pData)
 void AIDemoDargonComponent::EvadeEnter(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(1.0f, 0.75f, 0.0f));
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(1.0f, 0.75f, 0.0f));
 }
 
 void AIDemoDargonComponent::EvadeUpdate(float dt, void * pData)
@@ -264,6 +272,7 @@ void AIDemoDargonComponent::EnterRandomAStar(void * pData)
 	pComp->m_pAStarFollow->Enable();
 	pComp->m_pAStarFollow->SetSpeed(pComp->m_speed);
 	pComp->m_pAStarFollow->SetRandomTargetNode(true); 
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(1.0f, 1.0f, 0.0f));
 }
 
 void AIDemoDargonComponent::EnterFollowAStar(void * pData)
@@ -273,6 +282,7 @@ void AIDemoDargonComponent::EnterFollowAStar(void * pData)
 	pComp->m_pAStarFollow->SetRandomTargetNode(false);
 	pComp->m_pAStarFollow->SetSpeed(pComp->m_speed);
 	pComp->m_pAStarFollow->ForceRecalc(pComp->m_pSpatial->GetPosition());
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(1.0f, 0.0f, 0.0f));
 }
 
 void AIDemoDargonComponent::ExitRandomAStar(void * pData)
@@ -292,7 +302,7 @@ void AIDemoDargonComponent::ExitFollowAStar(void * pData)
 void AIDemoDargonComponent::ForageEnter(void * pData)
 {
 	AIDemoDargonComponent *pComp = reinterpret_cast<AIDemoDargonComponent *>(pData);
-	SetColor(pComp->m_pGobComp->GetGraphicalObject()->GetMatPtr(), Engine::Vec3(0.75f, 0.5f, 0.2f));
+	SetColor(pComp->m_pFormationGob->GetMatPtr(), Engine::Vec3(0.75f, 0.5f, 0.2f));
 }
 
 void AIDemoDargonComponent::ForageUpdate(float /*dt*/, void * pData)
@@ -327,5 +337,15 @@ void AIDemoDargonComponent::FaceMoveDir()
 		m_pGobComp->GetGraphicalObject()->CalcFullTransform();
 	}
 	
+}
+
+void AIDemoDargonComponent::InitOffset()
+{
+	int index = Engine::MathUtility::Rand(0, (int)m_pFormationGob->GetMeshPointer()->GetVertexCount());
+	Engine::Vec3 pos1 = *reinterpret_cast<Engine::Vec3*>(m_pFormationGob->GetMeshPointer()->GetPointerToVertexAt(index));
+	int indexTwo = Engine::MathUtility::Clamp(index % 3 == 0 ? index + 1 : index - 1, 0, m_pFormationGob->GetMeshPointer()->GetVertexCount() - 1);
+	Engine::Vec3 pos2 = *reinterpret_cast<Engine::Vec3*>(m_pFormationGob->GetMeshPointer()->GetPointerToVertexAt(indexTwo));
+	m_offset = pos1.Lerp(pos2, Engine::MathUtility::Rand(0.0f, 1.0f));
+	m_offset = m_offset * 20.0f;
 }
 

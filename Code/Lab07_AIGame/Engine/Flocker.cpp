@@ -21,8 +21,8 @@ namespace Engine
 		Vec3 pos = pSpatial->GetPosition();
 		
 		Vec3 vel = (cohesionWeight * CalculateCohesion(pSpatial))
-			+ (alignmentWeight * CalculateAlignment(pSpatial))
-			+ (separationWeight * CalculateSeparation(pSpatial));
+			     + (alignmentWeight * CalculateAlignment(pSpatial))
+			     + (separationWeight * CalculateSeparation(pSpatial));
 
 		pSpatial->SetVelocity((pSpatial->GetVelocity().Normalize() * 0.25f+ vel.Normalize()).Normalize() * speed);
 	}

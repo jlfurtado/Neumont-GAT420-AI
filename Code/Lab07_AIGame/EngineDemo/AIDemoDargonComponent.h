@@ -20,6 +20,7 @@ public:
 	bool Update(float dt) override;
 	void SetPlayerRef(Engine::SpatialComponent *pPlayerSpatial);
 	void SetPCollectibles(Engine::LinkedList<Engine::GraphicalObject*> *pCollectibles);
+	void SetFormationGobPtr(Engine::GraphicalObject *pFormationGob);
 
 private:
 	static void DoNothingOnPurpose(void *pData);
@@ -64,15 +65,15 @@ private:
 
 	static void SetColor(Engine::Material *pMat, const Engine::Vec3& color);
 	void FaceMoveDir();
-
+	void InitOffset();
 
 
 	Engine::Keyboard m_keyboardManager;
 	Engine::StackFSM m_brain;
-	Engine::AStarPathFollowComponent *m_pAStarFollow;
-	Engine::SpatialComponent *m_pSpatial;
+	Engine::AStarPathFollowComponent *m_pAStarFollow{ nullptr };
+	Engine::SpatialComponent *m_pSpatial{ nullptr };
 	Engine::SpatialComponent *m_pPlayerSpatial{ nullptr };
-	Engine::GraphicalObjectComponent *m_pGobComp;
+	Engine::GraphicalObjectComponent *m_pGobComp{ nullptr };
 	Engine::Vec3 m_offset;
 	int m_index{ 0 };
 	static const int NUM_STEERS = 8;
@@ -80,10 +81,10 @@ private:
 	static const int NUM_FLOCK = 1;
 	static const int NUM_FUNCS = NUM_STEERS + NUM_ASTARS + NUM_FLOCK;
 	static Engine::FSMPair s_AIFuncs[NUM_FUNCS];
-	Engine::LinkedList<Engine::GraphicalObject*> *m_pCollectibles;
+	Engine::LinkedList<Engine::GraphicalObject*> *m_pCollectibles{ nullptr };
 	Engine::Vec3 m_flockWeights;
 	float m_speed;
-
+	Engine::GraphicalObject *m_pFormationGob{ nullptr };
 };
 
 
