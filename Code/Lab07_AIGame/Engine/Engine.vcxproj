@@ -104,6 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)..\Middleware\FreeType\include\;$(SolutionDir)..\Middleware\stb\include\;$(SolutionDir)..\Middleware\QT\include\;$(SolutionDir)..\Middleware\glew\include\;$(SolutionDir)..\Middleware\irrKlang\include\</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>ENGINE_EXPORTS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

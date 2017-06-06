@@ -111,10 +111,10 @@ namespace Engine
 				BufferInfo *pCurrentBufferInfo = pCurrentBufferGroup->GetBufferInfos() + j;
 
 				// validate input
-				if (!pCurrentBufferInfo->GetGraphicalObjectList()->GetFirstObjectData())
+				if (pCurrentBufferInfo->GetGraphicalObjectList()->GetCount() <= 0)
 				{
-					//GameLogger::Log(MessageType::cWarning, "Tried to draw buffer info [%d] from buffer group [%d] but linked list was empty!\n", j, i);
-					continue; // TESTING
+					// no need to setup environment if buffer info list empty
+					continue;
 				}
 
 				// attempt to set attribs and bind buffers

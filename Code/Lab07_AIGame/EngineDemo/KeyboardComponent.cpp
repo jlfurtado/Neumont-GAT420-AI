@@ -50,30 +50,37 @@ bool KeyboardComponent::HandleKeyboardInput(float dt)
 	Engine::GraphicalObjectComponent *pGraphicalObjectComponent = GetSiblingComponent<Engine::GraphicalObjectComponent>();
 	if (!pGraphicalObjectComponent) { return true; }
 
+	// get vectors
+	Engine::Vec3 f = pSpatialComponent->GetForward();
+	Engine::Vec3 u = pSpatialComponent->GetUp();
+	Engine::Vec3 r = pSpatialComponent->GetRight();
+
+	// radians to rotate
+	float radians = pCameraComponent->GetRotateSpeed() * dt;
+
+	Engine::Mat4 rot;
+
 	// handle dargon input
-	static Engine::Vec3 combinedRotation(0.0f, 0.0f, 0.0f);
-	Engine::Vec3 deltaRotation(0.0f, 0.0f, 0.0f);
-	if (m_keyboardManager.KeyIsDown('W')) { deltaRotation = deltaRotation + Engine::Vec3(-1.0f, 0.0f, 0.0f);}
-	if (m_keyboardManager.KeyIsDown('S')) { deltaRotation = deltaRotation + Engine::Vec3(1.0f, 0.0f, 0.0f); }
-	if (m_keyboardManager.KeyIsDown('A')) { deltaRotation = deltaRotation + Engine::Vec3(0.0f, 1.0f, 0.0f); }
-	if (m_keyboardManager.KeyIsDown('D')) { deltaRotation = deltaRotation + Engine::Vec3(0.0f, -1.0f, 0.0f); }
-	if (m_keyboardManager.KeyIsDown('Q')) { deltaRotation = deltaRotation + Engine::Vec3(0.0f, 0.0f, -1.0f); }
-	if (m_keyboardManager.KeyIsDown('E')) { deltaRotation = deltaRotation + Engine::Vec3(0.0f, 0.0f, 1.0f); }
+	if (m_keyboardManager.KeyIsDown('W')) { rot = Engine::Mat4::RotationAroundAxis(r, -radians) * rot; }
+	if (m_keyboardManager.KeyIsDown('S')) { rot = Engine::Mat4::RotationAroundAxis(r, radians) * rot; }
+	if (m_keyboardManager.KeyIsDown('A')) { rot = Engine::Mat4::RotationAroundAxis(u, radians) * rot; }
+	if (m_keyboardManager.KeyIsDown('D')) { rot = Engine::Mat4::RotationAroundAxis(u, -radians) * rot; }
+	if (m_keyboardManager.KeyIsDown('Q')) { rot = Engine::Mat4::RotationAroundAxis(f, -radians) * rot; }
+	if (m_keyboardManager.KeyIsDown('E')) { rot = Engine::Mat4::RotationAroundAxis(f, radians) * rot; }
 
-	if (deltaRotation.Length() > 0.0f) { combinedRotation = combinedRotation + deltaRotation.Normalize() * pCameraComponent->GetRotateSpeed() * dt; }
-	if (m_keyboardManager.KeyIsDown(' ')) { pSpatialComponent->SetVelocity(pCameraComponent->GetSpeed()*(pSpatialComponent->CalcRotationMatrix()*(Engine::Vec3(0.0f, 0.0f, -1.0f)))); }
-	else { pSpatialComponent->SetVelocity(Engine::Vec3(0.0f, 0.0f, 0.0f)); }
+	//Engine::GameLogger::Log(Engine::MessageType::ConsoleOnly, "---(%.3f, %.3f, %.3f)\n", f.GetX(), f.GetY(), f.GetZ());
 
-	// set rotation
-	pSpatialComponent->SetRoll(combinedRotation.GetZ());
-	pSpatialComponent->SetPitch(combinedRotation.GetX());
-	pSpatialComponent->SetYaw(combinedRotation.GetY());
+	// update vectors
+	pSpatialComponent->SetAxes(rot * f, rot * u);
 
 	// calculate matrix and sqqqqet it on gob so its drawn
-	Engine::Mat4 rotation = pSpatialComponent->CalcRotationMatrix();
-	pGraphicalObjectComponent->GetGraphicalObject()->SetRotMat(rotation);
+	Engine::Mat4 calcdRot = pSpatialComponent->CalcRotationMatrix();
+	pGraphicalObjectComponent->GetGraphicalObject()->SetRotMat(calcdRot);
 
 	// update camera
-	pCameraComponent->Move(pSpatialComponent->GetPosition(), combinedRotation);
+	pCameraComponent->Move(pSpatialComponent->GetPosition(), Engine::Vec3(0.0f));
+
+	if (m_keyboardManager.KeyIsDown(' ')) { pSpatialComponent->SetVelocity(pCameraComponent->GetSpeed()*(calcdRot*(Engine::Vec3(0.0f, 0.0f, -1.0f)))); }
+	else { pSpatialComponent->SetVelocity(Engine::Vec3(0.0f, 0.0f, 0.0f)); }
 	return true;
 }

@@ -128,8 +128,8 @@ namespace Engine
 		for (int i = 0; i < m_numUniformDatas; ++i)
 		{
 			m_uniformData[i].PassUniform();
-			if (MyGL::TestForError(MessageType::cError, "Uniform data [%d] for object at (%.3f, %.3f, %.3f) failed", i, GetPos().GetX(), GetPos().GetY(), GetPos().GetZ()))
-			{ break; }
+//			if (MyGL::TestForError(MessageType::cError, "Uniform data [%d] for object at (%.3f, %.3f, %.3f) failed", i, GetPos().GetX(), GetPos().GetY(), GetPos().GetZ()))
+//			{ break; }
 		}
 	}
 

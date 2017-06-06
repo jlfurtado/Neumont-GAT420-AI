@@ -34,11 +34,6 @@ namespace Engine
 
 	bool SpatialComponent::Update(float dt)
 	{
-		Mat4 rotate = CalcRotationMatrix();
-		m_forward = rotate * BASE_FORWARD;
-		m_right = rotate * BASE_RIGHT;
-		m_up = rotate * BASE_UP;
-
 		m_position = m_position + m_velocity * dt;
 
 		// set pos
@@ -57,54 +52,9 @@ namespace Engine
 		m_position = m_position + deltaPosition;
 	}
 
-	void SpatialComponent::SetYaw(float newYaw)
-	{
-		m_yaw = newYaw;
-	}
-
-	void SpatialComponent::Yaw(float amountToYaw)
-	{
-		m_yaw += amountToYaw;
-	}
-
-	void SpatialComponent::SetPitch(float newPitch)
-	{
-		m_pitch = newPitch;
-	}
-
-	void SpatialComponent::Pitch(float amountToPitch)
-	{
-		m_pitch += amountToPitch;
-	}
-
-	void SpatialComponent::SetRoll(float newRoll)
-	{
-		m_roll = newRoll;
-	}
-
-	void SpatialComponent::Roll(float amountToRoll)
-	{
-		m_roll += amountToRoll;
-	}
-
 	Vec3 SpatialComponent::GetPosition() const
 	{
 		return m_position;
-	}
-
-	float SpatialComponent::GetYaw() const
-	{
-		return m_yaw;
-	}
-
-	float SpatialComponent::GetPitch() const
-	{
-		return m_pitch;
-	}
-
-	float SpatialComponent::GetRoll() const
-	{
-		return m_roll;
 	}
 
 	Vec3 SpatialComponent::GetForward() const
@@ -122,15 +72,6 @@ namespace Engine
 		return m_right;
 	}
 
-	Mat4 SpatialComponent::CalcRotationMatrix()
-	{
-		Mat4 y = Mat4::RotationAroundAxis(BASE_UP, m_yaw);
-		Mat4 p = Mat4::RotationAroundAxis(BASE_RIGHT, m_pitch);
-		Mat4 r = Mat4::RotationAroundAxis(BASE_FORWARD, m_roll);
-
-		return y * p * r;
-	}
-
 	Vec3 SpatialComponent::GetVelocity() const
 	{
 		return m_velocity;
@@ -139,5 +80,17 @@ namespace Engine
 	void SpatialComponent::SetVelocity(Vec3 newVelocity)
 	{
 		m_velocity = newVelocity;
+	}
+
+	void SpatialComponent::SetAxes(const Vec3 & forward, const Vec3 & up)
+	{
+		m_forward = forward.Normalize();
+		m_up = up.Normalize();
+		m_right = forward.Cross(up).Normalize();
+	}
+
+	Mat4 SpatialComponent::CalcRotationMatrix()
+	{
+		return Engine::Mat4::AxisRotation(m_forward, m_up);
 	}
 }

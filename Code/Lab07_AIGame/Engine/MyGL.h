@@ -31,6 +31,14 @@ namespace Engine
 		return TestForError(messageType, buffer);
 	}
 
+	template<>
+	inline bool MyGL::TestForError<int,float, float, float>(MessageType messageType, const char *const format, int i, float f1, float f2, float f3)
+	{
+
+		char      buffer[GameLogger::MAX_LOG_SIZE];
+		sprintf_s(buffer, GameLogger::MAX_LOG_SIZE, format, i, f1, f2, f3);
+		return TestForError(messageType, buffer);
+	}
 }
 
 #endif // ifndef MYGL_H

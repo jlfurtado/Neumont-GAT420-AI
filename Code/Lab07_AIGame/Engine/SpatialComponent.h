@@ -25,22 +25,14 @@ namespace Engine
 
 		void SetPosition(Vec3 newPosition);
 		void Translate(Vec3 deltaPosition);
-		void SetYaw(float newYaw);
-		void Yaw(float amountToYaw);
-		void SetPitch(float newPitch);
-		void Pitch(float amountToPitch);
-		void SetRoll(float newRoll);
-		void Roll(float amountToRoll);
 		Vec3 GetPosition() const;
-		float GetYaw() const;
-		float GetPitch() const;
-		float GetRoll() const;
 		Vec3 GetForward() const;
 		Vec3 GetUp() const;
 		Vec3 GetRight() const;
-		Mat4 CalcRotationMatrix();
 		Vec3 GetVelocity() const;
 		void SetVelocity(Vec3 newVelocity);
+		void SetAxes(const Vec3& forward, const Vec3& up);
+		Mat4 CalcRotationMatrix();
 
 	private:
 		Vec3 m_position;

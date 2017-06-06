@@ -60,6 +60,23 @@ namespace Engine
 
 		}
 
+		static Mat4 FromYawPitchRoll(float yaw, float pitch, float roll)
+		{
+			float x = pitch, y = yaw, z = roll;
+			float cx = cosf(x), cy = cosf(y), cz = cosf(z);
+			float sx = sinf(x), sy = sinf(y), sz = sinf(z);
+
+			//return Mat4(cy*cz, sx*sy*cz-cx*sz, sx*sz+cx*sy*cz, 0.0f,
+			//			cy*sz, cx*cz+sx*sy*sz, cx*sy*sz-sx*cz, 0.0f,
+			//			-sy, sx*cy, cx*cy, 0.0f,
+			//			0.0f, 0.0f, 0.0f, 1.0f);
+
+			return Mat4(cy*cz, cy*sz, -sy, 0.0f,
+						sx*sy*cz - cx*sz, cx*cz + sx*sy*sz, sx*cy, 0.0f,
+						sx*sz + cx*sy*cz, cx*sy*sz - sx*cz, cx*cy, 0.0f,
+						0.0f, 0.0f, 0.0f, 1.0f);
+		}
+
 		static Mat4 RotationToFace(const Vec3& baseDir, const Vec3& newDir)
 		{
 			Vec3 bd = baseDir.Normalize();

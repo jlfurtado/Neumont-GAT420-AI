@@ -85,7 +85,7 @@ namespace Engine
 			{
 				m_pSpatialComp->SetVelocity(toNextNode.Normalize() * m_speed);	
 				m_pGobComp->GetGraphicalObject()->SetRotMat(Mat4::AxisRotation(toNextNode.Normalize(), toNextNode.Cross(PLUS_Y).Cross(toNextNode).Normalize()));
-				m_pGobComp->GetGraphicalObject()->CalcFullTransform();
+				//m_pGobComp->GetGraphicalObject()->CalcFullTransform();
 			}
 		}
 

@@ -124,6 +124,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)..\Middleware\stb\include\;$(SolutionDir)..\Middleware\QT\include\;$(SolutionDir)..\Middleware\glew\include\;$(SolutionDir)Engine\;$(SolutionDir)..\Middleware\irrKlang\include;$(SolutionDir)..\Middleware\irrKlang\include</AdditionalIncludeDirectories>
+      <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
